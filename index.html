@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chronicles of Nimdak — A Solo Dev Story</title>
+<meta name="description" content="One dev. Many worlds. Games built from scratch by Nimdak — sci-fi, strategy, and everything in between.">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --space:   #04060f;
+  --deep:    #080c1a;
+  --panel:   #0d1428;
+  --border:  #1a2a4a;
+  --gold:    #c9a84c;
+  --gold-dim:#7a5c1e;
+  --cyan:    #00ccff;
+  --green:   #00ff88;
+  --red:     #ff3333;
+  --text:    #8ab0d0;
+  --muted:   #3a5070;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--space);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── STARFIELD ── */
+#starfield {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── LAYOUT ── */
+.page { position: relative; z-index: 1; }
+
+/* ── HERO ── */
+#hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 24px 80px;
+  position: relative;
+}
+
+.hero-eyebrow {
+  font-size: 9px;
+  letter-spacing: 5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  animation: fadeUp 0.8s ease both;
+}
+
+.hero-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(28px, 6vw, 72px);
+  font-weight: 900;
+  color: var(--gold);
+  line-height: 1.05;
+  letter-spacing: 2px;
+  text-shadow: 0 0 40px rgba(201,168,76,0.4), 0 0 80px rgba(201,168,76,0.15);
+  animation: fadeUp 0.8s 0.1s ease both;
+}
+
+.hero-sub {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(10px, 1.5vw, 14px);
+  color: var(--cyan);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  margin-top: 10px;
+  text-shadow: 0 0 12px rgba(0,200,255,0.4);
+  animation: fadeUp 0.8s 0.2s ease both;
+}
+
+.hero-divider {
+  width: 120px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 32px auto;
+  animation: fadeUp 0.8s 0.3s ease both;
+}
+
+/* TRANSMISSION LOG — the signature element */
+.transmission {
+  max-width: 560px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cyan);
+  padding: 20px 24px;
+  text-align: left;
+  animation: fadeUp 0.8s 0.4s ease both;
+}
+
+.transmission-header {
+  font-size: 8px;
+  letter-spacing: 4px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.transmission-header::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+.transmission p {
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--text);
+}
+
+.transmission p + p { margin-top: 10px; }
+
+.transmission .sign {
+  margin-top: 14px;
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: 2px;
+}
+
+.hero-scroll {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  letter-spacing: 4px;
+  color: var(--muted);
+  text-transform: uppercase;
+  animation: bounce 2s infinite;
+  text-decoration: none;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%       { transform: translateX(-50%) translateY(6px); }
+}
+
+/* ── GAMES SECTION ── */
+#games {
+  padding: 80px 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.section-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  letter-spacing: 5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(18px, 3vw, 28px);
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 40px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.game-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 28px 24px 22px;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.game-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 3px;
+  background: var(--card-accent, var(--gold));
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.game-card:hover {
+  border-color: var(--card-accent, var(--gold));
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+.game-card:hover::before { opacity: 1; }
+
+/* Placeholder card (coming soon) */
+.game-card.coming-soon {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}
+
+.card-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.card-genre {
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--card-accent, var(--gold));
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.card-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(14px, 2vw, 18px);
+  font-weight: 700;
+  color: #d0e4f0;
+  line-height: 1.2;
+}
+
+.card-desc {
+  font-size: 10px;
+  color: var(--text);
+  line-height: 1.7;
+  flex: 1;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.card-best {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.card-best-label {
+  font-size: 7px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.card-best-score {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--green);
+  text-shadow: 0 0 8px rgba(0,255,136,0.4);
+}
+
+.card-best-score.no-score {
+  color: var(--muted);
+  font-size: 10px;
+  text-shadow: none;
+}
+
+.card-play {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--card-accent, var(--gold));
+  border: 1px solid var(--card-accent, var(--gold));
+  padding: 6px 12px;
+  border-radius: 2px;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.game-card:hover .card-play {
+  background: var(--card-accent, var(--gold));
+  color: var(--space);
+}
+
+.coming-badge {
+  font-size: 7px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 2px;
+}
+
+/* ── PERSONAL BESTS ── */
+#bests {
+  padding: 0 24px 80px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.bests-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.best-card {
+  background: rgba(13,20,40,0.6);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px 18px;
+}
+
+.best-game {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.best-score-big {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.best-grade {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.footer-brand {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 2px;
+}
+
+.footer-links {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.footer-link {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+
+.footer-link:hover { color: var(--text); }
+
+.bmc-footer {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--panel);
+  color: var(--gold);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 9px 14px;
+  border-radius: 4px;
+  border: 1px solid rgba(201,168,76,0.4);
+  text-decoration: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.bmc-footer:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 16px rgba(201,168,76,0.25);
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+  .games-grid { grid-template-columns: 1fr; }
+  footer { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<div class="page">
+
+  <!-- HERO -->
+  <section id="hero">
+    <div class="hero-eyebrow">Transmission incoming · nimdak.github.io</div>
+    <h1 class="hero-title">Chronicles<br>of Nimdak</h1>
+    <div class="hero-sub">A Solo Dev Story</div>
+    <div class="hero-divider"></div>
+
+    <div class="transmission">
+      <div class="transmission-header">Incoming Transmission · Personal Log</div>
+      <p>Solo developer. Night-shift coder. Builder of worlds that probably have at least one bug involving elevators.</p>
+      <p>These games are built from scratch — one person, one screen, too much coffee, and a deep love of sci-fi, survival mechanics, and systems that reward curiosity. No studio. No team. Just commits at 2am and the quiet satisfaction of something working.</p>
+      <p>Play something. Break something. Leave a score.</p>
+      <div class="sign">— Nimdak, adrift somewhere in the verse</div>
+    </div>
+
+    <a class="hero-scroll" href="#games">▼ &nbsp; enter the verse</a>
+  </section>
+
+  <!-- GAMES -->
+  <section id="games">
+    <div class="section-label">// Active Deployments</div>
+    <h2 class="section-title">The Games</h2>
+
+    <div class="games-grid">
+
+      <!-- Star DEVizen -->
+      <div class="game-card reveal" style="--card-accent: #00ccff;">
+        <div class="card-icon">🪲</div>
+        <div class="card-genre">Parody · Action</div>
+        <h3 class="card-title">Star DEVizen: Bug Smasher</h3>
+        <p class="card-desc">You are a developer. The server just came back up. Bugs are crawling out of every game loop and the Lead Dev is watching. Smash them before they ship to live — or the shard goes down.</p>
+        <div class="card-footer">
+          <div class="card-best">
+            <div class="card-best-label">Your Best Score</div>
+            <div class="card-best-score" id="score-devizen">—</div>
+          </div>
+          <a class="card-play" href="./star-devizen/index.html">[ PLAY ]</a>
+        </div>
+      </div>
+
+      <!-- Last Stand: First Contact -->
+      <div class="game-card reveal" style="--card-accent: #ff6633;">
+        <div class="card-icon">🛸</div>
+        <div class="card-genre">Strategy · Sci-Fi</div>
+        <h3 class="card-title">Last Stand:<br>First Contact</h3>
+        <p class="card-desc">Humanity's final defence against an unknown signal. Build your fleet, manage your resources, and hold the line. The contact window closes whether you're ready or not.</p>
+        <div class="card-footer">
+          <div class="card-best">
+            <div class="card-best-label">Your Best Score</div>
+            <div class="card-best-score" id="score-laststand">—</div>
+          </div>
+          <a class="card-play" href="./last-stand/index.html">[ PLAY ]</a>
+        </div>
+      </div>
+
+      <!-- Coming Soon placeholder 1 -->
+      <div class="game-card coming-soon reveal" style="--card-accent: #c9a84c;">
+        <div class="card-icon">🌑</div>
+        <div class="card-genre">Unknown · Classified</div>
+        <h3 class="card-title">Transmission Pending</h3>
+        <p class="card-desc">Signal detected. Origin unknown. Content classified. Estimated arrival: when it's ready.</p>
+        <div class="card-footer">
+          <div class="card-best"></div>
+          <div class="coming-badge">INCOMING</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- PERSONAL BESTS -->
+  <section id="bests">
+    <div class="section-label reveal">// Your Mission Record</div>
+    <h2 class="section-title reveal">Personal Bests</h2>
+    <p style="font-size:10px;color:var(--muted);margin-bottom:24px;line-height:1.7;" class="reveal">
+      Scores are saved to your browser on this device. No account needed. No data leaves your machine.
+    </p>
+    <div class="bests-grid" id="bestsGrid">
+      <!-- filled by JS -->
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-brand">Chronicles of Nimdak</div>
+    <div class="footer-links">
+      <a class="footer-link" href="https://github.com/nimdak" target="_blank" rel="noopener">GitHub</a>
+      <a class="footer-link" href="#games">Games</a>
+      <a class="footer-link" href="#bests">Scores</a>
+    </div>
+    <a class="bmc-footer" href="https://buymeacoffee.com/Nimdak" target="_blank" rel="noopener">
+      ☕ &nbsp;Buy Me a Coffee
+    </a>
+  </footer>
+
+</div>
+
+<script>
+// ── STARFIELD ──
+const canvas = document.getElementById('starfield');
+const ctx = canvas.getContext('2d');
+let stars = [];
+
+function initStars() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  stars = Array.from({ length: 260 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 1.4 + 0.2,
+    a: Math.random(),
+    speed: Math.random() * 0.015 + 0.005,
+  }));
+}
+
+function drawStars() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (const s of stars) {
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(180,210,255,${s.a})`;
+    ctx.fill();
+    s.a += (Math.random() - 0.5) * s.speed;
+    s.a = Math.max(0.05, Math.min(1, s.a));
+  }
+  requestAnimationFrame(drawStars);
+}
+
+initStars();
+drawStars();
+window.addEventListener('resize', initStars);
+
+// ── SCROLL REVEAL ──
+const observer = new IntersectionObserver(
+  entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+  { threshold: 0.1 }
+);
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ── PERSONAL BESTS ──
+const SCORE_KEYS = [
+  { key: 'scores_devizen',   game: 'Star DEVizen: Bug Smasher',     id: 'score-devizen'   },
+  { key: 'scores_laststand', game: 'Last Stand: First Contact',     id: 'score-laststand' },
+];
+
+function getGrade(score) {
+  if (score >= 3000) return { letter: 'S', color: '#00ccff' };
+  if (score >= 2000) return { letter: 'A', color: '#00ff88' };
+  if (score >= 1200) return { letter: 'B', color: '#c9a84c' };
+  if (score >= 600)  return { letter: 'C', color: '#ffaa00' };
+  if (score >= 200)  return { letter: 'D', color: '#ff6633' };
+  return               { letter: 'F', color: '#ff3333' };
+}
+
+function loadBests() {
+  const grid = document.getElementById('bestsGrid');
+  grid.innerHTML = '';
+  let anyScore = false;
+
+  SCORE_KEYS.forEach(({ key, game, id }) => {
+    const raw = localStorage.getItem(key);
+    const score = raw ? parseInt(raw, 10) : null;
+
+    // Update card score display
+    const el = document.getElementById(id);
+    if (el) {
+      if (score !== null) {
+        el.textContent = score.toLocaleString();
+        el.classList.remove('no-score');
+      } else {
+        el.textContent = 'No run yet';
+        el.classList.add('no-score');
+      }
+    }
+
+    // Build bests card
+    const card = document.createElement('div');
+    card.className = 'best-card reveal';
+    if (score !== null) {
+      anyScore = true;
+      const g = getGrade(score);
+      card.innerHTML = `
+        <div class="best-game">${game}</div>
+        <div class="best-score-big">${score.toLocaleString()}</div>
+        <div class="best-grade" style="color:${g.color}">Grade: ${g.letter}</div>
+      `;
+    } else {
+      card.innerHTML = `
+        <div class="best-game">${game}</div>
+        <div class="best-score-big" style="color:var(--muted);font-size:14px;">No run yet</div>
+        <div class="best-grade" style="color:var(--muted)">Play to set a score</div>
+      `;
+    }
+    grid.appendChild(card);
+    observer.observe(card);
+  });
+}
+
+loadBests();
+// Refresh if returning from a game tab
+window.addEventListener('focus', loadBests);
+window.addEventListener('storage', loadBests);
+</script>
+</body>
+</html>
