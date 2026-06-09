@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Star DEVizen: Bug Smasher v0.0.1-alpha-unstable</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --gold: #c9a84c;
+    --dark-gold: #7a5c1e;
+    --space: #04060f;
+    --deep: #080c1a;
+    --panel: #0d1428;
+    --panel-border: #1a2a4a;
+    --red: #ff3333;
+    --green: #00ff88;
+    --cyan: #00ccff;
+    --muted: #4a6080;
+    --text: #8ab0d0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--space);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow: hidden;
+    cursor: crosshair;
+  }
+
+  /* STARS BACKGROUND */
+  #starfield {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* SCREENS */
+  .screen {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .screen.hidden { display: none; }
+
+  /* ---- PREGAME SCREEN ---- */
+  #pregame {
+    background: linear-gradient(180deg, #04060f 0%, #080c1a 100%);
+  }
+
+  .game-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(22px, 4vw, 48px);
+    font-weight: 900;
+    color: var(--gold);
+    text-align: center;
+    text-shadow: 0 0 30px rgba(201,168,76,0.6), 0 0 60px rgba(201,168,76,0.3);
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+  }
+
+  .game-subtitle {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 30px;
+    text-align: center;
+  }
+
+  .disclaimer {
+    font-size: 9px;
+    color: #2a3a50;
+    max-width: 500px;
+    text-align: center;
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+
+  /* GAME LOOP GRID — threat monitor, read-only */
+  .grid-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+
+  .loop-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    max-width: 680px;
+    width: 100%;
+    margin-bottom: 28px;
+  }
+
+  .loop-card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 4px;
+    padding: 10px 8px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    cursor: default;
+  }
+
+  /* Blinking alert on each card */
+  .loop-card::after {
+    content: '';
+    position: absolute;
+    top: 6px; left: 6px;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--red);
+    animation: blinkDot 1.4s infinite;
+    animation-delay: var(--blink-offset, 0s);
+  }
+
+  @keyframes blinkDot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--red); }
+    50% { opacity: 0.15; box-shadow: none; }
+  }
+
+  .loop-card .loop-icon { font-size: 22px; margin-bottom: 4px; }
+  .loop-card .loop-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    color: var(--gold);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .loop-card .loop-desc {
+    font-size: 8px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .loop-card .bug-tag {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(255,50,50,0.15);
+    border: 1px solid rgba(255,50,50,0.4);
+    color: var(--red);
+    font-size: 7px;
+    padding: 1px 4px;
+    border-radius: 2px;
+  }
+
+  .start-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    background: none;
+    border: 2px solid var(--gold);
+    color: var(--gold);
+    padding: 14px 50px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .start-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--gold);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.2s;
+    z-index: -1;
+  }
+  .start-btn:hover {
+    color: var(--space);
+    text-shadow: none;
+  }
+  .start-btn:hover::before { transform: scaleX(1); }
+
+  .version-badge {
+    margin-top: 14px;
+    font-size: 9px;
+    color: #1a2a40;
+    letter-spacing: 2px;
+  }
+
+  /* ---- GAME SCREEN ---- */
+  #gamescreen {
+    background: #03050e;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 0;
+  }
+
+  /* HUD */
+  #hud {
+    width: 100%;
+    background: var(--panel);
+    border-bottom: 1px solid var(--panel-border);
+    padding: 8px 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    z-index: 20;
+    flex-shrink: 0;
+  }
+
+  #hud-row1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding-bottom: 6px;
+    gap: 8px;
+  }
+
+  #hud-row2 {
+    border-top: 1px solid var(--panel-border);
+    padding: 5px 0 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  #hud-row2 .hud-label {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  #statusTicker {
+    font-size: 10px;
+    color: var(--text);
+    line-height: 1.4;
+    white-space: normal;
+    overflow: hidden;
+    word-break: break-word;
+    height: calc(10px * 1.4 * 3); /* exactly 3 lines */
+    transition: color 0.4s, font-size 0.3s;
+  }
+
+  /* Free fly event state */
+  #statusTicker.event-freefly {
+    font-size: 11px;
+    color: #00ccff;
+    text-shadow: 0 0 8px rgba(0,200,255,0.6);
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+  }
+
+  /* Critical bug event state */
+  #statusTicker.event-critical {
+    font-size: 11px;
+    color: #ff6600;
+    text-shadow: 0 0 8px rgba(255,100,0,0.7);
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    animation: critTickerBlink 0.5s infinite;
+  }
+  @keyframes critTickerBlink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.6; }
+  }
+
+  .hud-block { display: flex; flex-direction: column; align-items: center; }
+  .hud-label {
+    font-size: 8px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .hud-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--green);
+    text-shadow: 0 0 10px rgba(0,255,136,0.4);
+    transition: color 0.3s;
+  }
+  .hud-value.danger { color: var(--red); text-shadow: 0 0 10px rgba(255,50,50,0.5); }
+  .hud-value.warning { color: #ffaa00; text-shadow: 0 0 10px rgba(255,170,0,0.4); }
+
+  @keyframes loopFlash {
+    0% { color: #fff; text-shadow: 0 0 14px rgba(255,255,255,0.9); }
+    100% { color: var(--gold); text-shadow: 0 0 8px rgba(201,168,76,0.5); }
+  }
+  #activeLoop { color: var(--gold); font-size: 12px !important; }
+  #activeLoop.loop-flash { animation: loopFlash 0.5s ease-out; }
+
+  /* GAME AREA */
+  #arena {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  #bgCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* BUGS */
+  .bug {
+    position: absolute;
+    cursor: pointer;
+    user-select: none;
+    animation: bugEmerge 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: center;
+    z-index: 30;
+    filter: drop-shadow(0 0 8px rgba(255,50,50,0.7));
+  }
+
+  @keyframes bugEmerge {
+    0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+
+  /* TIMER RING — shrinks to zero over the bug's lifespan */
+  .bug-timer-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: -1;
+  }
+  .bug-timer-ring circle {
+    fill: none;
+    stroke-linecap: round;
+    transform-origin: center;
+    transform: rotate(-90deg);
+  }
+  .ring-track {
+    stroke: rgba(255,50,50,0.15);
+  }
+  .ring-fill {
+    stroke: rgba(255,60,60,0.85);
+    transition: stroke 0.5s;
+    /* stroke-dashoffset animated by JS */
+  }
+  .bug.critical-bug .ring-fill {
+    stroke: rgba(255,140,0,0.95);
+  }
+
+  /* CRITICAL BUG overrides */
+  .critical-bug {
+    filter: drop-shadow(0 0 16px rgba(255,100,0,0.9)) drop-shadow(0 0 32px rgba(255,50,0,0.5)) !important;
+    z-index: 35 !important;
+  }
+  .critical-bug .bug-body {
+    font-size: clamp(52px, 8vw, 80px) !important;
+    animation: criticalPulse 0.7s ease-in-out infinite alternate;
+  }
+  @keyframes criticalPulse {
+    from { filter: brightness(1);   transform: scale(1); }
+    to   { filter: brightness(1.4); transform: scale(1.08); }
+  }
+  .critical-bug .bug-label {
+    background: rgba(60,10,0,0.95) !important;
+    border-color: #ff6600 !important;
+    color: #ff6600 !important;
+    font-size: 9px !important;
+    font-weight: bold !important;
+    padding: 3px 7px !important;
+  }
+  .critical-bug .bug-hp {
+    width: 70px !important;
+    height: 6px !important;
+  }
+  .critical-bug .bug-hp-fill {
+    background: linear-gradient(90deg, #ff3300, #ff9900) !important;
+  }
+
+  /* CHRIS ROBERTS ALERT BANNER */
+  #criticalAlert {
+    position: absolute;
+    top: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 52;
+    pointer-events: none;
+    display: none;
+    text-align: center;
+  }
+  #criticalAlert.active {
+    display: block;
+    animation: alertSlam 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  }
+  @keyframes alertSlam {
+    0%   { transform: translateX(-50%) scale(1.4); opacity: 0; }
+    100% { transform: translateX(-50%) scale(1);   opacity: 1; }
+  }
+  #criticalAlert .alert-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(13px, 2.5vw, 20px);
+    font-weight: 900;
+    color: #ff6600;
+    text-shadow: 0 0 20px rgba(255,100,0,0.9);
+    letter-spacing: 3px;
+  }
+  #criticalAlert .alert-sub {
+    font-size: 9px;
+    color: #ffaa66;
+    letter-spacing: 2px;
+    margin-top: 2px;
+  }
+
+  .bug-body {
+    font-size: clamp(28px, 5vw, 50px);
+    line-height: 1;
+    display: block;
+    transition: transform 0.1s;
+    pointer-events: none;
+  }
+
+  .bug-label {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    border: 1px solid var(--red);
+    color: var(--red);
+    font-size: 8px;
+    white-space: nowrap;
+    padding: 2px 5px;
+    border-radius: 2px;
+    margin-top: 2px;
+    letter-spacing: 1px;
+    pointer-events: none;
+  }
+
+  .bug-hp {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: #1a0a0a;
+    border-radius: 2px;
+    margin-bottom: 2px;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .bug-hp-fill {
+    height: 100%;
+    background: var(--red);
+    border-radius: 2px;
+    transition: width 0.1s;
+  }
+
+  .bug:hover .bug-body { transform: scale(1.1); }
+
+  .bug.dying {
+    animation: bugDie 0.3s forwards;
+  }
+  @keyframes bugDie {
+    0% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 15px rgba(0,255,136,0.9)); }
+    50% { transform: scale(1.5) rotate(45deg); opacity: 0.6; }
+    100% { transform: scale(0) rotate(90deg); opacity: 0; }
+  }
+
+  /* SMASH FX */
+  .smash-fx {
+    position: absolute;
+    pointer-events: none;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: 18px;
+    color: var(--green);
+    text-shadow: 0 0 10px var(--green);
+    z-index: 50;
+    animation: smashFloat 0.8s forwards;
+    white-space: nowrap;
+  }
+  @keyframes smashFloat {
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    100% { transform: translateY(-60px) scale(0.5); opacity: 0; }
+  }
+
+  .miss-fx {
+    position: absolute;
+    pointer-events: none;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: 14px;
+    color: var(--red);
+    text-shadow: 0 0 10px var(--red);
+    z-index: 50;
+    animation: smashFloat 0.8s forwards;
+  }
+
+  /* STREAK BONUS POPUP */
+  .streak-bonus {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 55;
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    color: #ffcc00;
+    text-shadow: 0 0 20px rgba(255,200,0,0.9), 0 0 40px rgba(255,200,0,0.5);
+    pointer-events: none;
+    animation: streakPop 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    white-space: nowrap;
+  }
+  @keyframes streakPop {
+    0%   { opacity: 0; transform: translateX(-50%) scale(0.4); }
+    15%  { opacity: 1; transform: translateX(-50%) scale(1.15); }
+    30%  { transform: translateX(-50%) scale(0.95); }
+    40%  { transform: translateX(-50%) scale(1); }
+    70%  { opacity: 1; }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-40px) scale(0.8); }
+  }
+
+  /* PLEDGE STORE TICKER */
+  #pledgeTicker {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 38px;
+    background: rgba(4, 6, 15, 0.92);
+    border-top: 1px solid rgba(201,168,76,0.3);
+    overflow: hidden;
+    z-index: 28;
+    display: flex;
+    align-items: center;
+  }
+  #pledgeLabel {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    border-right: 1px solid rgba(201,168,76,0.3);
+    background: rgba(20,14,4,0.9);
+    height: 100%;
+    gap: 1px;
+    min-width: 110px;
+  }
+  #pledgeLabel .pl-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 7px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 2px;
+    white-space: nowrap;
+  }
+  #pledgeLabel .pl-total {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: 1px;
+    text-shadow: 0 0 8px rgba(0,255,136,0.5);
+    white-space: nowrap;
+  }
+  #pledgeScroll {
+    display: flex;
+    gap: 0;
+    align-items: center;
+    white-space: nowrap;
+    animation: scrollLeft 180s linear infinite;
+    will-change: transform;
+  }
+  @keyframes scrollLeft {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .pledge-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 22px;
+    font-size: 9px;
+    border-right: 1px solid rgba(201,168,76,0.15);
+    height: 38px;
+  }
+  .pledge-user { color: var(--cyan); }
+  .pledge-ship { color: #e0d0a0; }
+  .pledge-price { color: var(--gold); font-weight: bold; }
+  .pledge-sep { color: var(--muted); }
+
+  /* FREE FLY EVENT */
+  #freeFlyShip {
+    position: absolute;
+    top: 0;
+    left: -160px;
+    z-index: 45;
+    pointer-events: all;
+    cursor: pointer;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    filter: drop-shadow(0 0 12px rgba(0,200,255,0.9)) drop-shadow(0 0 30px rgba(0,200,255,0.5));
+  }
+  #freeFlyShip.active {
+    display: flex;
+    animation: shipZoom 14s linear forwards;
+  }
+  @keyframes shipZoom {
+    0%   { transform: translateY(0px); left: -160px; }
+    100% { transform: translateY(40px); left: calc(100vw + 160px); }
+  }
+  #freeFlyShip .ship-emoji {
+    font-size: 64px;
+    line-height: 1;
+    display: block;
+    animation: shipRoll 0.6s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  @keyframes shipRoll {
+    from { transform: rotate(-4deg); }
+    to   { transform: rotate(4deg); }
+  }
+  #freeFlyShip .ship-tap-hint {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 8px;
+    color: #00ccff;
+    letter-spacing: 2px;
+    text-shadow: 0 0 6px rgba(0,200,255,0.8);
+    margin-top: 2px;
+    animation: hintBlink 0.8s infinite;
+    pointer-events: none;
+  }
+  @keyframes hintBlink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+  #freeFlyGlow {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 8;
+    opacity: 0;
+    transition: opacity 0.5s;
+    box-shadow: inset 0 0 80px rgba(0,150,255,0.12);
+  }
+  #freeFlyGlow.active {
+    opacity: 1;
+    animation: freeFlyPulse 2s ease-in-out infinite;
+  }
+  @keyframes freeFlyPulse {
+    0%, 100% { box-shadow: inset 0 0 80px rgba(0,150,255,0.12); }
+    50%       { box-shadow: inset 0 0 120px rgba(0,150,255,0.25); }
+  }
+  #restoreCounter {
+    position: absolute;
+    top: 28%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #00ff88;
+    text-shadow: 0 0 10px rgba(0,255,136,0.7);
+    letter-spacing: 2px;
+    z-index: 50;
+    pointer-events: none;
+    display: none;
+    text-align: center;
+  }
+
+  #crackOverlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 40;
+    opacity: 0;
+    transition: opacity 0.3s;
+    background:
+      linear-gradient(135deg, transparent 45%, rgba(255,0,0,0.03) 50%, transparent 55%),
+      linear-gradient(45deg, transparent 45%, rgba(255,0,0,0.02) 50%, transparent 55%);
+  }
+  #crackOverlay.active { opacity: 1; }
+
+  /* BUG ORIGIN ZONES */
+  .origin-zone {
+    position: absolute;
+    border: 1px dashed rgba(255,50,50,0.2);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    color: rgba(255,50,50,0.3);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    pointer-events: none;
+    padding: 4px;
+    text-align: center;
+  }
+
+  /* STATUS LOG */
+  #statusLog {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    width: 260px;
+    max-height: 80px;
+    overflow: hidden;
+    z-index: 25;
+    pointer-events: none;
+  }
+  .log-entry {
+    font-size: 9px;
+    color: rgba(138, 176, 208, 0.5);
+    line-height: 1.6;
+    animation: logFade 4s forwards;
+  }
+  @keyframes logFade {
+    0% { opacity: 1; } 70% { opacity: 0.5; } 100% { opacity: 0; }
+  }
+
+  /* SERVER RESTART WARNING */
+  #restartWarning {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,0,0,0.08);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  #restartWarning.active { opacity: 1; pointer-events: all; }
+  .restart-box {
+    background: #0a0000;
+    border: 2px solid var(--red);
+    padding: 40px 60px;
+    text-align: center;
+    box-shadow: 0 0 80px rgba(255,0,0,0.4);
+    max-width: 500px;
+  }
+  .restart-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--red);
+    text-shadow: 0 0 20px rgba(255,0,0,0.8);
+    margin-bottom: 12px;
+    letter-spacing: 3px;
+  }
+  .restart-sub {
+    font-size: 11px;
+    color: #ff8888;
+    margin-bottom: 8px;
+    line-height: 1.6;
+  }
+  .restart-stat { font-size: 10px; color: var(--muted); margin-bottom: 20px; line-height: 1.8; }
+  .restart-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    background: none;
+    border: 1px solid var(--muted);
+    color: var(--muted);
+    padding: 10px 30px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .restart-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* VIGNETTE */
+  #vignette {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.7) 100%);
+    z-index: 5;
+  }
+
+  /* SCREEN FLASH */
+  #flashOverlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 55;
+    opacity: 0;
+    background: rgba(255,50,50,0.3);
+    transition: opacity 0.1s;
+  }
+
+  /* PULSE on bug miss */
+  @keyframes redPulse {
+    0% { box-shadow: inset 0 0 0 0 rgba(255,0,0,0); }
+    50% { box-shadow: inset 0 0 60px 10px rgba(255,0,0,0.3); }
+    100% { box-shadow: inset 0 0 0 0 rgba(255,0,0,0); }
+  }
+
+  #arena.pulse { animation: redPulse 0.5s ease-out; }
+
+  /* BUY ME A COFFEE */
+  .bmc-btn {
+    position: fixed;
+    bottom: 62px;
+    right: 18px;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: linear-gradient(135deg, #0d1428 0%, #111d38 100%);
+    color: var(--gold);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 9px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(201,168,76,0.4);
+    text-decoration: none;
+    box-shadow: 0 0 12px rgba(201,168,76,0.15), inset 0 0 20px rgba(0,0,0,0.4);
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    overflow: hidden;
+  }
+  .bmc-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 15% 25%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 60%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 65% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 70%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 25% 80%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 40%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 85%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 10% 55%, rgba(255,255,255,0.4) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bmc-btn span, .bmc-btn .bmc-text {
+    position: relative;
+    z-index: 1;
+  }
+  .bmc-btn span { font-size: 14px; }
+  .bmc-btn:hover {
+    transform: translateY(-2px);
+    border-color: rgba(201,168,76,0.8);
+    box-shadow: 0 0 20px rgba(201,168,76,0.3), inset 0 0 20px rgba(0,0,0,0.4);
+  }
+  #heatBar {
+    width: 100%;
+    height: 3px;
+    background: #0a0f1a;
+    position: relative;
+    flex-shrink: 0;
+  }
+  #heatFill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green) 0%, #ffaa00 60%, var(--red) 100%);
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="vignette"></div>
+<div id="crackOverlay"></div>
+<div id="flashOverlay"></div>
+
+<a class="bmc-btn" href="https://buymeacoffee.com/Nimdak" target="_blank" rel="noopener">
+  <span>☕</span><span class="bmc-text">BUY ME A COFFEE</span>
+</a>
+<div id="restartWarning">
+  <div class="restart-box">
+    <div class="restart-title">⚠ SERVER RESTARTING ⚠</div>
+    <div class="restart-sub">Bug density has exceeded critical threshold.<br>Initiating emergency shard restart...</div>
+    <div class="restart-stat" id="endStats">Loading stats...</div>
+    <button class="restart-btn" onclick="showPregame()">[ RECONNECT TO VERSE ]</button>
+    <div style="margin-top:10px;font-size:8px;color:#1a2a40;letter-spacing:2px;">Your items may or may not be there when you get back.</div>
+  </div>
+</div>
+
+<!-- PREGAME -->
+<div class="screen" id="pregame">
+  <div class="game-title">STAR DEVizen</div>
+  <div class="game-subtitle">Bug Smasher  ·  Alpha 0.0.1  ·  Definitely Not A Real Game</div>
+  <div class="disclaimer">
+    NOT AFFILIATED WITH ANY REAL SPACE GAME. This is a parody. <br>All bugs depicted are fictional. Any resemblance to bugs in real games is purely inevitable.
+  </div>
+
+  <div class="grid-label">// ACTIVE THREAT SYSTEMS — BUGS WILL EMERGE FROM ALL VECTORS //</div>
+
+  <div class="loop-grid" id="loopGrid">
+    <!-- filled by JS -->
+  </div>
+
+  <button class="start-btn" onclick="startGame()">[ LAUNCH GAME ] &nbsp; ETA: 14min</button>
+  <div class="version-badge">v4.8.0 · PERSISTENT ALPHA · SHARD #7749-C · A Chronicles of Nimdak Game</div>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="screen hidden" id="gamescreen">
+  <div id="hud">
+    <div id="hud-row1">
+      <div class="hud-block">
+        <div class="hud-label">Players Online</div>
+        <div class="hud-value" id="playerCount">0</div>
+      </div>
+      <div class="hud-block">
+        <div class="hud-label">Bugs Smashed</div>
+        <div class="hud-value" style="color: var(--cyan);" id="smashCount">0</div>
+      </div>
+      <div class="hud-block">
+        <div class="hud-label">Bugs Missed</div>
+        <div class="hud-value" id="missCount">0</div>
+      </div>
+      <div class="hud-block">
+        <div class="hud-label">Active Loop</div>
+        <div class="hud-value" id="activeLoop">—</div>
+      </div>
+      <div class="hud-block">
+        <div class="hud-label">Server Health</div>
+        <div class="hud-value" id="serverHealth">100%</div>
+      </div>
+    </div>
+    <div id="hud-row2">
+      <div class="hud-label">⚠ DEV STATUS FEED:</div>
+      <div id="statusTicker">Monitoring all systems...</div>
+    </div>
+  </div>
+  <div id="heatBar"><div id="heatFill"></div></div>
+  <div id="arena">
+    <canvas id="bgCanvas"></canvas>
+    <div id="statusLog"></div>
+    <div id="freeFlyGlow"></div>
+    <div id="freeFlyShip">
+      <span class="ship-emoji">🚀</span>
+      <span class="ship-tap-hint">[ TAP ME ]</span>
+    </div>
+    <div id="restoreCounter"></div>
+    <div id="pledgeTicker">
+      <div id="pledgeLabel">
+        <span class="pl-title">💳 VERSE STORE LIVE</span>
+        <span class="pl-total" id="pledgeTotalDisplay">$924.00M</span>
+      </div>
+      <div id="pledgeScroll"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// =========== STAR DEVizen GAME DATA ===========
+
+const GAME_LOOPS = [
+  { id: 'trading', icon: '📦', name: 'Cargo Trading', desc: 'Haul boxes for UEC', bug: 'Cargo falls through ship floor', color: '#4a8fff' },
+  { id: 'mining', icon: '⛏️', name: 'Mining', desc: 'Crack rocks in space', bug: 'Rocks refuse to be mined', color: '#ff9933' },
+  { id: 'combat', icon: '⚔️', name: 'Ship Combat', desc: 'PvP & bounty hunting', bug: 'Missiles orbit enemy ship', color: '#ff4444' },
+  { id: 'fps', icon: '🔫', name: 'FPS Combat', desc: 'Shoot people on stations', bug: 'Player invisible to enemies', color: '#cc44ff' },
+  { id: 'quantum', icon: '🌀', name: 'Quantum Travel', desc: 'Go places very slowly', bug: 'QT randomly aborts', color: '#00ccff' },
+  { id: 'elevator', icon: '🛗', name: 'Elevator Usage', desc: 'Ride elevators', bug: 'Elevator sends you to void', color: '#ffcc00' },
+  { id: 'medical', icon: '💉', name: 'Medical Gameplay', desc: 'Heal yourself maybe', bug: 'Regen-stick does nothing', color: '#00ff88' },
+  { id: 'bunker', icon: '🏚️', name: 'Bunker Missions', desc: 'Shoot NPC defenders', bug: 'Enemies stand on chairs', color: '#ff6633' },
+];
+
+const BUG_TYPES = [
+  { emoji: '🪲', label: 'INVENTORY VOID', desc: 'Items deleted themselves', severity: 1 },
+  { emoji: '🦟', label: 'TRAIN PHYS BUG', desc: 'Tram yeeted player to space', severity: 2 },
+  { emoji: '🐛', label: 'FALL THRU PLANET', desc: 'Fell through mesh again', severity: 2 },
+  { emoji: '🦗', label: 'RUBBER BAND', desc: 'Respawned in bed 4x', severity: 1 },
+  { emoji: '🐞', label: 'NPC ON CHAIR', desc: 'Standing on furniture again', severity: 1 },
+  { emoji: '🦂', label: 'SERVER CRASH', desc: 'Shard destabilized', severity: 3 },
+  { emoji: '🕷️', label: 'QT ABORT', desc: 'Quantum jump refused', severity: 1 },
+  { emoji: '🐝', label: 'CLIENT DESYNC', desc: 'You exist in two places', severity: 2 },
+  { emoji: '🦠', label: 'CHAR RESET', desc: 'Dev tool offline (as of today!)', severity: 3 },
+  { emoji: '🐜', label: 'ELEVATOR DEATH', desc: 'Teleported to void', severity: 2 },
+  { emoji: '🦋', label: 'SCAN BROKEN', desc: 'Asteroids unresponsive', severity: 1 },
+  { emoji: '🐌', label: 'POOR PERF', desc: '10fps at Pyro Gateway', severity: 2 },
+];
+
+const CRITICAL_BUGS = [
+  { emoji: '💀', label: 'ENTIRE ECONOMY WIPED', desc: 'All player UEC set to zero', severity: 10, hp: 7, cr_quote: '"This is unacceptable. Fix it before I see the demo."' },
+  { emoji: '☠️', label: 'ALL SHIPS DELETED', desc: 'Fleet persistence layer corrupted', severity: 10, hp: 6, cr_quote: '"Do you know how much those ships cost? FIX IT."' },
+  { emoji: '🔥', label: 'QUANTUM CORE MELTDOWN', desc: 'Travel system returned null universe', severity: 10, hp: 7, cr_quote: '"The entire Pyro system is missing. Where is Pyro?"' },
+  { emoji: '💥', label: 'ALL NPCS HOSTILE', desc: 'Friendly faction flag flipped globally', severity: 10, hp: 5, cr_quote: '"Every shopkeeper is trying to kill me. EVERY ONE."' },
+  { emoji: '🌀', label: 'SERVER MESH COLLAPSED', desc: 'All 725 players assigned to same node', severity: 10, hp: 7, cr_quote: '"We demo this in 6 hours. Make it work."' },
+  { emoji: '👻', label: 'ALL PLAYERS INVISIBLE', desc: 'Character renderer returned void', severity: 10, hp: 6, cr_quote: '"I cannot see anyone. Are we a ghost game now?"' },
+  { emoji: '🕳️', label: 'UNIVERSE IS EMPTY', desc: 'Procedural content seed returned nothing', severity: 10, hp: 6, cr_quote: '"The stars are gone. The planets are gone. Find them."' },
+];
+
+const CR_QUOTES = [
+  'THIS IS THE VISION.',
+  'WE JUST NEED MORE TIME AND FUNDING.',
+  'ADD MORE DETAIL TO THE ROCKS.',
+  'CAN WE ADD A THIRD SOLAR SYSTEM WHILE YOU\'RE AT IT?',
+  'THIS IS A BLOCKER. NOTHING SHIPS UNTIL THIS IS FIXED.',
+];
+
+let criticalBugActive = false;
+let criticalBugId = null;
+let criticalSmashed = 0;
+let freeFlysCaught = 0;
+
+const DEV_TICKERS = [
+  "We are aware of the issue and are working on a fix.",
+  "Character Repair Tool is currently offline. We're looking into it.",
+  "This is working as intended. Please submit an Issue Council report.",
+  "The servers are fine. You are rubber-banding because of your internet.",
+  "We've fixed the elevator bug. It now kills you 15% faster.",
+  "New ship available in the Verse Store: $950. Server stability patch ETA: unknown.",
+  "The train killing players is a known issue. Have you tried not being near the train?",
+  "Falling through planets is a skill issue.",
+  "Server restarting. Your cargo is probably fine. It's not fine.",
+  "Hotfix deployed. Known issues: 47 new bugs introduced.",
+  "The rocks can be mined. You're just holding the mining laser wrong.",
+  "Your items exist. They are in a quantum superposition between your ship and the void.",
+  "Thank you for your patience. Your patience has been noted and scheduled for Q4.",
+  "NPC behavior updated. NPCs now stand on chairs 12% more efficiently.",
+  "We're committed to the persistent universe. Progress may not persist.",
+  "Pyro performance improved by 3%. Known side effect: Stanton now 3% worse.",
+  "The character repair tool IS working. Just not for your character specifically.",
+  "UPDATE: Server meshing now supports 725 players. Seven of them can move simultaneously.",
+  "Bug bounty program active. Bugs are paying better than bounties.",
+  "Patch notes: Addressed 200 bugs. Introduced: more bugs. Net bugs: up.",
+];
+
+const LOG_MESSAGES = [
+  "ERROR: Tram collision physics exceeded threshold",
+  "WARN: Player inventory desynced from server state",
+  "INFO: NPC pathfinding node stuck on chair geometry",
+  "ERROR: Quantum drive spooling failed — no reason given",
+  "WARN: Elevator shaft registered as exterior space",
+  "CRIT: Player character reset to default — cause unknown",
+  "INFO: Asteroid scan result: null",
+  "ERROR: Mission cargo fell through floor. Floor is fine.",
+  "WARN: Server tick rate dropped to 3Hz in Pyro sector",
+  "INFO: Respawn complete. Rubber band effect: active.",
+  "CRIT: Ship repair terminal unresponsive (expected)",
+  "ERROR: Player model invisible to other players. Advantage: significant.",
+  "WARN: MobiGlas app threw exception: OutOfSpaceException",
+  "INFO: AI crew stuck in T-pose. Morale: unaffected.",
+  "CRIT: Gem phased into cave wall. It knows.",
+];
+
+// =========== GAME STATE ===========
+const MAX_PLAYERS = 725;
+let playerCount = MAX_PLAYERS;
+let smashCount = 0;
+let missCount = 0;
+let selectedLoop = null;
+let activeBugs = [];
+let gameActive = false;
+let bugIdCounter = 0;
+let spawnInterval, tickerInterval, logInterval, difficultyInterval, playerDripInterval;
+let currentBugRate = 2500;
+let serverHealth = 100;
+let totalMissed = 0;
+let totalSpawned = 0;
+
+// =========== STAR FIELD ===========
+const starCanvas = document.getElementById('starfield');
+const starCtx = starCanvas.getContext('2d');
+let stars = [];
+
+function initStars() {
+  starCanvas.width = window.innerWidth;
+  starCanvas.height = window.innerHeight;
+  stars = [];
+  for (let i = 0; i < 200; i++) {
+    stars.push({
+      x: Math.random() * starCanvas.width,
+      y: Math.random() * starCanvas.height,
+      r: Math.random() * 1.5,
+      alpha: Math.random(),
+      speed: Math.random() * 0.3 + 0.05,
+    });
+  }
+}
+
+function drawStars() {
+  starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+  for (const s of stars) {
+    starCtx.beginPath();
+    starCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    starCtx.fillStyle = `rgba(180,200,255,${s.alpha})`;
+    starCtx.fill();
+    s.alpha += (Math.random() - 0.5) * 0.02;
+    s.alpha = Math.max(0.1, Math.min(1, s.alpha));
+  }
+  requestAnimationFrame(drawStars);
+}
+
+initStars();
+drawStars();
+
+// =========== PREGAME ===========
+function buildLoopGrid() {
+  const grid = document.getElementById('loopGrid');
+  grid.innerHTML = '';
+  GAME_LOOPS.forEach((loop, i) => {
+    const card = document.createElement('div');
+    card.className = 'loop-card';
+    card.style.setProperty('--blink-offset', (i * 0.18) + 's');
+    card.innerHTML = `
+      <div class="bug-tag">THREAT ACTIVE</div>
+      <div class="loop-icon">${loop.icon}</div>
+      <div class="loop-name">${loop.name}</div>
+      <div class="loop-desc">${loop.desc}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+buildLoopGrid();
+
+function showPregame() {
+  document.getElementById('restartWarning').classList.remove('active');
+  document.getElementById('gamescreen').classList.add('hidden');
+  document.getElementById('pregame').classList.remove('hidden');
+  const bmc = document.querySelector('.bmc-btn');
+  bmc.style.display = 'flex';
+  bmc.style.bottom = '62px';
+  resetGame();
+}
+
+// =========== GAME START ===========
+function startGame() {
+  document.getElementById('pregame').classList.add('hidden');
+  document.getElementById('gamescreen').classList.remove('hidden');
+  document.querySelector('.bmc-btn').style.display = 'none';
+  resetGame();
+  gameActive = true;
+
+  document.getElementById('activeLoop').textContent = 'MONITORING...';
+  document.getElementById('playerCount').textContent = playerCount;
+
+  setupArena();
+  scheduleNextBug();
+  startTicker();
+  startLogFeed();
+  startDifficulty();
+  buildPledgeTicker();
+  scheduleFreeFlys();
+  startPlayerDrip();
+}
+
+function resetGame() {
+  clearInterval(spawnInterval);
+  clearInterval(tickerInterval);
+  clearInterval(logInterval);
+  clearInterval(difficultyInterval);
+  clearInterval(pledgeDripInterval);
+  clearInterval(playerDripInterval);
+
+  // Clear all bugs
+  document.querySelectorAll('.bug').forEach(b => b.remove());
+  activeBugs = [];
+
+  playerCount = 0;
+  smashCount = 0;
+  missCount = 0;
+  serverHealth = 100;
+  totalMissed = 0;
+  totalSpawned = 0;
+  currentBugRate = 2500;
+  gameActive = false;
+  bugIdCounter = 0;
+  smashStreak = 0;
+  freeFlyUsed = 0;
+  freeFlyActive = false;
+  clearTimeout(freeFlyShipTimeout);
+  clearTimeout(freeFlyScheduleTimeout);
+  criticalBugActive = false;
+  criticalBugId = null;
+  criticalSmashed = 0;
+  freeFlysCaught = 0;
+  tickerEventActive = false;
+  const tickerEl = document.getElementById('statusTicker');
+  if (tickerEl) { tickerEl.className = ''; tickerEl.textContent = 'Monitoring all systems...'; }
+  const ffShip = document.getElementById('freeFlyShip');
+  if (ffShip) ffShip.classList.remove('active');
+  const ffBanner = document.getElementById('freeFlyBanner');
+  if (ffBanner) ffBanner.classList.remove('active');
+  const ffGlow = document.getElementById('freeFlyGlow');
+  if (ffGlow) ffGlow.classList.remove('active');
+  const ffCounter = document.getElementById('restoreCounter');
+  if (ffCounter) ffCounter.style.display = 'none';
+
+  updateHUD();
+  document.getElementById('heatFill').style.width = '0%';
+  document.getElementById('crackOverlay').classList.remove('active');
+  document.getElementById('statusLog').innerHTML = '';
+}
+
+// =========== ARENA SETUP ===========
+function setupArena() {
+  const arena = document.getElementById('arena');
+  const canvas = document.getElementById('bgCanvas');
+  canvas.width = arena.offsetWidth;
+  canvas.height = arena.offsetHeight;
+  drawArenaBackground(canvas);
+}
+
+function drawArenaBackground(canvas) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  // Space background with nebula
+  const grad = ctx.createRadialGradient(w*0.5, h*0.5, 0, w*0.5, h*0.5, w*0.7);
+  grad.addColorStop(0, '#050a18');
+  grad.addColorStop(1, '#020408');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Grid lines (engine blueprint vibe)
+  ctx.strokeStyle = 'rgba(20,40,80,0.5)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < w; x += 60) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  for (let y = 0; y < h; y += 60) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+
+  // Zone labels — one per spawn zone, labeled with a game loop
+  const zoneData = [
+    { x: 0.05, y: 0.05, w: 0.25, h: 0.25, loopIdx: 0 },
+    { x: 0.70, y: 0.05, w: 0.25, h: 0.25, loopIdx: 1 },
+    { x: 0.05, y: 0.65, w: 0.25, h: 0.28, loopIdx: 2 },
+    { x: 0.70, y: 0.65, w: 0.25, h: 0.28, loopIdx: 3 },
+    { x: 0.35, y: 0.35, w: 0.3,  h: 0.3,  loopIdx: 4 },
+  ];
+
+  zoneData.forEach(z => {
+    const loop = GAME_LOOPS[z.loopIdx];
+    const rx = z.x*w, ry = z.y*h, rw = z.w*w, rh = z.h*h;
+
+    // Zone fill + border
+    ctx.fillStyle = 'rgba(255,50,50,0.05)';
+    ctx.fillRect(rx, ry, rw, rh);
+    ctx.strokeStyle = 'rgba(255,80,80,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.strokeRect(rx, ry, rw, rh);
+    ctx.setLineDash([]);
+
+    // Corner tick marks
+    const tick = 8;
+    ctx.strokeStyle = 'rgba(255,120,120,0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([]);
+    [[rx, ry], [rx+rw, ry], [rx, ry+rh], [rx+rw, ry+rh]].forEach(([cx, cy]) => {
+      const sx = cx === rx ? 1 : -1;
+      const sy = cy === ry ? 1 : -1;
+      ctx.beginPath(); ctx.moveTo(cx, cy + sy*tick); ctx.lineTo(cx, cy); ctx.lineTo(cx + sx*tick, cy); ctx.stroke();
+    });
+
+    // Label — icon + name with a solid dark backing
+    const labelText = loop.icon + '  ' + loop.name.toUpperCase();
+    ctx.font = 'bold 11px "Share Tech Mono", monospace';
+    const tw = ctx.measureText(labelText).width;
+    const lx = rx + 8, ly = ry + 8;
+    const pad = 5;
+
+    // Dark pill backing
+    ctx.fillStyle = 'rgba(4,6,15,0.88)';
+    ctx.beginPath();
+    ctx.roundRect(lx - pad, ly - pad - 2, tw + pad*2 + 2, 20, 3);
+    ctx.fill();
+
+    // Border on pill
+    ctx.strokeStyle = 'rgba(255,100,100,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(lx - pad, ly - pad - 2, tw + pad*2 + 2, 20, 3);
+    ctx.stroke();
+
+    // Label text
+    ctx.fillStyle = '#ff8888';
+    ctx.shadowColor = 'rgba(255,80,80,0.6)';
+    ctx.shadowBlur = 6;
+    ctx.fillText(labelText, lx + 1, ly + 9);
+    ctx.shadowBlur = 0;
+
+    // Bug count indicator dot (decorative)
+    ctx.beginPath();
+    ctx.arc(rx + rw - 10, ry + 10, 3.5, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,50,50,0.6)';
+    ctx.fill();
+  });
+}
+
+// =========== BUG SPAWNING ===========
+const SPAWN_ZONES = [
+  { xMin: 0.05, xMax: 0.30, yMin: 0.05, yMax: 0.30 },
+  { xMin: 0.70, xMax: 0.95, yMin: 0.05, yMax: 0.30 },
+  { xMin: 0.05, xMax: 0.30, yMin: 0.60, yMax: 0.85 },
+  { xMin: 0.70, xMax: 0.95, yMin: 0.60, yMax: 0.85 },
+  { xMin: 0.35, xMax: 0.65, yMin: 0.30, yMax: 0.65 },
+];
+
+let spawnTimeout = null;
+let smashStreak = 0;
+
+// FREE FLY STATE
+let freeFlyUsed = 0;
+const FREE_FLY_MAX = 2;
+let freeFlyActive = false;
+let freeFlyShipTimeout = null;
+let freeFlyScheduleTimeout = null;
+
+function scheduleNextBug() {
+  if (!gameActive) return;
+  const jitter = (Math.random() - 0.5) * 600;
+  spawnTimeout = setTimeout(() => {
+    if (gameActive) {
+      spawnBug();
+      scheduleNextBug();
+    }
+  }, currentBugRate + jitter);
+}
+
+function spawnBug() {
+  if (!gameActive) return;
+
+  // 6% chance to spawn a critical bug if none active
+  if (!criticalBugActive && Math.random() < 0.06) {
+    spawnCriticalBug();
+    return;
+  }
+
+  const arena = document.getElementById('arena');
+  const aw = arena.offsetWidth, ah = arena.offsetHeight;
+
+  const TICKER_H = 38;
+  const zone = SPAWN_ZONES[Math.floor(Math.random() * SPAWN_ZONES.length)];
+  const bugType = BUG_TYPES[Math.floor(Math.random() * BUG_TYPES.length)];
+  const sourceLoop = GAME_LOOPS[Math.floor(Math.random() * GAME_LOOPS.length)];
+
+  const xFrac = zone.xMin + Math.random() * (zone.xMax - zone.xMin);
+  const yFrac = zone.yMin + Math.random() * (zone.yMax - zone.yMin);
+  const x = xFrac * aw;
+  const usableH = ah - TICKER_H - 60;
+  const y = Math.min(yFrac * ah, usableH);
+
+  const id = bugIdCounter++;
+  const hp = bugType.severity;
+  const maxHp = hp;
+
+  const lifespan = 3500 + bugType.severity * 1000 - (smashCount * 20);
+  const clampedLife = Math.max(1800, lifespan);
+
+  const R = 44, CIRC = 2 * Math.PI * R;
+
+  const bugEl = document.createElement('div');
+  bugEl.className = 'bug';
+  bugEl.id = `bug-${id}`;
+  bugEl.style.left = (x - 25) + 'px';
+  bugEl.style.top = (y - 25) + 'px';
+  bugEl.innerHTML = `
+    <svg class="bug-timer-ring" width="${R*2+8}" height="${R*2+8}">
+      <circle class="ring-track" cx="${R+4}" cy="${R+4}" r="${R}" stroke-width="3"/>
+      <circle class="ring-fill"  cx="${R+4}" cy="${R+4}" r="${R}" stroke-width="3"
+        stroke-dasharray="${CIRC.toFixed(2)}" stroke-dashoffset="0"/>
+    </svg>
+    <div class="bug-hp"><div class="bug-hp-fill" style="width:100%"></div></div>
+    <span class="bug-body">${bugType.emoji}</span>
+    <div class="bug-label">${sourceLoop.icon} ${sourceLoop.name.toUpperCase()}: ${bugType.label}</div>
+  `;
+
+  const bugData = { id, el: bugEl, hp, maxHp, type: bugType, loop: sourceLoop, escaped: false, critical: false };
+  activeBugs.push(bugData);
+  totalSpawned++;
+
+  const loopEl = document.getElementById('activeLoop');
+  loopEl.textContent = sourceLoop.icon + ' ' + sourceLoop.name.toUpperCase();
+  loopEl.classList.remove('loop-flash');
+  void loopEl.offsetWidth;
+  loopEl.classList.add('loop-flash');
+
+  bugEl.onclick = () => handleBugClick(id);
+  arena.appendChild(bugEl);
+
+  // Ring shrink animation — red → orange → yellow as timer runs out
+  const ringFill = bugEl.querySelector('.ring-fill');
+  const ringStart = Date.now();
+  const ringAnim = setInterval(() => {
+    if (!bugEl.parentNode) { clearInterval(ringAnim); return; }
+    const progress = Math.min(1, (Date.now() - ringStart) / clampedLife);
+    ringFill.setAttribute('stroke-dashoffset', (CIRC * progress).toFixed(2));
+    const hue = progress * 55; // 0=red, 55=orange-yellow
+    ringFill.style.stroke = `hsla(${hue}, 100%, 55%, ${0.75 + progress * 0.25})`;
+    if (progress >= 1) clearInterval(ringAnim);
+  }, 50);
+  bugData.ringAnim = ringAnim;
+
+  // Wobble
+  let wobbleT = 0;
+  const startX = x - 25, startY = y - 25;
+  const wobbleAnim = setInterval(() => {
+    if (!bugEl.parentNode) { clearInterval(wobbleAnim); return; }
+    wobbleT += 0.08;
+    bugEl.style.left = (startX + Math.sin(wobbleT * 1.3) * 5) + 'px';
+    bugEl.style.top  = (startY + Math.cos(wobbleT * 0.9) * 3) + 'px';
+  }, 50);
+  bugData.wobble = wobbleAnim;
+
+  bugData.timer = setTimeout(() => {
+    if (!bugData.escaped && bugEl.parentNode) escapeBug(id);
+  }, clampedLife);
+}
+
+function spawnCriticalBug() {
+  if (!gameActive) return;
+  criticalBugActive = true;
+
+  const arena = document.getElementById('arena');
+  const aw = arena.offsetWidth, ah = arena.offsetHeight;
+  const TICKER_H = 38;
+
+  const critType = CRITICAL_BUGS[Math.floor(Math.random() * CRITICAL_BUGS.length)];
+  const sourceLoop = GAME_LOOPS[Math.floor(Math.random() * GAME_LOOPS.length)];
+
+  // Centre-ish spawn to ensure visibility
+  const x = aw * 0.3 + Math.random() * aw * 0.4;
+  const y = Math.min(ah * 0.2 + Math.random() * ah * 0.45, ah - TICKER_H - 100);
+
+  const id = bugIdCounter++;
+  criticalBugId = id;
+  const hp = critType.hp;
+  const maxHp = hp;
+  const clampedLife = 12000; // 12s — long window but devastating if missed
+
+  const R = 70, CIRC = 2 * Math.PI * R; // bigger ring for bigger bug
+
+  const bugEl = document.createElement('div');
+  bugEl.className = 'bug critical-bug';
+  bugEl.id = `bug-${id}`;
+  bugEl.style.left = (x - 40) + 'px';
+  bugEl.style.top  = (y - 40) + 'px';
+  bugEl.innerHTML = `
+    <svg class="bug-timer-ring" width="${R*2+8}" height="${R*2+8}">
+      <circle class="ring-track" cx="${R+4}" cy="${R+4}" r="${R}" stroke-width="5"/>
+      <circle class="ring-fill"  cx="${R+4}" cy="${R+4}" r="${R}" stroke-width="5"
+        stroke-dasharray="${CIRC.toFixed(2)}" stroke-dashoffset="0"
+        style="stroke:rgba(255,140,0,0.95)"/>
+    </svg>
+    <div class="bug-hp" style="width:80px;height:7px;margin-bottom:4px;">
+      <div class="bug-hp-fill" style="width:100%;background:linear-gradient(90deg,#ff3300,#ff9900)"></div>
+    </div>
+    <span class="bug-body">${critType.emoji}</span>
+    <div class="bug-label">${critType.label}</div>
+  `;
+
+  const bugData = { id, el: bugEl, hp, maxHp, type: critType, loop: sourceLoop, escaped: false, critical: true };
+  activeBugs.push(bugData);
+  totalSpawned++;
+
+  // Block other bugs from being clicked while critical is alive
+  // (handled in handleBugClick)
+
+  // CR Alert → write into status ticker
+  setTickerEvent(
+    `🚨 LEAD DEV PRIORITY ALERT 🚨 &nbsp;|&nbsp; ${critType.label} &nbsp;|&nbsp; <span style="font-size:9px;opacity:0.85">"${critType.cr_quote}" — The Lead Dev</span>`,
+    'event-critical'
+  );
+  setTimeout(() => {
+    if (!criticalBugActive) clearTickerEvent();
+  }, 12000); // clear if still showing after bug's lifespan
+
+  addLog(`🚨 CRITICAL BUG: ${critType.label} — The Lead Dev has been notified.`);
+
+  bugEl.onclick = () => handleBugClick(id);
+  arena.appendChild(bugEl);
+
+  // Orange ring countdown
+  const ringFill = bugEl.querySelector('.ring-fill');
+  const ringStart = Date.now();
+  const ringAnim = setInterval(() => {
+    if (!bugEl.parentNode) { clearInterval(ringAnim); return; }
+    const progress = Math.min(1, (Date.now() - ringStart) / clampedLife);
+    ringFill.setAttribute('stroke-dashoffset', (CIRC * progress).toFixed(2));
+    const alpha = 0.95 - progress * 0.3;
+    ringFill.style.stroke = `hsla(${30 - progress * 30}, 100%, 55%, ${alpha})`;
+    if (progress >= 1) clearInterval(ringAnim);
+  }, 50);
+  bugData.ringAnim = ringAnim;
+
+  // Slow wobble — it's big and confident
+  let wobbleT = 0;
+  const startX = x - 40, startY = y - 40;
+  const wobbleAnim = setInterval(() => {
+    if (!bugEl.parentNode) { clearInterval(wobbleAnim); return; }
+    wobbleT += 0.04;
+    bugEl.style.left = (startX + Math.sin(wobbleT) * 8) + 'px';
+    bugEl.style.top  = (startY + Math.cos(wobbleT * 0.7) * 5) + 'px';
+  }, 50);
+  bugData.wobble = wobbleAnim;
+
+  bugData.timer = setTimeout(() => {
+    if (!bugData.escaped && bugEl.parentNode) escapeBug(id);
+  }, clampedLife);
+}
+
+function handleBugClick(id) {
+  if (!gameActive) return;
+  const bug = activeBugs.find(b => b.id === id);
+  if (!bug || bug.escaped) return;
+
+  // While a critical bug is active, only that bug can be clicked
+  if (criticalBugActive && !bug.critical) return;
+
+  bug.hp--;
+  const pct = (bug.hp / bug.maxHp) * 100;
+  const fill = bug.el.querySelector('.bug-hp-fill');
+  if (fill) fill.style.width = pct + '%';
+
+  if (bug.hp <= 0) {
+    clearTimeout(bug.timer);
+    clearInterval(bug.wobble);
+    clearInterval(bug.ringAnim);
+    if (bug.critical) criticalBugActive = false;
+    smashBug(id, bug);
+  } else {
+    bug.el.style.transform = 'scale(1.2)';
+    setTimeout(() => { if (bug.el.parentNode) bug.el.style.transform = ''; }, 100);
+  }
+}
+
+function smashBug(id, bug) {
+  bug.escaped = true;
+  smashCount++;
+  smashStreak++;
+
+  const rect = bug.el.getBoundingClientRect();
+  const arena = document.getElementById('arena');
+  const arenaRect = arena.getBoundingClientRect();
+
+  bug.el.classList.add('dying');
+  setTimeout(() => { if (bug.el.parentNode) bug.el.remove(); }, 300);
+
+  // Smash FX
+  const fx = document.createElement('div');
+  fx.className = 'smash-fx';
+  fx.textContent = ['PATCHED!', 'FIXED!', 'SQUASHED!', 'CLOSED: WONT FIX', 'RESOLVED!'][Math.floor(Math.random()*5)];
+  fx.style.left = (rect.left - arenaRect.left + 10) + 'px';
+  fx.style.top = (rect.top - arenaRect.top - 10) + 'px';
+  arena.appendChild(fx);
+  setTimeout(() => fx.remove(), 800);
+
+  // ===== CRITICAL BUG KILL REWARD =====
+  if (bug.critical) {
+    criticalSmashed++;
+    serverHealth = Math.min(100, serverHealth + 10);
+    clearTickerEvent();
+    const critFx = document.createElement('div');
+    critFx.className = 'streak-bonus';
+    critFx.style.top = '35%';
+    critFx.style.left = '50%';
+    critFx.style.fontSize = 'clamp(14px,2.5vw,22px)';
+    critFx.innerHTML = `🚨 CRITICAL BUG RESOLVED!<br>`
+      + `<span style="font-size:11px;color:#00ff88">SERVER HEALTH +10%</span><br>`
+      + `<span style="font-size:9px;color:#c9a84c;letter-spacing:2px;">💰 SALARY +0.01% — C. ROBERTS APPROVES</span>`;
+    arena.appendChild(critFx);
+    setTimeout(() => critFx.remove(), 5000);
+    addLog(`🚨 CRITICAL RESOLVED: ${bug.type.label} — Server health +10%. Dev gets a 0.01% raise.`);
+  }
+
+  // ===== 5-STREAK BONUS =====
+  if (smashStreak > 0 && smashStreak % 5 === 0) {
+    serverHealth = Math.min(100, serverHealth + 1);
+    const bonusFx = document.createElement('div');
+    bonusFx.className = 'streak-bonus';
+    bonusFx.innerHTML = `🔥 ${smashStreak}-BUG STREAK!<br><span style="font-size:11px;color:#00ff88">SERVER HEALTH +1%</span>`;
+    bonusFx.style.left = '50%';
+    bonusFx.style.top = '40%';
+    arena.appendChild(bonusFx);
+    setTimeout(() => bonusFx.remove(), 1800);
+    addLog(`STREAK x${smashStreak}! QA team impressed. Server health +1%.`);
+  }
+
+  activeBugs = activeBugs.filter(b => b.id !== id);
+  updateHUD();
+  addLog(`FIXED: [${bug.loop.name}] ${bug.type.label} — ${bug.type.desc}`);
+}
+
+function escapeBug(id) {
+  const bug = activeBugs.find(b => b.id === id);
+  if (!bug || bug.escaped) return;
+  bug.escaped = true;
+  clearInterval(bug.wobble);
+  clearInterval(bug.ringAnim);
+  if (bug.critical) { criticalBugActive = false; clearTickerEvent(); }
+  smashStreak = 0; // streak broken
+
+  // Miss FX
+  const arena = document.getElementById('arena');
+  const arenaRect = arena.getBoundingClientRect();
+  const rect = bug.el.getBoundingClientRect();
+  const fx = document.createElement('div');
+  fx.className = 'miss-fx';
+  fx.textContent = ['DEPLOYED TO LIVE!', 'IN PROD!', 'SHIPS FRIDAY!', 'KNOWN ISSUE!', 'WORKING AS INTENDED!'][Math.floor(Math.random()*5)];
+  fx.style.left = (rect.left - arenaRect.left) + 'px';
+  fx.style.top = (rect.top - arenaRect.top) + 'px';
+  arena.appendChild(fx);
+  setTimeout(() => fx.remove(), 800);
+
+  bug.el.style.opacity = '0';
+  bug.el.style.transition = 'opacity 0.3s';
+  setTimeout(() => { if (bug.el.parentNode) bug.el.remove(); }, 300);
+
+  activeBugs = activeBugs.filter(b => b.id !== id);
+
+  // Penalize player count — boosted during free fly instability
+  const strainMultiplier = freeFlyActive ? 2.0 : 1.0;
+  const penalty = Math.ceil(bug.type.severity * Math.ceil(MAX_PLAYERS * 0.008) * strainMultiplier);
+  playerCount = Math.max(0, playerCount - penalty);
+  missCount++;
+  totalMissed++;
+
+  // Screen flash
+  const flash = document.getElementById('flashOverlay');
+  flash.style.opacity = '1';
+  setTimeout(() => flash.style.opacity = '0', 150);
+
+  // Arena pulse
+  const arenaEl = document.getElementById('arena');
+  arenaEl.classList.add('pulse');
+  setTimeout(() => arenaEl.classList.remove('pulse'), 500);
+
+  serverHealth = Math.max(0, serverHealth - (bug.type.severity * (bug.critical ? 8 : 2.5)));
+  updateHUD();
+  addLog(`ESCAPED: [${bug.loop.name}] ${bug.type.label} — Players disconnected: ${penalty}`);
+
+  // Check game over — server collapses when health is gone
+  if (serverHealth <= 0) {
+    triggerServerRestart();
+    return;
+  }
+
+  // Heat bar — shows server health degradation
+  const heat = 1 - (serverHealth / 100);
+  document.getElementById('heatFill').style.width = (heat * 100) + '%';
+
+  // Visual degradation when server health is struggling
+  if (serverHealth < 50) {
+    document.getElementById('crackOverlay').classList.add('active');
+  }
+}
+
+function triggerServerRestart() {
+  gameActive = false;
+  clearTimeout(spawnTimeout);
+  clearTimeout(freeFlyShipTimeout);
+  clearTimeout(freeFlyScheduleTimeout);
+  clearInterval(tickerInterval);
+  clearInterval(logInterval);
+  clearInterval(difficultyInterval);
+  clearInterval(playerDripInterval);
+
+  // Hard-kill every bug still on screen — clear their timers so
+  // escapeBug can never fire after the game ends and alter the score
+  activeBugs.forEach(bug => {
+    clearTimeout(bug.timer);
+    clearInterval(bug.wobble);
+    clearInterval(bug.ringAnim);
+    if (bug.el && bug.el.parentNode) bug.el.remove();
+  });
+  activeBugs = [];
+
+  // Delay long enough for any in-flight penalty callbacks to be dead
+  setTimeout(() => {
+    const stats = document.getElementById('endStats');
+
+    const sessionSecs = (Date.now() - gameStartTime) / 1000;
+    const score = Math.max(0, Math.round(
+      (smashCount * 10) +
+      (criticalSmashed * 150) -
+      (missCount * 20) +
+      (playerCount * 2) +
+      (sessionSecs * 1) +
+      (freeFlysCaught * 200)
+    ));
+
+    const GRADES = [
+      { min: 3000, letter: 'S', color: '#00ccff', text: 'The Lead Dev offered you a raise. In ships.' },
+      { min: 2000, letter: 'A', color: '#00ff88', text: 'Senior Dev. Still no stock options.' },
+      { min: 1200, letter: 'B', color: '#c9a84c', text: 'Mid-level. Your PRs get reviewed eventually.' },
+      { min: 600,  letter: 'C', color: '#ffaa00', text: 'Junior Dev. Please stop shipping on Fridays.' },
+      { min: 200,  letter: 'D', color: '#ff6633', text: 'QA Tester. You caused half these bugs.' },
+      { min: 0,    letter: 'F', color: '#ff3333', text: 'The Lead Dev has personally unfollowed you.' },
+    ];
+    const grade = GRADES.find(g => score >= g.min);
+
+    // ===== SALARY CALC =====
+    const BASE_ANNUAL = 97329;
+    const perSecond = BASE_ANNUAL / (365 * 24 * 3600);
+    const basePay = perSecond * sessionSecs;
+    const raiseMultiplier = Math.pow(1 + 0.0001, criticalSmashed);
+    const totalPay = basePay * raiseMultiplier;
+    const raisePct = ((raiseMultiplier - 1) * 100).toFixed(4);
+    const fmt = (n) => '$' + n.toFixed(4);
+
+    stats.innerHTML = `
+      BUGS SMASHED: ${smashCount}<br>
+      CRITICAL BUGS RESOLVED: ${criticalSmashed}<br>
+      BUGS SHIPPED TO LIVE: ${missCount}<br>
+      PLAYERS ONLINE AT COLLAPSE: ${playerCount} / ${MAX_PLAYERS}<br>
+      FREE FLY EVENTS CAUGHT: ${freeFlysCaught} / ${FREE_FLY_MAX}<br>
+      TIME BEFORE CRASH: ${formatTime(Date.now() - gameStartTime)}<br>
+      <br>
+      <span style="color:#c9a84c;letter-spacing:1px;">💰 SALARY EARNED THIS SESSION</span><br>
+      Base pay (${formatTime(Date.now() - gameStartTime)} @ $97,329/yr): ${fmt(basePay)}<br>
+      Raise from ${criticalSmashed} critical fix${criticalSmashed !== 1 ? 'es' : ''} (+${raisePct}%): ${fmt(totalPay - basePay)}<br>
+      <span style="color:#00ff88;font-size:12px;font-family:'Orbitron',sans-serif;">TOTAL: ${fmt(totalPay)}</span><br>
+      <br>
+      <div style="border-top:1px solid #1a2a40;margin-top:6px;padding-top:10px;">
+        <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:var(--muted);letter-spacing:3px;margin-bottom:8px;">PERFORMANCE REVIEW</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
+          <div style="font-family:'Orbitron',sans-serif;font-size:52px;font-weight:900;color:${grade.color};text-shadow:0 0 24px ${grade.color};line-height:1;">${grade.letter}</div>
+          <div style="text-align:left;">
+            <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:${grade.color};letter-spacing:2px;">SCORE: ${score.toLocaleString()}</div>
+            <div style="font-size:9px;color:#8ab0d0;margin-top:4px;max-width:200px;line-height:1.5;">${grade.text}</div>
+          </div>
+        </div>
+      </div>
+      <br>
+      <span style="color:#2a3a50;font-size:9px;">NEXT PATCH: "Stability Improvements"<br>Next raise review: Q4 ${new Date().getFullYear() + 2}</span>
+    `;
+    document.getElementById('restartWarning').classList.add('active');
+    document.querySelector('.bmc-btn').style.display = 'flex';
+    document.querySelector('.bmc-btn').style.bottom = '18px';
+
+    // Save personal best to localStorage
+    const prevBest = parseInt(localStorage.getItem('scores_devizen') || '0', 10);
+    if (score > prevBest) {
+      localStorage.setItem('scores_devizen', score);
+    }
+  }, 1500);
+}
+
+let gameStartTime;
+
+const origStart = startGame;
+// Wrap to capture start time
+window.startGame = function() {
+  gameStartTime = Date.now();
+  origStart();
+};
+
+function formatTime(ms) {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  return m > 0 ? `${m}m ${s%60}s` : `${s}s`;
+}
+
+// =========== DIFFICULTY SCALING ===========
+function startDifficulty() {
+  difficultyInterval = setInterval(() => {
+    if (!gameActive) return;
+    // Increase spawn rate over time, bugs come faster and faster
+    currentBugRate = Math.max(700, currentBugRate - 120);
+  }, 8000);
+}
+
+// =========== HUD UPDATE ===========
+function updateHUD() {
+  const pcEl = document.getElementById('playerCount');
+  pcEl.textContent = playerCount;
+  const pcFrac = playerCount / MAX_PLAYERS;
+  pcEl.className = 'hud-value' + (pcFrac < 0.1 ? ' danger' : pcFrac < 0.4 ? ' warning' : '');
+
+  document.getElementById('smashCount').textContent = smashCount;
+  document.getElementById('missCount').textContent = missCount;
+
+  const sh = Math.max(0, Math.round(serverHealth));
+  const shEl = document.getElementById('serverHealth');
+  shEl.textContent = sh + '%';
+  shEl.className = 'hud-value' + (sh < 30 ? ' danger' : sh < 60 ? ' warning' : '');
+
+  const heat = 1 - (serverHealth / 100);
+  document.getElementById('heatFill').style.width = (heat * 100) + '%';
+}
+
+// =========== TICKER ===========
+let tickerIdx = 0;
+let tickerEventActive = false;
+
+function setTickerEvent(html, cssClass) {
+  tickerEventActive = true;
+  const el = document.getElementById('statusTicker');
+  el.innerHTML = html;
+  el.className = cssClass;
+}
+
+function clearTickerEvent() {
+  tickerEventActive = false;
+  const el = document.getElementById('statusTicker');
+  el.className = '';
+  el.textContent = DEV_TICKERS[(tickerIdx - 1 + DEV_TICKERS.length) % DEV_TICKERS.length];
+}
+
+function startTicker() {
+  const el = document.getElementById('statusTicker');
+  function updateTicker() {
+    if (tickerEventActive) return; // don't overwrite event messages
+    el.textContent = DEV_TICKERS[tickerIdx % DEV_TICKERS.length];
+    tickerIdx++;
+  }
+  updateTicker();
+  tickerInterval = setInterval(updateTicker, 5000);
+}
+
+// =========== LOG FEED ===========
+function startLogFeed() {
+  logInterval = setInterval(() => {
+    if (!gameActive) return;
+    addLog(LOG_MESSAGES[Math.floor(Math.random() * LOG_MESSAGES.length)]);
+  }, 3000);
+}
+
+function addLog(msg) {
+  const log = document.getElementById('statusLog');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.textContent = '> ' + msg;
+  log.appendChild(entry);
+  if (log.children.length > 5) log.removeChild(log.firstChild);
+  setTimeout(() => { if (entry.parentNode) entry.remove(); }, 4000);
+}
+
+// =========== PLAYER DRIP ===========
+function startPlayerDrip() {
+  let surgeCountdown = 8 + Math.floor(Math.random() * 10); // ticks until next surge
+
+  playerDripInterval = setInterval(() => {
+    if (!gameActive) return;
+    if (playerCount >= MAX_PLAYERS) return;
+
+    surgeCountdown--;
+
+    let joining;
+    if (surgeCountdown <= 0) {
+      // Surge: 9–35 players at once (+15%)
+      joining = 9 + Math.floor(Math.random() * 27);
+      surgeCountdown = 8 + Math.floor(Math.random() * 12);
+      addLog(`SURGE: ${joining} players connected to shard simultaneously.`);
+    } else {
+      // Normal trickle: 0–3, slightly weighted up (~15% more)
+      const roll = Math.random();
+      joining = roll < 0.28 ? 0 : roll < 0.60 ? 1 : roll < 0.83 ? 2 : roll < 0.95 ? 3 : 4;
+    }
+
+    if (joining > 0) {
+      playerCount = Math.min(MAX_PLAYERS, playerCount + joining);
+      updateHUD();
+    }
+  }, 1200); // tick every 1.2s
+}
+
+// =========== FREE FLY EVENT ===========
+const FREE_FLY_SHIPS = ['🚀','🛸','🛩️','🚁','🛰️','✈️'];
+const FREE_FLY_NAMES = [
+  'Idris Free Fly Weekend',
+  'Carrack Explorer Event',
+  'Javelin Demo Day',
+  'Hammerhead Trial',
+  'Polaris Preview Event',
+  'Aurora Free Fly Starter',
+];
+
+function scheduleFreeFlys() {
+  if (!gameActive || freeFlyUsed >= FREE_FLY_MAX) return;
+  // First event: 20-35s in. Second: 50-80s after first.
+  const delay = freeFlyUsed === 0
+    ? 20000 + Math.random() * 15000
+    : 110000 + Math.random() * 30000;
+  freeFlyScheduleTimeout = setTimeout(() => {
+    if (gameActive && freeFlyUsed < FREE_FLY_MAX) launchFreeFlyShip();
+  }, delay);
+}
+
+function launchFreeFlyShip() {
+  if (!gameActive) return;
+  freeFlyUsed++;
+
+  const arena = document.getElementById('arena');
+  const ah = arena.offsetHeight;
+  const shipEl = document.getElementById('freeFlyShip');
+  const banner = document.getElementById('freeFlyBanner');
+  const glow = document.getElementById('freeFlyGlow');
+
+  // Pick random ship emoji and Y position (keep in middle third)
+  const shipEmoji = FREE_FLY_SHIPS[Math.floor(Math.random() * FREE_FLY_SHIPS.length)];
+  const eventName = FREE_FLY_NAMES[Math.floor(Math.random() * FREE_FLY_NAMES.length)];
+  const shipY = ah * 0.2 + Math.random() * (ah * 0.45);
+
+  shipEl.querySelector('.ship-emoji').textContent = shipEmoji;
+  shipEl.style.top = shipY + 'px';
+  shipEl.style.left = '-160px';
+
+  // Reset animation by removing/re-adding class
+  shipEl.classList.remove('active');
+  void shipEl.offsetWidth;
+  shipEl.classList.add('active');
+
+  // Update banner → write into status ticker
+  setTickerEvent(
+    `🚀 <strong>FREE FLY EVENT: ${eventName.toUpperCase()}</strong> — TAP THE SHIP TO CALL IN FREE PLAYERS &nbsp;|&nbsp; <span style="color:#ff8844">⚠ SERVER INSTABILITY +10%</span>`,
+    'event-freefly'
+  );
+
+  // Instability glow
+  glow.classList.add('active');
+
+  // Apply 10% server instability immediately
+  freeFlyActive = true;
+  serverHealth = Math.max(0, serverHealth - 10);
+  updateHUD();
+  addLog(`FREE FLY EVENT: ${eventName} launched. Server instability +10%. Tap the ship!`);
+
+  // Wire up tap
+  const onTap = (e) => {
+    e.stopPropagation();
+    if (!shipEl.classList.contains('active')) return;
+    clearTimeout(freeFlyShipTimeout); // cancel the untapped exit — restore interval takes over
+    activateFreeFlyBonus(eventName);
+    shipEl.removeEventListener('click', onTap);
+    shipEl.removeEventListener('touchstart', onTap);
+  };
+  shipEl.addEventListener('click', onTap);
+  shipEl.addEventListener('touchstart', onTap);
+
+  // Ship exits after 14s whether tapped or not
+  freeFlyShipTimeout = setTimeout(() => {
+    endFreeFly(false);
+    shipEl.removeEventListener('click', onTap);
+    shipEl.removeEventListener('touchstart', onTap);
+    // Schedule next if slots remain
+    if (freeFlyUsed < FREE_FLY_MAX) scheduleFreeFlys();
+  }, 14000);
+}
+
+function activateFreeFlyBonus(eventName) {
+  const shipEl = document.getElementById('freeFlyShip');
+  const counter = document.getElementById('restoreCounter');
+  const arena = document.getElementById('arena');
+
+  // Remove tap hint, ship keeps flying
+  shipEl.querySelector('.ship-tap-hint').textContent = '🎉 INBOUND!';
+  freeFlysCaught++;
+
+  // Random players to restore: 75–300 (+50%)
+  const toRestore = Math.floor(Math.random() * 226) + 75;
+  const duration = 20000; // 20 seconds
+  const startPlayers = playerCount;
+  const targetPlayers = Math.min(MAX_PLAYERS, playerCount + toRestore);
+  const startTime = Date.now();
+
+  counter.textContent = `+${toRestore} FREE FLYERS INCOMING`;
+  counter.style.display = 'block';
+
+  addLog(`FREE FLY ACTIVATED: ${toRestore} new players flooding in over 20 seconds...`);
+
+  // Big splash FX
+  const splash = document.createElement('div');
+  splash.className = 'streak-bonus';
+  splash.style.top = '20%';
+  splash.style.left = '50%';
+  splash.innerHTML = `🚀 FREE FLY ACTIVATED!<br><span style="font-size:11px;color:#00ccff">+${toRestore} PLAYERS INBOUND</span>`;
+  arena.appendChild(splash);
+  setTimeout(() => splash.remove(), 2000);
+
+  const restoreInterval = setInterval(() => {
+    if (!gameActive) { clearInterval(restoreInterval); return; }
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(1, elapsed / duration);
+    playerCount = Math.round(startPlayers + (targetPlayers - startPlayers) * progress);
+    updateHUD();
+
+    const remaining = Math.max(0, Math.round(toRestore * (1 - progress)));
+
+    if (progress < 1) {
+      counter.textContent = `+${remaining} FREE FLYERS STILL INBOUND`;
+      setTickerEvent(
+        `🚀 <strong>FREE FLY INBOUND</strong> — <span style="color:#00ff88">+${remaining} players still joining...</span>`,
+        'event-freefly'
+      );
+    }
+
+    if (progress >= 1) {
+      clearInterval(restoreInterval);
+      counter.textContent = '✅ FREE FLY COMPLETE — 0 REMAINING';
+      setTimeout(() => { counter.style.display = 'none'; }, 2000);
+      clearTickerEvent();
+      addLog(`Free fly complete. ${toRestore} players joined. Good luck keeping them.`);
+      endFreeFly(true);
+      if (freeFlyUsed < FREE_FLY_MAX) scheduleFreeFlys();
+    }
+  }, 200);
+}
+
+function endFreeFly(tapped) {
+  freeFlyActive = false;
+  document.getElementById('freeFlyShip').classList.remove('active');
+  document.getElementById('freeFlyGlow').classList.remove('active');
+  if (!tapped) {
+    // Missed — clear everything immediately
+    clearTickerEvent();
+    document.getElementById('restoreCounter').style.display = 'none';
+    addLog(`Free fly ship passed without being tapped. Opportunity missed.`);
+  }
+  // If tapped, the restore interval owns the ticker and counter until it hits zero
+}
+
+// =========== PLEDGE STORE TICKER ===========
+const PLEDGE_SHIPS = [
+  { name: 'Javelin Destroyer', price: 2850 },
+  { name: 'Idris-P Frigate', price: 1650 },
+  { name: 'Polaris Corvette', price: 750 },
+  { name: 'Hammerhead', price: 725 },
+  { name: 'Carrack Explorer', price: 650 },
+  { name: 'Perseus', price: 600 },
+  { name: 'Constellation Aquila', price: 340 },
+  { name: 'Reclaimer', price: 400 },
+  { name: 'Hull E Freighter', price: 550 },
+  { name: 'Merchantman', price: 470 },
+  { name: 'Orion Mining Platform', price: 500 },
+  { name: '600i Explorer', price: 435 },
+  { name: 'Corsair', price: 225 },
+  { name: 'Cutlass Black', price: 110 },
+  { name: 'Avenger Titan', price: 75 },
+  { name: 'Aurora MR Starter', price: 45 },
+  { name: 'F7C Hornet Mk II', price: 195 },
+  { name: 'Spirit C1', price: 115 },
+  { name: 'Zeus Mk II MR', price: 245 },
+  { name: 'Legionnaire LTI Pack', price: 895 },
+  { name: 'Ironclad Assault', price: 380 },
+  { name: 'Galaxy Multi-Role', price: 430 },
+  { name: 'Anvil Liberator', price: 490 },
+  { name: 'Ares Inferno', price: 250 },
+  { name: 'Corsair LTI Warbond', price: 240 },
+  { name: 'Pioneer Colony Ship', price: 1500 },
+  { name: 'Kraken Carrier', price: 1700 },
+  { name: 'Bengal Carrier', price: 48000 }, // yes, this is real
+];
+
+const PLEDGE_EXTRAS = [
+  'LTI Insurance',
+  '+ Weapon Pack',
+  '+ Paint Bundle',
+  '+ Referral Bonus',
+  'Warbond Edition',
+  '+ Ship Upgrade Token',
+  'Collector\'s Edition',
+  '+ Armor Set',
+  'Anniversary Sale',
+  '+ Hangar Flair',
+  '+ Concept Pledge',
+  'Fleet Pack Bundle',
+];
+
+const CITIZEN_PREFIXES = ['Dark','Star','Nova','Void','Iron','Neon','Ace','Ghost','Red','Blue','Apex','Zero','Hyper','Rogue','Echo','Storm','Alpha','Omega','Frost','Blaze'];
+const CITIZEN_SUFFIXES = ['Walker','Runner','Pilot','Backer','Hawk','Wolf','Fox','Bear','Eagle','Rider','Blade','Shadow','Phantom','Striker','Drift','Fury','Forge','Crest','Lance','Dawn'];
+
+function randCitizenID() {
+  const pre = CITIZEN_PREFIXES[Math.floor(Math.random() * CITIZEN_PREFIXES.length)];
+  const suf = CITIZEN_SUFFIXES[Math.floor(Math.random() * CITIZEN_SUFFIXES.length)];
+  const num = Math.floor(Math.random() * 9000) + 1000;
+  return pre + suf + num;
+}
+
+let pledgeTotal = 924_000_000 + Math.floor(Math.random() * 5_000_000);
+let pledgeDripInterval = null;
+
+function updatePledgeDisplay() {
+  const el = document.getElementById('pledgeTotalDisplay');
+  if (el) el.textContent = '$' + (pledgeTotal / 1_000_000).toFixed(2) + 'M';
+}
+
+function buildPledgeTicker() {
+  const scroll = document.getElementById('pledgeScroll');
+  scroll.innerHTML = '';
+  clearInterval(pledgeDripInterval);
+
+  // Generate 40 transactions
+  const items = [];
+  for (let i = 0; i < 40; i++) {
+    const ship = PLEDGE_SHIPS[Math.floor(Math.random() * PLEDGE_SHIPS.length)];
+    const extra = Math.random() > 0.4 ? PLEDGE_EXTRAS[Math.floor(Math.random() * PLEDGE_EXTRAS.length)] : '';
+    const user = randCitizenID();
+    const total = ship.price + (extra ? Math.floor(Math.random() * 30) : 0);
+    pledgeTotal += total;
+    items.push({ user, ship: ship.name, extra, total });
+  }
+
+  // Duplicate for seamless CSS scroll loop
+  const allItems = [...items, ...items];
+  allItems.forEach(it => {
+    const el = document.createElement('span');
+    el.className = 'pledge-item';
+    el.innerHTML = `
+      <span class="pledge-user">${it.user}</span>
+      <span class="pledge-sep">purchased</span>
+      <span class="pledge-ship">${it.ship}${it.extra ? ' (' + it.extra + ')' : ''}</span>
+      <span class="pledge-sep">for</span>
+      <span class="pledge-price">$${it.total.toLocaleString()}</span>
+    `;
+    scroll.appendChild(el);
+  });
+
+  updatePledgeDisplay();
+
+  // Drip extra money into the total every 2s — because they never stop
+  pledgeDripInterval = setInterval(() => {
+    if (!gameActive) return;
+    const drip = Math.floor(Math.random() * 2000) + 45;
+    pledgeTotal += drip;
+    updatePledgeDisplay();
+  }, 2000);
+}
+
+// =========== RESIZE ===========
+window.addEventListener('resize', () => {
+  initStars();
+  if (gameActive) setupArena();
+});
+</script>
+</body>
+</html>
