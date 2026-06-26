@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Wandering Chef</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap');
+:root{
+  --bg:#fdf6ec;--card:#fff9f2;--border:#e8d8c0;--deep:#3d2008;--mid:#7a4520;
+  --amber:#c8762a;--alight:#f5a94e;--cream:#ede0cc;--green:#4a8c38;--muted:#8a6848;
+  --red:#c0392b;--tile:#f0e8d8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);font-family:'Lato',sans-serif;color:var(--deep);min-height:100vh;padding-bottom:80px}
+
+/* ── HEADER ── */
+.hdr{background:var(--deep);padding:13px 16px 11px;text-align:center;position:sticky;top:0;z-index:50}
+.hdr::after{content:'';display:block;height:3px;background:linear-gradient(90deg,var(--amber),var(--alight),var(--amber));margin-top:9px}
+.hdr-row{display:flex;align-items:center;justify-content:space-between;max-width:700px;margin:0 auto}
+.hdr-title{font-family:'Playfair Display',serif;font-size:clamp(17px,4vw,26px);color:#fdf6ec;letter-spacing:.04em}
+.hdr-title em{color:var(--alight);font-style:italic}
+.star-pill{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  padding:4px 12px;border-radius:20px;font-size:13px;font-weight:700;color:var(--alight);letter-spacing:.04em}
+
+/* ── SCREENS ── */
+.screen{display:none;max-width:700px;margin:0 auto;padding:16px}
+.screen.active{display:block}
+
+/* ══ WORLD MAP ══════════════════════════════════════════════════ */
+.wm-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--deep);margin-bottom:4px}
+.wm-sub{font-size:12px;color:var(--muted);margin-bottom:18px;line-height:1.6}
+.kitchen-card{border-radius:8px;border:2px solid var(--border);overflow:hidden;margin-bottom:14px;transition:all .15s}
+.kitchen-card:not(.locked):hover{border-color:var(--amber);box-shadow:0 3px 16px rgba(200,118,42,.15);cursor:pointer}
+.kitchen-card.locked{opacity:.6;cursor:not-allowed}
+.kc-header{padding:14px 16px 12px;display:flex;gap:14px;align-items:center}
+.kc-emoji{font-size:32px;flex-shrink:0}
+.kc-name{font-family:'Playfair Display',serif;font-size:17px;color:var(--deep);margin-bottom:2px}
+.kc-sub{font-size:11.5px;color:var(--muted);line-height:1.5}
+.kc-meta{display:flex;gap:8px;margin-top:7px;flex-wrap:wrap}
+.kc-tag{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  padding:2px 9px;border-radius:10px;background:var(--cream);color:var(--mid)}
+.kc-tag.special{background:#e8f0ff;color:#2040a0}
+.kc-tag.locked-tag{background:#f0e0e0;color:#903030}
+.kc-levels{background:var(--tile);border-top:1px solid var(--border);
+  padding:10px 16px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.kc-lv{width:34px;height:34px;border-radius:50%;border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+  color:var(--muted);background:var(--card);cursor:pointer;transition:all .15s;flex-shrink:0}
+.kc-lv:hover{border-color:var(--amber);color:var(--amber)}
+.kc-lv.done{background:var(--green);border-color:var(--green);color:white}
+.kc-lv.current{border-color:var(--amber);background:#fff8ee;color:var(--amber)}
+.kc-lv.locked{opacity:.4;cursor:not-allowed;pointer-events:none}
+.kc-stars{margin-left:auto;font-size:13px;color:var(--amber);font-weight:700;white-space:nowrap}
+.lock-req{font-size:11px;color:var(--red);font-weight:700;margin-left:auto;white-space:nowrap}
+
+/* ══ KITCHEN SCREEN ══════════════════════════════════════════════ */
+.kitchen-banner{border-radius:6px;padding:14px 16px;margin-bottom:14px;
+  display:flex;gap:12px;align-items:center}
+.kb-emoji{font-size:36px;flex-shrink:0}
+.kb-name{font-family:'Playfair Display',serif;font-size:19px;color:var(--deep);margin-bottom:2px}
+.kb-quirk{font-size:11.5px;color:var(--muted);line-height:1.5}
+.quirk-pill{display:inline-block;background:#e8f0ff;color:#2040a0;font-size:10px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:10px;margin-top:4px}
+
+/* ══ GAME SCREEN ══════════════════════════════════════════════════ */
+.recipe-card{background:var(--card);border:1.5px solid var(--border);border-radius:6px;
+  padding:13px 15px;margin-bottom:12px}
+.rc-meta{display:flex;align-items:center;gap:11px;margin-bottom:7px}
+.rc-badge{width:42px;height:42px;border-radius:50%;background:var(--deep);color:var(--alight);
+  font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rc-lv{font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--amber);font-weight:700;margin-bottom:2px}
+.rc-title{font-family:'Playfair Display',serif;font-size:17px;color:var(--deep)}
+.rc-desc{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:7px}
+.goal-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px}
+.goal-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+.goal-tag{background:var(--deep);color:var(--cream);font-size:11px;font-weight:700;
+  padding:3px 10px;border-radius:20px;letter-spacing:.05em;transition:background .3s}
+.goal-tag.met{background:var(--green);color:white}
+.par-row{display:flex;align-items:center;gap:6px;margin-top:4px}
+.par-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+.par-star{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .3s;background:white}
+.par-star.lit{background:#f5c518;border-color:#c89000}
+.par-info{font-size:11px;color:var(--muted);margin-left:2px}
+
+/* SPECIAL MECHANIC BANNERS */
+.mech-banner{border-radius:5px;padding:8px 12px;margin-bottom:10px;
+  font-size:12px;line-height:1.5;display:flex;gap:10px;align-items:flex-start}
+.mech-banner.finite{background:#fff3e0;border:1.5px solid #f5a94e;color:#7a4000}
+.mech-banner.twobowl{background:#e8f5e0;border:1.5px solid #68a840;color:#2a5a10}
+.mech-banner.oneway{background:#e8eeff;border:1.5px solid #6080d0;color:#203080}
+.mech-banner.sticky{background:#f8e8ff;border:1.5px solid #9860c0;color:#502070}
+.mech-banner.layers{background:#fff8e0;border:1.5px solid #c0a020;color:#604000}
+.mech-banner .mb-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+
+/* POUR LIMIT */
+.pour-limit{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.pl-label{font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.08em}
+.pl-dots{display:flex;gap:4px}
+.pl-dot{width:12px;height:12px;border-radius:50%;background:var(--green);transition:background .2s}
+.pl-dot.used{background:var(--red)}
+.pl-dot.empty{background:var(--border)}
+
+/* COUNTER */
+.counter{background:var(--tile);border:1.5px solid var(--border);border-radius:8px;
+  padding:18px 13px 14px;margin-bottom:11px;position:relative;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.06)}
+.counter-top{position:absolute;top:7px;left:12px;right:12px;
+  display:flex;justify-content:space-between;align-items:center}
+.counter-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:700}
+.move-badge{background:var(--deep);color:var(--alight);font-size:10px;font-weight:700;
+  padding:2px 8px;border-radius:10px}
+
+.vessels-row{display:flex;justify-content:center;align-items:flex-end;
+  gap:clamp(5px,2vw,16px);flex-wrap:wrap;padding:6px 0 2px;min-height:140px}
+.vessel{display:flex;flex-direction:column;align-items:center;gap:3px;
+  cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;transition:transform .1s}
+.vessel:active:not(.disabled){transform:scale(.96)}
+.vessel.selected .vsw{filter:drop-shadow(0 0 7px rgba(200,118,42,.95))}
+.vessel.pour-target .vsw{filter:drop-shadow(0 0 6px rgba(74,140,56,.85))}
+.vessel.disabled{opacity:.38;cursor:not-allowed}
+.vessel.oneway-vessel .vsw{filter:drop-shadow(0 0 4px rgba(60,100,220,.5))}
+.vsw{transition:filter .18s}
+.vname{font-size:9.5px;font-weight:700;color:var(--mid);text-align:center;max-width:66px;line-height:1.2}
+.vamt{font-size:10px;color:var(--muted);text-align:center}
+.vamt b{color:var(--deep);font-size:11.5px}
+.vuses{font-size:9px;color:var(--red);font-weight:700;text-align:center}
+/* layer action buttons */
+.layer-btns{display:flex;gap:4px;margin-top:2px}
+.layer-btn{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;
+  border:none;cursor:pointer;letter-spacing:.05em}
+.layer-btn.top{background:#e8f0ff;color:#2040a0}
+.layer-btn.bot{background:#fff0e0;color:#a04000}
+
+.controls-row{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:11px}
+.btn{padding:7px 15px;border-radius:3px;border:none;font-family:'Lato',sans-serif;
+  font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;cursor:pointer;transition:all .13s}
+.btn-ghost{background:transparent;color:var(--mid);border:2px solid var(--border)}
+.btn-ghost:hover:not(:disabled){border-color:var(--amber);color:var(--amber)}
+.btn-ghost:disabled{opacity:.4;cursor:not-allowed}
+.btn-cost{background:#fff3e0;color:#a05000;border:2px solid #f5a94e}
+.btn-cost:hover:not(.cant){background:#ffe8c0}
+.btn-cost.cant{opacity:.45;cursor:not-allowed}
+.btn-primary{background:var(--deep);color:var(--cream);border:none;font-family:'Lato',sans-serif;
+  font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;
+  padding:10px 22px;border-radius:3px;transition:background .13s}
+.btn-primary:hover{background:var(--mid)}
+
+.hint-bar{text-align:center;font-size:11px;color:var(--muted);margin-top:7px;min-height:15px}
+.hint-bar strong{color:var(--mid)}
+
+/* LOG */
+.log-wrap{margin-bottom:12px}
+.log-title{font-size:9px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);font-weight:700;margin-bottom:4px}
+.log-list{display:flex;flex-direction:column;gap:3px;max-height:72px;overflow-y:auto}
+.log-entry{font-size:11px;color:var(--muted);padding:3px 8px;
+  border-left:3px solid var(--cream);background:white;border-radius:0 3px 3px 0}
+.log-entry.fresh{border-left-color:var(--amber);color:var(--mid);font-weight:700}
+
+/* ══ OVERLAYS ════════════════════════════════════════════════════ */
+.overlay{position:fixed;inset:0;background:rgba(20,10,0,.82);display:flex;
+  align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay.show{opacity:1;pointer-events:all}
+.ov-card{background:var(--card);border-radius:8px;padding:28px 34px;text-align:center;
+  max-width:400px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.5);
+  transform:scale(.85);transition:transform .36s cubic-bezier(.34,1.56,.64,1);border:2px solid var(--border)}
+.overlay.show .ov-card{transform:scale(1)}
+.ov-icon{font-size:46px;margin-bottom:9px}
+.ov-title{font-family:'Playfair Display',serif;font-size:21px;color:var(--deep);margin-bottom:6px}
+.ov-sub{font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:10px}
+.ov-stars{font-size:26px;letter-spacing:4px;margin-bottom:7px}
+.ov-moves{font-size:11.5px;color:var(--amber);font-weight:700;letter-spacing:.06em;margin-bottom:16px}
+.ov-btns{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+
+/* FAIL overlay */
+.fail-card{background:#fff5f5;border-color:#e0a0a0}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;
+  align-items:center;justify-content:center;z-index:400;opacity:0;pointer-events:none;transition:opacity .22s}
+.modal-bg.show{opacity:1;pointer-events:all}
+.modal{background:var(--card);border-radius:8px;padding:24px 28px;text-align:center;
+  max-width:320px;width:90%;border:2px solid var(--border)}
+.modal-title{font-family:'Playfair Display',serif;font-size:17px;color:var(--deep);margin-bottom:7px}
+.modal-body{font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:16px}
+.modal-btns{display:flex;gap:9px;justify-content:center}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(50px);
+  background:var(--deep);color:var(--alight);padding:8px 18px;border-radius:20px;
+  font-size:12px;font-weight:700;letter-spacing:.06em;white-space:nowrap;
+  transition:transform .28s,opacity .28s;opacity:0;z-index:300;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* scrollbar */
+.log-list::-webkit-scrollbar{width:3px}
+.log-list::-webkit-scrollbar-thumb{background:var(--cream);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-row">
+    <div class="hdr-title">The <em>Wandering</em> Chef</div>
+    <div class="star-pill">⭐ <span id="starTotal">0</span></div>
+  </div>
+</div>
+
+<!-- ══ WORLD MAP ══════════════════════════════════════════════════ -->
+<div class="screen active" id="worldScreen">
+  <div style="margin-top:14px">
+    <div class="wm-title">Your Journey</div>
+    <div class="wm-sub">Each kitchen has its own rules and quirks.<br>Master them all to become a true Wandering Chef.</div>
+    <div id="worldMap"></div>
+  </div>
+</div>
+
+<!-- ══ GAME SCREEN ══════════════════════════════════════════════ -->
+<div class="screen" id="gameScreen">
+  <div class="kitchen-banner" id="kitchenBanner">
+    <div class="kb-emoji" id="kbEmoji"></div>
+    <div>
+      <div class="kb-name" id="kbName"></div>
+      <div class="kb-quirk" id="kbQuirk"></div>
+      <div class="quirk-pill" id="kbPill"></div>
+    </div>
+  </div>
+
+  <div class="recipe-card">
+    <div class="rc-meta">
+      <div class="rc-badge" id="rcBadge"></div>
+      <div>
+        <div class="rc-lv" id="rcLv"></div>
+        <div class="rc-title" id="rcTitle"></div>
+      </div>
+    </div>
+    <div class="rc-desc" id="rcDesc"></div>
+    <div class="goal-row" id="goalRow"></div>
+    <div class="par-row">
+      <div class="par-lbl">Stars:</div>
+      <div class="par-star" id="ps0">⭐</div>
+      <div class="par-star" id="ps1">⭐</div>
+      <div class="par-star" id="ps2">⭐</div>
+      <div class="par-info" id="parInfo">Par: —</div>
+    </div>
+  </div>
+
+  <div class="mech-banner" id="mechBanner" style="display:none">
+    <div class="mb-icon" id="mechIcon"></div>
+    <div id="mechText"></div>
+  </div>
+
+  <div class="pour-limit" id="pourLimitRow" style="display:none">
+    <div class="pl-label">Pours left:</div>
+    <div class="pl-dots" id="pourDots"></div>
+  </div>
+
+  <div class="counter">
+    <div class="counter-top">
+      <div class="counter-lbl">Kitchen Counter</div>
+      <div class="move-badge">Move <span id="moveCount">0</span></div>
+    </div>
+    <div class="vessels-row" id="vesselsRow"></div>
+    <div class="controls-row">
+      <button class="btn btn-ghost" id="undoBtn" onclick="undoMove()" disabled>↩ Undo</button>
+      <button class="btn btn-cost" id="resetBtn" onclick="confirmReset()">↺ Reset (1⭐)</button>
+      <button class="btn btn-ghost" onclick="goWorld()">⬅ Map</button>
+    </div>
+    <div class="hint-bar" id="hintBar"></div>
+  </div>
+
+  <div class="log-wrap">
+    <div class="log-title">Pour Log</div>
+    <div class="log-list" id="logList"></div>
+  </div>
+</div>
+
+<!-- WIN OVERLAY -->
+<div class="overlay" id="winOverlay">
+  <div class="ov-card">
+    <div class="ov-icon" id="winIcon"></div>
+    <div class="ov-stars" id="winStars"></div>
+    <div class="ov-title" id="winTitle"></div>
+    <div class="ov-sub" id="winSub"></div>
+    <div class="ov-moves" id="winMoves"></div>
+    <div class="ov-btns">
+      <button class="btn btn-primary" id="nextBtn" onclick="goNext()">Next →</button>
+      <button class="btn btn-ghost" onclick="closeWin()">Stay</button>
+    </div>
+  </div>
+</div>
+
+<!-- FAIL OVERLAY -->
+<div class="overlay" id="failOverlay">
+  <div class="ov-card fail-card">
+    <div class="ov-icon">😬</div>
+    <div class="ov-title" id="failTitle">Stuck!</div>
+    <div class="ov-sub" id="failSub">You've run out of moves. Reset to try again.</div>
+    <div class="ov-btns">
+      <button class="btn btn-primary" onclick="closeFail();confirmReset()">↺ Reset (1⭐)</button>
+      <button class="btn btn-ghost" onclick="closeFail()">Review</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESET MODAL -->
+<div class="modal-bg" id="resetModal">
+  <div class="modal">
+    <div class="modal-title">Reset for 1 ⭐?</div>
+    <div class="modal-body">You have <strong><span id="modalStars">0</span> ⭐</strong>.<br>Reset clears your moves and costs 1 star.</div>
+    <div class="modal-btns">
+      <button class="btn btn-primary" onclick="doReset()">Spend 1 ⭐</button>
+      <button class="btn btn-ghost" onclick="closeResetModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+//  UNIT HELPERS
+// ══════════════════════════════════════════════════════════════════════
+const tbsp = u => u===0?'empty':`${u} tbsp`;
+const qcup = u => {
+  if(u===0) return 'empty';
+  const w=Math.floor(u/4),r=u%4,f={0:'',1:'¼',2:'½',3:'¾'};
+  return (w>0?w:'')+f[r]+' cup'+(u>=4?'s':'');
+};
+const tsp = u => {
+  if(u===0) return 'empty';
+  const w=Math.floor(u/2),r=u%2;
+  if(w===0) return '½ tsp';
+  return w+(r?'½':'')+' tsp';
+};
+const parts = u => u===0?'empty':`${u} part${u!==1?'s':''}`;
+
+// ══════════════════════════════════════════════════════════════════════
+//  KITCHEN + LEVEL DATA
+//  Container flags:
+//    isSource   — ingredient source (can pour from)
+//    isBowl     — goal destination; target = required amount
+//    isSink     — drain; accepts unlimited, gives nothing
+//    isOneWay   — can receive but never be selected as source
+//    isFinite   — source has exact amt, no excess (K2 mechanic shown on UI)
+//    isResidual — 1 unit sticks when poured out
+//    usesLeft   — fragile: decrements each pour-from; 0 = disabled
+//    hasLayers  — layered liquid: {topAmt,botAmt,topLiq,botLiq}
+//  Level flags:
+//    maxPours   — hard pour limit (K4)
+//    mechanic   — string key for banner
+// ══════════════════════════════════════════════════════════════════════
+const KITCHENS = [
+
+// ════════════════════════════════════════════════════════
+// K1 — GRANDMA'S COTTAGE  (Standard pours, tutorial)
+// ════════════════════════════════════════════════════════
+{
+  id:'cottage', name:"Grandma's Cottage", emoji:'🏡',
+  quirk:'A warm, forgiving kitchen. Standard measures, simple recipes.',
+  pill:'Standard Pours',
+  pillStyle:'background:#e8f5e0;color:#2a5a10',
+  bannerClass:'',
+  unlockStars:0,
+  levels:[
+  {n:1, name:'Butter for Toast', icon:'🧈', du:tbsp,
+   desc:'Just <strong>2 tablespoons of butter</strong>. Fill the scoop once.',
+   hint:'Fill the 2-tbsp scoop, pour into the ramekin.',
+   par:2,
+   containers:[
+    {label:'Butter Dish',cap:8, amt:8, liq:'#d4a010',shape:'candlejar',isSource:true},
+    {label:'2-Tbsp',    cap:2, amt:0, liq:'#d4a010',shape:'measuringcup'},
+    {label:'Ramekin',   cap:4, amt:0, liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:2},
+   ]},
+  {n:2, name:'Honey Drizzle', icon:'🍯', du:tbsp,
+   desc:'<strong>3 tablespoons of honey</strong>. Only a 1-tbsp dipper.',
+   hint:'Fill and pour three times.',
+   par:6,
+   containers:[
+    {label:'Honey Jar',cap:10,amt:10,liq:'#e8a020',shape:'babyjar',isSource:true},
+    {label:'1-Tbsp',   cap:1, amt:0, liq:'#e8a020',shape:'measuringcup'},
+    {label:'Bowl',     cap:5, amt:0, liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:3},
+   ]},
+  {n:3, name:'Pancake Milk', icon:'🥛', du:qcup,
+   desc:'<strong>1¼ cups of milk</strong>. Use your ¾-cup and ½-cup.',
+   hint:'¾-cup (3 units) + ½-cup (2 units) = 1¼ cups.',
+   par:4,
+   containers:[
+    {label:'Milk Jug',cap:12,amt:12,liq:'#5a9ed8',shape:'jar',isSource:true},
+    {label:'¾-Cup',  cap:3, amt:0, liq:'#5a9ed8',shape:'measuringcup'},
+    {label:'½-Cup',  cap:2, amt:0, liq:'#5a9ed8',shape:'measuringcup'},
+    {label:'Bowl',   cap:7, amt:0, liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:5},
+   ]},
+  {n:4, name:'Waffle Oil', icon:'🧇', du:tbsp,
+   desc:'<strong>4 tablespoons of oil</strong>, but your scoop holds 3. The bowl caps at 4.',
+   hint:'Fill scoop → bowl (3). Refill — only 1 fits. Done.',
+   par:4,
+   containers:[
+    {label:'Oil Jar',cap:12,amt:12,liq:'#8ab820',shape:'jar',isSource:true},
+    {label:'3-Tbsp', cap:3, amt:0, liq:'#8ab820',shape:'measuringcup'},
+    {label:'Bowl',   cap:4, amt:0, liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:4},
+   ]},
+  {n:5, name:'Brown Sugar', icon:'🍮', du:tbsp,
+   desc:'<strong>3 tablespoons</strong>. Fill the 5-tbsp cup, then scoop 2 back out.',
+   hint:'5→bowl. Fill 2-tbsp from bowl → bowl=3.',
+   par:4,
+   containers:[
+    {label:'Sugar Jar',cap:12,amt:12,liq:'#9040b8',shape:'jar',isSource:true},
+    {label:'2-Tbsp',  cap:2, amt:0, liq:'#9040b8',shape:'measuringcup'},
+    {label:'5-Cup',   cap:5, amt:0, liq:'#9040b8',shape:'eggcup'},
+    {label:'Bowl',    cap:6, amt:0, liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:3},
+   ]},
+  ]
+},
+
+// ════════════════════════════════════════════════════════
+// K2 — THE BISTRO  (Finite source — nothing to waste)
+// ════════════════════════════════════════════════════════
+{
+  id:'bistro', name:'The Bistro', emoji:'🥐',
+  quirk:'A precise French kitchen. Each ingredient is measured exactly — waste nothing.',
+  pill:'Finite Source',
+  pillStyle:'background:#fff3e0;color:#8a4000',
+  bannerClass:'finite',
+  bannerIcon:'⚖️',
+  bannerText:'<strong>Finite Source:</strong> The source jar holds exactly the right total. Pour carefully — there\'s no excess, and no sink. Wasted liquid means starting over.',
+  unlockStars:3,
+  levels:[
+  {n:6, name:'Vinaigrette Oil', icon:'🥗', du:tbsp,
+   mechanic:'finite',
+   desc:'Exactly <strong>5 tablespoons of oil</strong> in the source. Get all 5 into the bowl.',
+   hint:'Source holds exactly 5. One pour → 3-tbsp cup, one pour → 2-tbsp cup, both into bowl.',
+   par:4,
+   containers:[
+    {label:'Oil (5 tbsp)',cap:5,amt:5,liq:'#8ab820',shape:'jar',isSource:true,isFinite:true},
+    {label:'3-Tbsp',     cap:3,amt:0,liq:'#8ab820',shape:'measuringcup'},
+    {label:'2-Tbsp',     cap:2,amt:0,liq:'#8ab820',shape:'measuringcup'},
+    {label:'Bowl',       cap:6,amt:0,liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:5},
+   ]},
+  {n:7, name:'Reduction Stock', icon:'🍲', du:tbsp,
+   mechanic:'finite',
+   desc:'<strong>7 tablespoons of stock</strong>, exactly. Source holds 10 — but the bowl maxes at 7.',
+   hint:'Fill the 4-cup from source, fill the 3-cup from source. Pour both into bowl = 7. Don\'t spill the extra 3.',
+   par:4,
+   containers:[
+    {label:'Stock (10)',cap:10,amt:10,liq:'#c87020',shape:'jar',isSource:true,isFinite:true},
+    {label:'4-Tbsp',   cap:4, amt:0, liq:'#c87020',shape:'measuringcup'},
+    {label:'3-Tbsp',   cap:3, amt:0, liq:'#c87020',shape:'measuringcup'},
+    {label:'Pot',      cap:7, amt:0, liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:7},
+   ]},
+  {n:8, name:'Butter Baste', icon:'🧈', du:tbsp,
+   mechanic:'finite',
+   desc:'Melt <strong>4 tablespoons</strong> exactly. Source has 9 — you must leave 5 behind.',
+   hint:'Fill the 5-cup from source (5). Source=4. Pour source directly into bowl (4). Done.',
+   par:3,
+   containers:[
+    {label:'Butter (9)',cap:9,amt:9,liq:'#d4a010',shape:'candlejar',isSource:true,isFinite:true},
+    {label:'5-Tbsp',   cap:5,amt:0,liq:'#d4a010',shape:'eggcup'},
+    {label:'Bowl',     cap:5,amt:0,liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:4},
+   ]},
+  {n:9, name:'Cream Sauce', icon:'🍝', du:tbsp,
+   mechanic:'finite',
+   desc:'<strong>6 tablespoons of cream</strong>. Source holds 11. Only a 7-tbsp ladle available.',
+   hint:'7→ladle, ladle→bowl(6 fits, max=6). Source=4. Ladle=1 left over — that\'s fine.',
+   par:3,
+   containers:[
+    {label:'Cream (11)',cap:11,amt:11,liq:'#f0e8d8',shape:'jar',isSource:true,isFinite:true},
+    {label:'7-Tbsp',   cap:7, amt:0, liq:'#d8c8a8',shape:'measuringcup'},
+    {label:'Bowl',     cap:6, amt:0, liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:6},
+   ]},
+  {n:10, name:'Demi-Glace', icon:'🍖', du:tbsp,
+   mechanic:'finite',
+   desc:'An intense reduction: exactly <strong>8 tablespoons</strong>. Source holds 13. Only a 5-tbsp measure.',
+   hint:'5→cup→bowl(5). Source=8. 5→cup→bowl: 3 fits (max=8). Cup=2. Back to source? No — source→cup fills to 5 but you only need... think again.',
+   par:5,
+   containers:[
+    {label:'Stock (13)',cap:13,amt:13,liq:'#5a2008',shape:'jar',isSource:true,isFinite:true},
+    {label:'5-Tbsp',   cap:5, amt:0, liq:'#5a2008',shape:'measuringcup'},
+    {label:'Bowl',     cap:8, amt:0, liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:8},
+   ]},
+  ]
+},
+
+// ════════════════════════════════════════════════════════
+// K3 — THE STREET CART  (Two goal bowls)
+// ════════════════════════════════════════════════════════
+{
+  id:'cart', name:'The Street Cart', emoji:'🛒',
+  quirk:'Splitting portions for two customers. Both bowls must be filled exactly.',
+  pill:'Two Bowls',
+  pillStyle:'background:#e8f5e0;color:#2a5a10',
+  bannerClass:'twobowl',
+  bannerIcon:'🥣',
+  bannerText:'<strong>Two Bowls:</strong> Fill BOTH goal bowls to their exact targets to complete the recipe. Order matters — plan your splits carefully.',
+  unlockStars:8,
+  levels:[
+  {n:11, name:'Split the Milk', icon:'🥛', du:qcup,
+   mechanic:'twobowl',
+   desc:'Split <strong>8 units of milk</strong> into exactly <strong>5 units and 3 units</strong> for two customers.',
+   hint:'Source=8. 5-cup→bowl A (5). Source→3-cup (3)→bowl B (3). Done.',
+   par:4,
+   containers:[
+    {label:'Milk (8)',cap:8,amt:8,liq:'#5a9ed8',shape:'jar',isSource:true},
+    {label:'5-Cup',  cap:5,amt:0,liq:'#5a9ed8',shape:'measuringcup'},
+    {label:'3-Cup',  cap:3,amt:0,liq:'#5a9ed8',shape:'measuringcup'},
+    {label:'Bowl A', cap:6,amt:0,liq:'#6ab8e8',shape:'mixingbowl',isBowl:true,target:5,bowlId:'A'},
+    {label:'Bowl B', cap:5,amt:0,liq:'#4898c8',shape:'mixingbowl',isBowl:true,target:3,bowlId:'B'},
+   ]},
+  {n:12, name:'Sauce Split', icon:'🍅', du:tbsp,
+   mechanic:'twobowl',
+   desc:'Split <strong>10 tbsp of tomato sauce</strong> into <strong>6 tbsp and 4 tbsp</strong>.',
+   hint:'6-cup→bowl A. 4-cup→bowl B. Two pours.',
+   par:4,
+   containers:[
+    {label:'Sauce (10)',cap:10,amt:10,liq:'#c82010',shape:'jar',isSource:true},
+    {label:'6-Tbsp',   cap:6, amt:0, liq:'#c82010',shape:'measuringcup'},
+    {label:'4-Tbsp',   cap:4, amt:0, liq:'#c82010',shape:'measuringcup'},
+    {label:'Bowl A',   cap:8, amt:0, liq:'#e07060',shape:'mixingbowl',isBowl:true,target:6,bowlId:'A'},
+    {label:'Bowl B',   cap:6, amt:0, liq:'#c05040',shape:'mixingbowl',isBowl:true,target:4,bowlId:'B'},
+   ]},
+  {n:13, name:'Oil & Vinegar', icon:'🫙', du:tbsp,
+   mechanic:'twobowl',
+   desc:'From <strong>9 tbsp of dressing</strong>, pour <strong>5 tbsp into one bottle and 4 into another</strong>. Only a 6-tbsp measure.',
+   hint:'6→cup→bottle A (5 fits, max=5). Cup has 1 left → bottle B (1). Source→cup (3)→bottle B (3+1=4).',
+   par:5,
+   containers:[
+    {label:'Dressing (9)',cap:9,amt:9,liq:'#c8a030',shape:'jar',isSource:true},
+    {label:'6-Tbsp',     cap:6,amt:0,liq:'#c8a030',shape:'measuringcup'},
+    {label:'Bottle A',   cap:5,amt:0,liq:'#e8c050',shape:'flowervase',isBowl:true,target:5,bowlId:'A'},
+    {label:'Bottle B',   cap:5,amt:0,liq:'#a08020',shape:'flowervase',isBowl:true,target:4,bowlId:'B'},
+   ]},
+  {n:14, name:'Batter for Two', icon:'🥞', du:tbsp,
+   mechanic:'twobowl',
+   desc:'Split <strong>12 tbsp of batter</strong> into <strong>7 tbsp and 5 tbsp</strong>. Using a 4-tbsp scoop.',
+   hint:'4×2=8 in A — too much. Try: 4→A, 4→A (8>7). Use the scoop as a transfer vessel.',
+   par:7,
+   containers:[
+    {label:'Batter (12)',cap:12,amt:12,liq:'#c8b890',shape:'floursack',isSource:true},
+    {label:'4-Tbsp',    cap:4, amt:0, liq:'#c8b890',shape:'measuringcup'},
+    {label:'Bowl A',    cap:8, amt:0, liq:'#e0d0a0',shape:'mixingbowl',isBowl:true,target:7,bowlId:'A'},
+    {label:'Bowl B',    cap:7, amt:0, liq:'#c8b880',shape:'mixingbowl',isBowl:true,target:5,bowlId:'B'},
+   ]},
+  {n:15, name:'Three-Way Split', icon:'🫕', du:tbsp,
+   mechanic:'twobowl',
+   desc:'Split <strong>15 tbsp of broth</strong> into <strong>8 tbsp and 7 tbsp</strong>. You have a 5-tbsp and 3-tbsp measure.',
+   hint:'5+3=8 for bowl A. 5+? for B. Think about what\'s left after filling A.',
+   par:6,
+   containers:[
+    {label:'Broth (15)',cap:15,amt:15,liq:'#c87020',shape:'jar',isSource:true},
+    {label:'5-Tbsp',   cap:5, amt:0, liq:'#c87020',shape:'measuringcup'},
+    {label:'3-Tbsp',   cap:3, amt:0, liq:'#c87020',shape:'measuringcup'},
+    {label:'Bowl A',   cap:10,amt:0, liq:'#e09040',shape:'mixingbowl',isBowl:true,target:8,bowlId:'A'},
+    {label:'Bowl B',   cap:9, amt:0, liq:'#c07020',shape:'mixingbowl',isBowl:true,target:7,bowlId:'B'},
+   ]},
+  ]
+},
+
+// ════════════════════════════════════════════════════════
+// K4 — THE CHEMISTRY LAB  (One-way valves + limited pours)
+// ════════════════════════════════════════════════════════
+{
+  id:'lab', name:'The Chemistry Lab', emoji:'🧪',
+  quirk:'Molecular gastronomy. Some vessels only receive. Every pour costs a move — you have a hard limit.',
+  pill:'One-Way + Pour Limit',
+  pillStyle:'background:#e8eeff;color:#203080',
+  bannerClass:'oneway',
+  bannerIcon:'🔒',
+  bannerText:'<strong>One-Way Vessels</strong> can only receive — you cannot pour from them. <strong>Pour Limit:</strong> you have a hard cap on total pours. Exceed it and the level fails.',
+  unlockStars:15,
+  levels:[
+  {n:16, name:'Emulsion Base', icon:'🫧', du:tbsp,
+   mechanic:'oneway',
+   desc:'<strong>4 tbsp into the one-way chamber</strong>. You have 7 pours maximum.',
+   hint:'The chamber only receives. Get exactly 4 into it using the 3-cup and 1-cup.',
+   par:4, maxPours:7,
+   containers:[
+    {label:'Source',   cap:12,amt:12,liq:'#e0e8ff',shape:'jar',isSource:true},
+    {label:'3-Tbsp',   cap:3, amt:0, liq:'#8090d0',shape:'measuringcup'},
+    {label:'1-Tbsp',   cap:1, amt:0, liq:'#8090d0',shape:'measuringcup'},
+    {label:'Chamber',  cap:5, amt:0, liq:'#6070c0',shape:'soupcan',isBowl:true,target:4,isOneWay:true},
+   ]},
+  {n:17, name:'Foam Stabiliser', icon:'🫙', du:tbsp,
+   mechanic:'oneway',
+   desc:'Route <strong>6 tbsp</strong> through an intermediate cup into the one-way sealed flask. Max <strong>8 pours</strong>.',
+   hint:'You must use the intermediate cup — can\'t pour source directly into the flask. Get exactly 6.',
+   par:5, maxPours:8,
+   containers:[
+    {label:'Source',  cap:14,amt:14,liq:'#d0f0e8',shape:'jar',isSource:true},
+    {label:'4-Tbsp',  cap:4, amt:0, liq:'#40a080',shape:'measuringcup'},
+    {label:'3-Tbsp',  cap:3, amt:0, liq:'#40a080',shape:'measuringcup'},
+    {label:'Flask',   cap:7, amt:0, liq:'#208060',shape:'testtube',isBowl:true,target:6,isOneWay:true},
+   ]},
+  {n:18, name:'Gel Matrix', icon:'🧫', du:tbsp,
+   mechanic:'oneway',
+   desc:'Load exactly <strong>9 tbsp</strong> into the one-way gel mould. Two intermediate cups. Max <strong>10 pours</strong>.',
+   hint:'5+4=9. But the mould only receives. Route source→cups→mould.',
+   par:4, maxPours:10,
+   containers:[
+    {label:'Source', cap:16,amt:16,liq:'#f0e8ff',shape:'jar',isSource:true},
+    {label:'5-Tbsp', cap:5, amt:0, liq:'#9060c0',shape:'measuringcup'},
+    {label:'4-Tbsp', cap:4, amt:0, liq:'#9060c0',shape:'measuringcup'},
+    {label:'Mould',  cap:10,amt:0, liq:'#7040a0',shape:'mixingbowl',isBowl:true,target:9,isOneWay:true},
+   ]},
+  {n:19, name:'Spherification', icon:'⚗️', du:tbsp,
+   mechanic:'oneway',
+   desc:'<strong>7 tbsp</strong> into the sealed bath. Two one-way chambers used as staging. Max <strong>12 pours</strong>.',
+   hint:'The staging chambers can receive but not give back. Plan your routing carefully.',
+   par:7, maxPours:12,
+   containers:[
+    {label:'Source',    cap:18,amt:18,liq:'#fff0e0',shape:'jar',isSource:true},
+    {label:'4-Tbsp',    cap:4, amt:0, liq:'#d08000',shape:'measuringcup'},
+    {label:'Stage A',   cap:5, amt:0, liq:'#e09010',shape:'soupcan',isOneWay:true},
+    {label:'Stage B',   cap:4, amt:0, liq:'#c07000',shape:'soupcan',isOneWay:true},
+    {label:'Bath',      cap:8, amt:0, liq:'#a05000',shape:'mixingbowl',isBowl:true,target:7},
+   ]},
+  {n:20, name:'The Reduction', icon:'🔬', du:tbsp,
+   mechanic:'oneway',
+   desc:'Route <strong>11 tbsp</strong> through one-way staging into the final vessel. Max <strong>14 pours</strong>.',
+   hint:'One-way stages hold 6 and 5. The final vessel takes the combined result.',
+   par:8, maxPours:14,
+   containers:[
+    {label:'Source',  cap:20,amt:20,liq:'#e8f8e8',shape:'jar',isSource:true},
+    {label:'6-Tbsp',  cap:6, amt:0, liq:'#40a040',shape:'measuringcup'},
+    {label:'5-Tbsp',  cap:5, amt:0, liq:'#40a040',shape:'measuringcup'},
+    {label:'Stage',   cap:7, amt:0, liq:'#309030',shape:'soupcan',isOneWay:true},
+    {label:'Vessel',  cap:12,amt:0, liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:11},
+   ]},
+  ]
+},
+
+// ════════════════════════════════════════════════════════
+// K5 — THE HAUNTED PANTRY  (Sticky residue + fragile cups)
+// ════════════════════════════════════════════════════════
+{
+  id:'pantry', name:'The Haunted Pantry', emoji:'👻',
+  quirk:'Cursed equipment. Sticky cups leave residue behind. Fragile vessels crack with use.',
+  pill:'Sticky + Fragile',
+  pillStyle:'background:#f8e8ff;color:#502070',
+  bannerClass:'sticky',
+  bannerIcon:'🕸️',
+  bannerText:'<strong>Sticky Cups:</strong> 1 unit stays behind when poured — account for it in your math. <strong>Fragile Cups:</strong> limited uses shown by cracks. Break one and it\'s gone.',
+  unlockStars:24,
+  levels:[
+  {n:21, name:'Ghost Honey', icon:'🍯', du:tbsp,
+   mechanic:'sticky',
+   desc:'Get <strong>3 tbsp</strong> of haunted honey. The sticky cup leaves 1 behind every pour.',
+   hint:'Sticky 4-cup only delivers 3. Fill it once → bowl = 3.',
+   par:2,
+   containers:[
+    {label:'Honey Jar',cap:12,amt:12,liq:'#e8a020',shape:'babyjar',isSource:true},
+    {label:'Sticky 4-Cup',cap:4,amt:0,liq:'#e8a020',shape:'measuringcup',isResidual:true},
+    {label:'Bowl',    cap:5, amt:0, liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:3},
+   ]},
+  {n:22, name:'Cursed Oil', icon:'🫒', du:tbsp,
+   mechanic:'sticky',
+   desc:'<strong>5 tbsp of oil</strong>. Both cups are sticky — each leaves 1 unit behind.',
+   hint:'Sticky 3-cup delivers 2. Sticky 4-cup delivers 3. 2+3=5.',
+   par:4,
+   containers:[
+    {label:'Oil Jar', cap:14,amt:14,liq:'#8ab820',shape:'jar',isSource:true},
+    {label:'Sticky 3',cap:3, amt:0, liq:'#8ab820',shape:'measuringcup',isResidual:true},
+    {label:'Sticky 4',cap:4, amt:0, liq:'#8ab820',shape:'measuringcup',isResidual:true},
+    {label:'Bowl',    cap:8, amt:0, liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:5},
+   ]},
+  {n:23, name:'Fragile Measure', icon:'🧂', du:tbsp,
+   mechanic:'fragile',
+   desc:'<strong>6 tbsp of brine</strong>. The only cup is fragile — it cracks after <strong>4 uses</strong>.',
+   hint:'You have a 2-tbsp cup, 4 uses. 2×3=6. Use all 4 wisely.',
+   par:6,
+   containers:[
+    {label:'Brine Jar',cap:14,amt:14,liq:'#7888a8',shape:'jar',isSource:true},
+    {label:'Cracked 2-Cup',cap:2,amt:0,liq:'#7888a8',shape:'measuringcup',usesLeft:4},
+    {label:'Bowl',    cap:8, amt:0, liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:6},
+   ]},
+  {n:24, name:'Witch Brew', icon:'🧙', du:tbsp,
+   mechanic:'sticky',
+   desc:'<strong>7 tbsp</strong> into the cauldron. Sticky 5-cup leaves 1 behind. Fragile 3-cup has <strong>3 uses left</strong>.',
+   hint:'Sticky 5-cup delivers 4. Fragile 3-cup delivers 3. 4+3=7.',
+   par:4,
+   containers:[
+    {label:'Brew Jar',cap:16,amt:16,liq:'#308028',shape:'jar',isSource:true},
+    {label:'Sticky 5',cap:5, amt:0, liq:'#308028',shape:'measuringcup',isResidual:true},
+    {label:'Fragile 3',cap:3,amt:0, liq:'#308028',shape:'measuringcup',usesLeft:3},
+    {label:'Cauldron',cap:9, amt:0, liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:7},
+   ]},
+  {n:25, name:'The Séance Sauce', icon:'🕯️', du:tbsp,
+   mechanic:'sticky',
+   desc:'<strong>9 tbsp</strong>. Sticky 6-cup (delivers 5). Fragile 4-cup (delivers 4, only <strong>3 uses</strong>). Two bowls — <strong>5 tbsp and 4 tbsp</strong>.',
+   hint:'Sticky 6 → Bowl A (delivers 5). Fragile 4 → Bowl B (delivers 4, uses 1 of 3).',
+   par:4,
+   containers:[
+    {label:'Sauce Jar',cap:16,amt:16,liq:'#6030a0',shape:'jar',isSource:true},
+    {label:'Sticky 6', cap:6, amt:0, liq:'#6030a0',shape:'measuringcup',isResidual:true},
+    {label:'Fragile 4',cap:4, amt:0, liq:'#6030a0',shape:'measuringcup',usesLeft:3},
+    {label:'Bowl A',   cap:7, amt:0, liq:'#8050c0',shape:'mixingbowl',isBowl:true,target:5,bowlId:'A'},
+    {label:'Bowl B',   cap:6, amt:0, liq:'#5020a0',shape:'mixingbowl',isBowl:true,target:4,bowlId:'B'},
+   ]},
+  ]
+},
+
+// ════════════════════════════════════════════════════════
+// K6 — THE GRAND RESTAURANT  (Layered liquids + everything)
+// ════════════════════════════════════════════════════════
+{
+  id:'grand', name:'The Grand Restaurant', emoji:'🏆',
+  quirk:'The ultimate kitchen. Layered liquids, every mechanic in play. The finale.',
+  pill:'All Mechanics',
+  pillStyle:'background:#fff8e0;color:#604000',
+  bannerClass:'layers',
+  bannerIcon:'🎨',
+  bannerText:'<strong>Layered Liquids:</strong> Some vessels hold two ingredients that separate by density. Tap a layered vessel to choose — pour the <strong>Top</strong> layer or <strong>Bottom</strong> layer independently.',
+  unlockStars:35,
+  levels:[
+  {n:26, name:'Clarified Butter', icon:'🧈', du:tbsp,
+   mechanic:'layers',
+   desc:'The butter has separated. Extract the <strong>top 3 tbsp of clarified butter</strong> into the bowl, leaving the whey behind.',
+   hint:'Tap the layered jar — choose "Pour Top" to extract only the clarified layer.',
+   par:2,
+   containers:[
+    {label:'Butter Jar',cap:8,amt:0,liq:'#d4a010',shape:'jar',isSource:true,
+     hasLayers:true,topAmt:3,botAmt:5,topLiq:'#f0d060',botLiq:'#c0a000',topLabel:'Clarified',botLabel:'Whey'},
+    {label:'Bowl',     cap:5,amt:0,liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:3},
+   ]},
+  {n:27, name:'Sauce Separation', icon:'🍝', du:tbsp,
+   mechanic:'layers',
+   desc:'A sauce has settled into oil (top, 4 tbsp) and tomato base (bottom, 6 tbsp). Extract <strong>4 tbsp of oil into bowl A</strong> and <strong>6 tbsp of base into bowl B</strong>.',
+   hint:'Tap the jar. Pour Top → Bowl A. Pour Bottom → Bowl B.',
+   par:4,
+   containers:[
+    {label:'Sauce Jar',cap:12,amt:0,liq:'#c82010',shape:'jar',isSource:true,
+     hasLayers:true,topAmt:4,botAmt:6,topLiq:'#e0c040',botLiq:'#c82010',topLabel:'Oil',botLabel:'Base'},
+    {label:'Bowl A',  cap:6, amt:0, liq:'#e0c040',shape:'mixingbowl',isBowl:true,target:4,bowlId:'A'},
+    {label:'Bowl B',  cap:8, amt:0, liq:'#c82010',shape:'mixingbowl',isBowl:true,target:6,bowlId:'B'},
+   ]},
+  {n:28, name:'The Grand Consommé', icon:'🫕', du:tbsp,
+   mechanic:'layers',
+   desc:'Extract <strong>5 tbsp of clarified consommé</strong> (top layer). The vessel is one-way. Max <strong>8 pours</strong>.',
+   hint:'Layered source: top=5 tbsp. Pour top → cup → one-way vessel.',
+   par:4, maxPours:8,
+   containers:[
+    {label:'Consommé',cap:10,amt:0,liq:'#c87020',shape:'jar',isSource:true,
+     hasLayers:true,topAmt:5,botAmt:5,topLiq:'#e8c060',botLiq:'#804010',topLabel:'Clear',botLabel:'Cloudy'},
+    {label:'Ladle',  cap:6, amt:0, liq:'#e8c060',shape:'measuringcup'},
+    {label:'Tureen', cap:6, amt:0, liq:'#e6b870',shape:'mixingbowl',isBowl:true,target:5,isOneWay:true},
+   ]},
+  {n:29, name:'Vinaigrette Finale', icon:'🥗', du:tbsp,
+   mechanic:'layers',
+   desc:'Layered dressing: oil (top, 4 tbsp) + vinegar (bottom, 4 tbsp). Need <strong>3 tbsp oil in Bowl A</strong> and <strong>4 tbsp vinegar in Bowl B</strong>. Sticky 4-cup.',
+   hint:'Step 1: Dressing ▲ Oil → Sticky 4-cup (fills to 4). Step 2: Sticky 4-cup → Bowl A (delivers 3, 1 sticks). Step 3: Dressing ▼ Vinegar → Bowl B (all 4 go straight in).',
+   par:3,
+   containers:[
+    {label:'Dressing',cap:8, amt:0,liq:'#c8a030',shape:'jar',isSource:true,
+     hasLayers:true,topAmt:4,botAmt:4,topLiq:'#e0c040',botLiq:'#c09020',topLabel:'Oil',botLabel:'Vinegar'},
+    {label:'Sticky 4',cap:4, amt:0, liq:'#e0c040',shape:'measuringcup',isResidual:true},
+    {label:'Bowl A',  cap:5, amt:0, liq:'#e0c040',shape:'mixingbowl',isBowl:true,target:3,bowlId:'A'},
+    {label:'Bowl B',  cap:5, amt:0, liq:'#c09020',shape:'mixingbowl',isBowl:true,target:4,bowlId:'B'},
+   ]},
+  {n:30, name:'The Masterpiece', icon:'👨‍🍳', du:tbsp,
+   mechanic:'layers',
+   desc:'The grand finale. A layered stock (top: 5 fond, bottom: 8 base). Need <strong>5 in Bowl A (fond)</strong> and <strong>6 in Bowl B (base)</strong>. Fragile 3-cup has 4 uses. Max <strong>12 pours</strong>.',
+   hint:'Top=5 → Bowl A directly. Bottom=8, need 6 → use fragile 3-cup twice (6). Careful with uses.',
+   par:5, maxPours:12,
+   containers:[
+    {label:'Grand Stock',cap:14,amt:0,liq:'#704010',shape:'jar',isSource:true,
+     hasLayers:true,topAmt:5,botAmt:8,topLiq:'#e8c060',botLiq:'#804010',topLabel:'Fond',botLabel:'Base'},
+    {label:'Fragile 3', cap:3, amt:0, liq:'#804010',shape:'measuringcup',usesLeft:4},
+    {label:'Bowl A',    cap:7, amt:0, liq:'#e8c060',shape:'mixingbowl',isBowl:true,target:5,bowlId:'A'},
+    {label:'Bowl B',    cap:8, amt:0, liq:'#804010',shape:'mixingbowl',isBowl:true,target:6,bowlId:'B'},
+   ]},
+  ]
+},
+]; // end KITCHENS
+
+// All levels flat
+const ALL_LEVELS = KITCHENS.flatMap(k=>k.levels.map(l=>({...l,kitchenId:k.id})));
+
+// ══════════════════════════════════════════════════════════════════════
+//  SAVE / LOAD
+// ══════════════════════════════════════════════════════════════════════
+let totalStars=0, levelData={};
+function save(){ try{localStorage.setItem('wchef',JSON.stringify({totalStars,levelData}));}catch(e){} }
+function load(){ try{const d=JSON.parse(localStorage.getItem('wchef')||'null'); if(d){totalStars=d.totalStars||0;levelData=d.levelData||{};}}catch(e){} }
+
+// ══════════════════════════════════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════════════════════════════════
+let curLevelN=null, stepState=[], stepHistory=[], moveCount=0, selectedVessel=null;
+let pourCount=0, pourlimit=null;
+let layerAction=null; // 'top' or 'bot' for layered vessel
+let vesselUses={};    // idx→remaining uses (fragile)
+let toastTimer=null, hintTimer=null;
+
+// ══════════════════════════════════════════════════════════════════════
+//  WORLD MAP
+// ══════════════════════════════════════════════════════════════════════
+function buildWorld(){
+  document.getElementById('starTotal').textContent=totalStars;
+  const map=document.getElementById('worldMap');
+  map.innerHTML='';
+  let starsEarned=0;
+  KITCHENS.forEach(k=>{
+    const kStars=k.levels.reduce((s,l)=>(s+(levelData[l.n]?.stars||0)),0);
+    const unlocked=starsEarned>=k.unlockStars;
+    starsEarned+=kStars;
+
+    const card=document.createElement('div');
+    card.className='kitchen-card'+(unlocked?'':' locked');
+
+    const levelBtns=k.levels.map(l=>{
+      const d=levelData[l.n]||{};
+      const lvUnlocked=unlocked&&(l.n===k.levels[0].n||(levelData[l.n-1]?.stars>0));
+      return `<div class="kc-lv ${d.stars>0?'done':''} ${!lvUnlocked?'locked':''}"
+        onclick="if(${lvUnlocked}) startLevel(${l.n})" title="${l.name}">
+        ${d.stars>0?'★':l.n}
+      </div>`;
+    }).join('');
+
+    card.innerHTML=`
+      <div class="kc-header">
+        <div class="kc-emoji">${k.emoji}</div>
+        <div>
+          <div class="kc-name">${k.name}</div>
+          <div class="kc-sub">${k.quirk}</div>
+          <div class="kc-meta">
+            <span class="kc-tag special">${k.pill}</span>
+            ${!unlocked?`<span class="kc-tag locked-tag">🔒 Requires ${k.unlockStars}⭐</span>`:''}
+          </div>
+        </div>
+      </div>
+      <div class="kc-levels">
+        ${levelBtns}
+        <div class="kc-stars">${kStars}/15 ⭐</div>
+      </div>`;
+    if(unlocked) card.querySelector('.kc-header').onclick=()=>startLevel(k.levels.find(l=>!levelData[l.n]?.stars)?.n||k.levels[0].n);
+    map.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  LEVEL START
+// ══════════════════════════════════════════════════════════════════════
+function startLevel(n){
+  const lv=ALL_LEVELS.find(l=>l.n===n); if(!lv) return;
+  const kit=KITCHENS.find(k=>k.id===lv.kitchenId);
+  curLevelN=n;
+  pourCount=0;
+  pourlimit=lv.maxPours||null;
+  layerAction=null;
+  selectedVessel=null;
+  moveCount=0;
+
+  // Deep-copy container state, init vesselUses
+  vesselUses={};
+  stepState=lv.containers.map((c,i)=>{
+    if(c.usesLeft!=null) vesselUses[i]=c.usesLeft;
+    if(c.hasLayers) return 0; // bowl display; actual tracked via layerState
+    return c.amt;
+  });
+  // Layer state separate
+  window.layerState={};
+  lv.containers.forEach((c,i)=>{
+    if(c.hasLayers) window.layerState[i]={top:c.topAmt, bot:c.botAmt};
+  });
+  stepHistory=[];
+
+  // Kitchen banner
+  document.getElementById('kbEmoji').textContent=kit.emoji;
+  document.getElementById('kbName').textContent=kit.name;
+  document.getElementById('kbQuirk').textContent=kit.quirk;
+  const pill=document.getElementById('kbPill');
+  pill.textContent=kit.pill; pill.setAttribute('style',kit.pillStyle||'');
+
+  // Mechanic banner
+  const mb=document.getElementById('mechBanner');
+  if(kit.bannerClass&&lv.mechanic){
+    mb.className=`mech-banner ${kit.bannerClass}`; mb.style.display='flex';
+    document.getElementById('mechIcon').textContent=kit.bannerIcon||'ℹ️';
+    document.getElementById('mechText').innerHTML=kit.bannerText||'';
+  } else { mb.style.display='none'; }
+
+  // Pour limit
+  const plr=document.getElementById('pourLimitRow');
+  if(pourlimit){ plr.style.display='flex'; buildPourDots(); }
+  else plr.style.display='none';
+
+  // Recipe card
+  document.getElementById('rcBadge').textContent=lv.icon;
+  document.getElementById('rcLv').textContent=`Level ${n} · ${kit.name}`;
+  document.getElementById('rcTitle').textContent=lv.name;
+  document.getElementById('rcDesc').innerHTML=lv.desc;
+  document.getElementById('parInfo').textContent=`Par: ${lv.par}`;
+  document.getElementById('moveCount').textContent='0';
+  document.getElementById('logList').innerHTML='';
+  document.getElementById('hintBar').innerHTML=lv.hint;
+  document.getElementById('undoBtn').disabled=true;
+  updateResetBtn();
+  buildGoalRow(lv);
+  updateParStars();
+  showScreen('gameScreen');
+  renderVessels();
+}
+
+function buildGoalRow(lv){
+  const row=document.getElementById('goalRow');
+  const bowls=lv.containers.filter(c=>c.isBowl);
+  row.innerHTML='<div class="goal-lbl">Goal:</div>'+
+    bowls.map(b=>`<div class="goal-tag" id="gt-${b.bowlId||'main'}">${lv.du(b.target)} in ${b.label}</div>`).join('');
+}
+
+function buildPourDots(){
+  const dots=document.getElementById('pourDots');
+  dots.innerHTML='';
+  for(let i=0;i<pourlimit;i++){
+    const d=document.createElement('div');
+    d.className='pl-dot'; d.id=`pd${i}`;
+    dots.appendChild(d);
+  }
+}
+
+function updatePourDots(){
+  if(!pourlimit) return;
+  for(let i=0;i<pourlimit;i++){
+    const d=document.getElementById(`pd${i}`);
+    if(d) d.className='pl-dot'+(i<pourCount?' used':'');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  CLICK / POUR LOGIC
+// ══════════════════════════════════════════════════════════════════════
+function handleClick(idx){
+  const lv=ALL_LEVELS.find(l=>l.n===curLevelN);
+  const c=lv.containers[idx];
+
+  // Layered vessel — need to pick top or bottom first
+  if(c.hasLayers){
+    if(selectedVessel===idx){ selectedVessel=null; layerAction=null; renderVessels(); return; }
+    selectedVessel=idx; renderVessels(); return;
+  }
+
+  if(selectedVessel===null){
+    const amt=c.hasLayers?(window.layerState[idx]?.top+window.layerState[idx]?.bot):stepState[idx];
+    if(amt===0&&!c.isSink){ shakeVessel(idx); return; }
+    if(c.isSink) return;
+    if(c.isOneWay) return; // can't pour from one-way
+    selectedVessel=idx; renderVessels(); return;
+  }
+  if(selectedVessel===idx){ selectedVessel=null; layerAction=null; renderVessels(); return; }
+  doPour(selectedVessel,idx);
+}
+
+function handleLayerPour(idx, which){
+  // which = 'top' or 'bot'
+  layerAction=which;
+  selectedVessel=idx;
+  renderVessels();
+  // Show hint
+  const lv=ALL_LEVELS.find(l=>l.n===curLevelN);
+  const c=lv.containers[idx];
+  setHint(`Selected: ${which==='top'?c.topLabel:c.botLabel} layer — now tap a destination`);
+}
+
+function doPour(fi,ti){
+  const lv=ALL_LEVELS.find(l=>l.n===curLevelN);
+  const fc=lv.containers[fi], tc=lv.containers[ti];
+
+  // Check pour limit
+  if(pourlimit&&pourCount>=pourlimit){
+    showFail('Pour limit reached!','You\'ve used all your allowed pours. Reset to try again.');
+    selectedVessel=null; layerAction=null; renderVessels(); return;
+  }
+
+  // Fragile check
+  if(vesselUses[fi]!==undefined&&vesselUses[fi]<=0){
+    setHint('⚠️ This cup is broken!');
+    selectedVessel=null; renderVessels(); return;
+  }
+
+  let xfer=0, fromAmt=0;
+
+  if(fc.hasLayers){
+    // Pouring a layer
+    const ls=window.layerState[fi];
+    const layerAmt=layerAction==='top'?ls.top:ls.bot;
+    if(layerAmt===0){ selectedVessel=null; layerAction=null; renderVessels(); return; }
+    const space=tc.isSink?layerAmt:(tc.cap-stepState[ti]);
+    xfer=Math.min(layerAmt,space);
+    if(xfer===0){ selectedVessel=null; layerAction=null; renderVessels(); return; }
+    // Save history
+    stepHistory.push({state:[...stepState],layers:JSON.parse(JSON.stringify(window.layerState)),uses:{...vesselUses},pc:pourCount});
+    if(layerAction==='top') ls.top-=xfer; else ls.bot-=xfer;
+    if(!tc.isSink) stepState[ti]+=xfer;
+    const layerName=layerAction==='top'?fc.topLabel:fc.botLabel;
+    finalizePour(fi,ti,xfer,`${lv.du(xfer)} (${layerName}): ${fc.label} → ${tc.isSink?'🚰':tc.label}`,lv);
+    layerAction=null;
+  } else {
+    fromAmt=stepState[fi];
+    if(fromAmt===0){ selectedVessel=null; renderVessels(); return; }
+    const space=tc.isSink?fromAmt:(tc.cap-stepState[ti]);
+    xfer=Math.min(fromAmt,space);
+    if(xfer===0){ selectedVessel=null; renderVessels(); return; }
+
+    // Residual — 1 sticks behind (if not already at 0 after xfer)
+    let actualXfer=xfer;
+    if(fc.isResidual&&xfer>0) actualXfer=Math.max(0,xfer-1);
+
+    stepHistory.push({state:[...stepState],layers:JSON.parse(JSON.stringify(window.layerState)),uses:{...vesselUses},pc:pourCount});
+    stepState[fi]-=xfer; // full amount leaves
+    if(!tc.isSink) stepState[ti]+=actualXfer;
+    // The 1 lost to residue is gone (stuck in cup = stays as stepState[fi] but shown as stain)
+    // Actually residue stays in the cup:
+    if(fc.isResidual&&xfer>0){ stepState[fi]+=1; } // 1 sticks back
+
+    finalizePour(fi,ti,actualXfer,`${lv.du(actualXfer)}: ${fc.label} → ${tc.isSink?'🚰':tc.label}${fc.isResidual?' (1 stuck)':''}`,lv);
+  }
+}
+
+function finalizePour(fi,ti,xfer,logMsg,lv){
+  // Fragile decrement
+  if(vesselUses[fi]!==undefined) vesselUses[fi]--;
+
+  pourCount++;
+  moveCount++;
+  document.getElementById('moveCount').textContent=moveCount;
+  document.getElementById('undoBtn').disabled=false;
+  updatePourDots();
+  addLog(logMsg);
+  selectedVessel=null;
+  renderVessels();
+  updateParStars();
+  updateGoalTags(lv);
+  checkWin(lv);
+
+  // Check fail conditions
+  if(pourlimit&&pourCount>=pourlimit){
+    const bowls=lv.containers.filter(c=>c.isBowl);
+    const allMet=bowls.every(b=>{
+      const idx=lv.containers.indexOf(b);
+      return stepState[idx]===b.target;
+    });
+    if(!allMet) setTimeout(()=>showFail('Out of pours!','You\'ve used all your pours without completing the recipe.'),400);
+  }
+}
+
+function undoMove(){
+  if(stepHistory.length===0) return;
+  const snap=stepHistory.pop();
+  stepState=[...snap.state];
+  window.layerState=snap.layers;
+  vesselUses={...snap.uses};
+  pourCount=snap.pc;
+  moveCount=Math.max(0,moveCount-1);
+  document.getElementById('moveCount').textContent=moveCount;
+  if(stepHistory.length===0) document.getElementById('undoBtn').disabled=true;
+  const log=document.getElementById('logList');
+  if(log.firstChild) log.removeChild(log.firstChild);
+  selectedVessel=null; layerAction=null;
+  updatePourDots();
+  const lv=ALL_LEVELS.find(l=>l.n===curLevelN);
+  renderVessels();
+  updateParStars();
+  updateGoalTags(lv);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  WIN / FAIL
+// ══════════════════════════════════════════════════════════════════════
+function updateGoalTags(lv){
+  lv.containers.filter(c=>c.isBowl).forEach(b=>{
+    const idx=lv.containers.indexOf(b);
+    const el=document.getElementById(`gt-${b.bowlId||'main'}`);
+    if(el) el.className='goal-tag'+(stepState[idx]===b.target?' met':'');
+  });
+}
+
+function checkWin(lv){
+  const bowls=lv.containers.filter(c=>c.isBowl);
+  const allMet=bowls.every(b=>stepState[lv.containers.indexOf(b)]===b.target);
+  if(!allMet) return;
+  const earned=starsForMoves(moveCount,lv.par);
+  const prev=levelData[lv.n]||{stars:0};
+  const gained=Math.max(0,earned-(prev.stars||0));
+  levelData[lv.n]={stars:Math.max(earned,prev.stars||0),bestMoves:Math.min(moveCount,prev.bestMoves||9999)};
+  if(gained>0) totalStars+=gained;
+  document.getElementById('starTotal').textContent=totalStars;
+  save();
+  setTimeout(()=>showWin(lv,earned,gained),500);
+}
+
+function starsForMoves(m,par){
+  if(m<=par) return 3;
+  if(m<=Math.ceil(par*1.5)) return 2;
+  return 1;
+}
+
+function showWin(lv,earned,gained){
+  document.getElementById('winIcon').textContent=lv.icon;
+  document.getElementById('winStars').textContent='⭐'.repeat(earned);
+  document.getElementById('winTitle').textContent=`${lv.name} — Done!`;
+  document.getElementById('winSub').textContent=moveCount<=lv.par?'🎯 Par!':moveCount<=Math.ceil(lv.par*1.5)?'Well done!':'Completed!';
+  document.getElementById('winMoves').textContent=`${moveCount} moves · Par ${lv.par}${gained>0?' · +'+gained+'⭐':''}`;
+  const isLast=lv.n===30;
+  document.getElementById('nextBtn').textContent=isLast?'🏆 You Win!':'Next Recipe →';
+  document.getElementById('winOverlay').classList.add('show');
+}
+function closeWin(){ document.getElementById('winOverlay').classList.remove('show'); }
+function goNext(){
+  closeWin();
+  const lv=ALL_LEVELS.find(l=>l.n===curLevelN);
+  const next=ALL_LEVELS.find(l=>l.n===curLevelN+1);
+  if(next) startLevel(next.n); else { goWorld(); showToast('🏆 All 30 levels complete!'); }
+}
+function showFail(title,sub){
+  document.getElementById('failTitle').textContent=title;
+  document.getElementById('failSub').textContent=sub;
+  document.getElementById('failOverlay').classList.add('show');
+}
+function closeFail(){ document.getElementById('failOverlay').classList.remove('show'); }
+
+// ══════════════════════════════════════════════════════════════════════
+//  RESET
+// ══════════════════════════════════════════════════════════════════════
+function updateResetBtn(){
+  document.getElementById('resetBtn').classList.toggle('cant',totalStars<1);
+}
+function confirmReset(){
+  if(totalStars<1){ showToast('Need at least 1 ⭐ to reset!'); return; }
+  document.getElementById('modalStars').textContent=totalStars;
+  document.getElementById('resetModal').classList.add('show');
+}
+function closeResetModal(){ document.getElementById('resetModal').classList.remove('show'); }
+function doReset(){
+  closeResetModal();
+  totalStars=Math.max(0,totalStars-1);
+  document.getElementById('starTotal').textContent=totalStars;
+  save(); updateResetBtn();
+  startLevel(curLevelN);
+  showToast('Reset! −1 ⭐');
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  RENDER VESSELS
+// ══════════════════════════════════════════════════════════════════════
+function renderVessels(){
+  const lv=ALL_LEVELS.find(l=>l.n===curLevelN);
+  const row=document.getElementById('vesselsRow');
+  row.innerHTML='';
+  lv.containers.forEach((c,i)=>{
+    const isLayered=!!c.hasLayers;
+    const ls=isLayered?window.layerState[i]:{};
+    const amt=isLayered?(ls.top+ls.bot):stepState[i];
+    const pct=c.cap>0?amt/c.cap:0;
+    const isSel=selectedVessel===i;
+    const isTarget=selectedVessel!==null&&selectedVessel!==i;
+    const goalMet=c.isBowl&&stepState[i]===c.target;
+    const broken=c.usesLeft!=null&&vesselUses[i]<=0;
+    const uses=c.usesLeft!=null?vesselUses[i]:null;
+    const sc=isSel?'#c87828':isTarget?'#4a8c38':goalMet?'#4a8c38':broken?'#c03030':'#9a8878';
+    const sw=(isSel||isTarget||goalMet||broken)?2.5:1.5;
+
+    let fillLiq=c.liq;
+    let splitFill=null;
+    if(isLayered&&amt>0){
+      const topPct=ls.top/c.cap, botPct=ls.bot/c.cap;
+      splitFill={topPct,botPct,topLiq:c.topLiq,botLiq:c.botLiq};
+      fillLiq=null;
+    }
+
+    const svgHtml=SHAPES[c.shape||'measuringcup'](c,pct,sc,sw,goalMet,false,lv,i,splitFill,c.isResidual&&amt>0&&!c.isBowl);
+    
+    const wrap=document.createElement('div');
+    let cls=`vessel${isSel?' selected':''}${isTarget&&!c.isBowl&&!c.isOneWay?' pour-target':''}${broken?' disabled':''}${c.isOneWay?' oneway-vessel':''}`;
+    wrap.className=cls;
+    wrap.onclick=()=>{ if(!broken) handleClick(i); };
+
+    let layerBtns='';
+    if(isLayered&&isSel){
+      layerBtns=`<div class="layer-btns">
+        ${ls.top>0?`<button class="layer-btn top" onclick="event.stopPropagation();handleLayerPour(${i},'top')">▲ ${c.topLabel}</button>`:''}
+        ${ls.bot>0?`<button class="layer-btn bot" onclick="event.stopPropagation();handleLayerPour(${i},'bot')">▼ ${c.botLabel}</button>`:''}
+      </div>`;
+    }
+
+    wrap.innerHTML=`<div class="vsw">${svgHtml}</div>
+      <div class="vname">${c.isOneWay?'⬇ ':''}${c.label}</div>
+      <div class="vamt"><b>${isLayered?`▲${ls.top}+▼${ls.bot}`:lv.du(amt)}</b></div>
+      ${uses!=null?`<div class="vuses">${uses} use${uses!==1?'s':''} left</div>`:''}
+      ${layerBtns}`;
+    row.appendChild(wrap);
+  });
+}
+
+function updateParStars(){
+  const lv=ALL_LEVELS.find(l=>l.n===curLevelN); if(!lv) return;
+  const s=moveCount===0?3:starsForMoves(moveCount,lv.par);
+  for(let i=0;i<3;i++) document.getElementById(`ps${i}`).className='par-star'+(i<s?' lit':'');
+}
+
+function addLog(msg){
+  const log=document.getElementById('logList');
+  const e=document.createElement('div');
+  e.className='log-entry fresh'; e.textContent=`${moveCount}. ${msg}`;
+  log.insertBefore(e,log.firstChild);
+  Array.from(log.children).forEach((el,j)=>{if(j>0)el.classList.remove('fresh');});
+}
+
+function shakeVessel(idx){
+  const vs=document.querySelectorAll('.vessel');
+  if(vs[idx]){vs[idx].style.opacity='.3';setTimeout(()=>vs[idx].style.opacity='1',220);}
+}
+
+let _hintTimer=null;
+function setHint(msg){
+  clearTimeout(_hintTimer);
+  document.getElementById('hintBar').innerHTML=`<span style="color:var(--amber);font-weight:700">${msg}</span>`;
+  _hintTimer=setTimeout(()=>{const lv=ALL_LEVELS.find(l=>l.n===curLevelN);if(lv)document.getElementById('hintBar').innerHTML=lv.hint;},2500);
+}
+
+function showToast(msg){
+  clearTimeout(toastTimer);
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goWorld(){ showScreen('worldScreen'); buildWorld(); }
+
+// ══════════════════════════════════════════════════════════════════════
+//  SHAPE LIBRARY
+// ══════════════════════════════════════════════════════════════════════
+function liqRect(clipId,x,y,w,h,liq){
+  if(h<=0) return '';
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${liq}" opacity="1" clip-path="url(#${clipId})"/>`
+    +(h>3?`<rect x="${x}" y="${y}" width="${w}" height="2.5" fill="white" opacity=".28" clip-path="url(#${clipId})"/>` :'');
+}
+function selArrow(cx,y,sc){
+  if(sc!=='#c87828') return '';
+  return `<polygon points="${cx-7},${y} ${cx+7},${y} ${cx},${y-9}" fill="#c87828" opacity=".9"/>`;
+}
+// Split fill for layered vessels
+function splitFillSVG(clipId,x,y,w,totalH,split){
+  if(!split||totalH<=0) return '';
+  const botH=Math.round(split.botPct*totalH);
+  const topH=Math.round(split.topPct*totalH);
+  const botY=y+(totalH-botH), topY=botY-topH;
+  return (botH>0?`<rect x="${x}" y="${botY}" width="${w}" height="${botH}" fill="${split.botLiq}" opacity="1" clip-path="url(#${clipId})"/>`:'')
+    +(topH>0?`<rect x="${x}" y="${topY}" width="${w}" height="${topH}" fill="${split.topLiq}" opacity="1" clip-path="url(#${clipId})"/>`:'')
+    +(topH>2?`<rect x="${x}" y="${topY}" width="${w}" height="2" fill="white" opacity=".22" clip-path="url(#${clipId})"/>`:'');
+}
+
+const SHAPES={
+  measuringcup(c,pct,sc,sw,gm,sf,lv,idx,split,residual){
+    const W=56,H=80,cx=W/2,rimY=10,botY=H-10,bw=W-16,tw=W-4,innerH=botY-rimY;
+    const fh=Math.round(pct*innerH),fy=rimY+(innerH-fh);
+    const cid=`mc-${curLevelN}-${idx}`;
+    let ticks='';
+    for(let t=1;t<Math.min(c.cap,10);t++){
+      const ty=rimY+innerH*(1-t/c.cap),tw2=(t%2===0)?9:5;
+      ticks+=`<line x1="${W-5-tw2}" y1="${ty}" x2="${W-5}" y2="${ty}" stroke="rgba(0,0,0,.18)" stroke-width="1"/>`;
+    }
+    const residualMark=residual?`<rect x="${cx-tw/2+2}" y="${botY-5}" width="${tw-4}" height="4" fill="${c.liq}" opacity=".5" clip-path="url(#${cid})"/>`:'';
+    return `<svg width="${W+14}" height="${H+10}" viewBox="0 0 ${W+14} ${H+10}">
+      <defs><clipPath id="${cid}"><polygon points="${cx-bw/2},${botY} ${cx+bw/2},${botY} ${cx+tw/2},${rimY} ${cx-tw/2},${rimY}"/></clipPath></defs>
+      <polygon points="${cx-bw/2},${botY} ${cx+bw/2},${botY} ${cx+tw/2},${rimY} ${cx-tw/2},${rimY}" fill="${gm?'#e8f5e0':'white'}" stroke="${sc}" stroke-width="${sw}"/>
+      ${split?splitFillSVG(cid,cx-tw/2+2,rimY,tw-4,innerH,split):liqRect(cid,cx-tw/2+2,fy,tw-4,fh,c.liq)}
+      ${residualMark}
+      ${ticks}
+      <path d="M${cx+bw/2+1} ${rimY+7} Q${cx+bw/2+15} ${rimY+16} ${cx+bw/2+1} ${rimY+28}" fill="none" stroke="${sc}" stroke-width="2.5" stroke-linecap="round"/>
+      ${selArrow(cx,rimY-1,sc)}
+    </svg>`;
+  },
+  jar(c,pct,sc,sw,gm,sf,lv,idx,split,residual){
+    const W=58,H=88,cx=W/2,rimY=16,botY=H-6,bw=W-12,innerH=botY-rimY;
+    const fh=Math.round(pct*innerH),fy=rimY+(innerH-fh);
+    const nW=W-22,nH=16,nX=cx-nW/2;
+    const cid=`jr-${curLevelN}-${idx}`;
+    return `<svg width="${W+4}" height="${H+8}" viewBox="0 0 ${W+4} ${H+8}">
+      <defs><clipPath id="${cid}"><rect x="${cx-bw/2}" y="${rimY}" width="${bw}" height="${innerH}" rx="2"/></clipPath></defs>
+      <rect x="${cx-bw/2}" y="${rimY}" width="${bw}" height="${innerH}" rx="3" fill="${gm?'#e8f5e0':'white'}" stroke="${sc}" stroke-width="${sw}"/>
+      ${split?splitFillSVG(cid,cx-bw/2+2,rimY,bw-4,innerH,split):liqRect(cid,cx-bw/2+2,fy,bw-4,fh,c.liq)}
+      <rect x="${cx-bw/2+4}" y="${rimY+innerH*.35}" width="${bw-8}" height="${innerH*.22}" rx="2" fill="none" stroke="rgba(0,0,0,.1)" stroke-width="1" stroke-dasharray="2,2"/>
+      <rect x="${nX}" y="${rimY-nH}" width="${nW}" height="${nH}" rx="2" fill="#c8b8a8" stroke="${sc}" stroke-width="${sw}"/>
+      ${selArrow(cx,rimY-nH-1,sc)}
+    </svg>`;
+  },
+  floursack(c,pct,sc,sw,gm,sf,lv,idx,split){
+    const W=62,H=88,cx=W/2,fh=Math.round(pct*60),fy=16+(60-fh);
+    const cid=`fs-${curLevelN}-${idx}`;
+    return `<svg width="${W+4}" height="${H+8}" viewBox="0 0 ${W+4} ${H+8}">
+      <defs><clipPath id="${cid}"><path d="M${cx-22},16 Q${cx-26},46 ${cx-24},76 Q${cx-20},80 ${cx},80 Q${cx+20},80 ${cx+24},76 Q${cx+26},46 ${cx+22},16 Z"/></clipPath></defs>
+      <path d="M${cx-22},16 Q${cx-26},46 ${cx-24},76 Q${cx-20},80 ${cx},80 Q${cx+20},80 ${cx+24},76 Q${cx+26},46 ${cx+22},16 Z" fill="${gm?'#e8f5e0':'#f0ece0'}" stroke="${sc}" stroke-width="${sw}"/>
+      ${fh>0?liqRect(cid,cx-26,fy,52,fh,c.liq):''}
+      <path d="M${cx-22},16 Q${cx-10},4 ${cx},6 Q${cx+10},4 ${cx+22},16" fill="none" stroke="${sc}" stroke-width="${sw}"/>
+      <ellipse cx="${cx}" cy="7" rx="5" ry="5" fill="#c8b8a8" stroke="${sc}" stroke-width="1"/>
+      ${selArrow(cx,0,sc)}
+    </svg>`;
+  },
+  mixingbowl(c,pct,sc,sw,gm,sf,lv,idx,split){
+    const W=92,H=66,cx=W/2,cy=H-8,rx=42,ry=27;
+    const liquidY=cy-ry+(ry*2*(1-pct));
+    const cid=`mb-${curLevelN}-${idx}`;
+    return `<svg width="${W}" height="${H+13}" viewBox="0 0 ${W} ${H+13}">
+      <defs><clipPath id="${cid}"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/></clipPath></defs>
+      <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${gm?'#e8f5e0':'#fdfaf5'}" stroke="${sc}" stroke-width="${sw}"/>
+      ${split?splitFillSVG(cid,cx-rx,cy-ry,rx*2,ry*2,split):pct>0?liqRect(cid,cx-rx,liquidY,rx*2,cy+ry-liquidY,c.liq):''}
+      <ellipse cx="${cx}" cy="${cy-ry}" rx="${rx+4}" ry="5" fill="none" stroke="${sc}" stroke-width="${sw}"/>
+      ${gm?`<text x="${cx}" y="${H+12}" text-anchor="middle" font-size="11.5" fill="#4a8c38">✓ ${lv.du(c.target)}</text>`:''}
+    </svg>`;
+  },
+  soupcan(c,pct,sc,sw,gm,sf,lv,idx,split){
+    const W=54,H=70,cx=W/2,r=21,top=12,bot=H-10;
+    const ih=bot-top,fh=Math.round(pct*ih),fy=bot-fh;
+    const cid=`sc-${curLevelN}-${idx}`;
+    return `<svg width="${W+4}" height="${H+8}" viewBox="0 0 ${W+4} ${H+8}">
+      <defs><clipPath id="${cid}"><rect x="${cx-r}" y="${top}" width="${r*2}" height="${ih}"/></clipPath></defs>
+      <rect x="${cx-r}" y="${top}" width="${r*2}" height="${ih}" fill="${gm?'#e8f5e0':'white'}" stroke="${sc}" stroke-width="${sw}"/>
+      ${split?splitFillSVG(cid,cx-r+2,top,r*2-4,ih,split):liqRect(cid,cx-r+2,fy,r*2-4,fh,c.liq)}
+      <ellipse cx="${cx}" cy="${top}" rx="${r}" ry="5" fill="#c8b8a8" stroke="${sc}" stroke-width="${sw}"/>
+      <ellipse cx="${cx}" cy="${bot}" rx="${r}" ry="5" fill="#c8b8a8" stroke="${sc}" stroke-width="${sw}"/>
+      ${selArrow(cx,top-5,sc)}
+    </svg>`;
+  },
+  candlejar(c,pct,sc,sw,gm,sf,lv,idx){
+    const W=52,H=48,cx=W/2,r=21,top=10,bot=H-6;
+    const ih=bot-top,fh=Math.round(pct*ih),fy=bot-fh;
+    const cid=`cj-${curLevelN}-${idx}`;
+    return `<svg width="${W+4}" height="${H+8}" viewBox="0 0 ${W+4} ${H+8}">
+      <defs><clipPath id="${cid}"><rect x="${cx-r}" y="${top}" width="${r*2}" height="${ih}"/></clipPath></defs>
+      <rect x="${cx-r}" y="${top}" width="${r*2}" height="${ih}" rx="2" fill="${gm?'#e8f5e0':'#f8f0e8'}" stroke="${sc}" stroke-width="${sw}"/>
+      ${liqRect(cid,cx-r+2,fy,r*2-4,fh,c.liq)}
+      <ellipse cx="${cx}" cy="${top}" rx="${r+1}" ry="5" fill="#f0e8d8" stroke="${sc}" stroke-width="${sw}"/>
+      <line x1="${cx}" y1="${top-4}" x2="${cx}" y2="${top-12}" stroke="#5a3a1a" stroke-width="1.5" stroke-linecap="round"/>
+      <ellipse cx="${cx}" cy="${top-14}" rx="3" ry="5" fill="#f0a020" opacity=".9"/>
+      ${selArrow(cx,top-20,sc)}
+    </svg>`;
+  },
+  babyjar(c,pct,sc,sw,gm,sf,lv,idx){
+    const W=52,H=50,cx=W/2,r=21,top=14,bot=H-6;
+    const ih=bot-top,fh=Math.round(pct*ih),fy=bot-fh;
+    const cid=`bj-${curLevelN}-${idx}`;
+    return `<svg width="${W+4}" height="${H+8}" viewBox="0 0 ${W+4} ${H+8}">
+      <defs><clipPath id="${cid}"><rect x="${cx-r}" y="${top}" width="${r*2}" height="${ih}"/></clipPath></defs>
+      <rect x="${cx-r}" y="${top}" width="${r*2}" height="${ih}" rx="2" fill="${gm?'#e8f5e0':'white'}" stroke="${sc}" stroke-width="${sw}"/>
+      ${liqRect(cid,cx-r+2,fy,r*2-4,fh,c.liq)}
+      <path d="M${cx-18},${top} Q${cx-18},${top-12} ${cx},${top-12} Q${cx+18},${top-12} ${cx+18},${top}" fill="#c8b8a8" stroke="${sc}" stroke-width="${sw}"/>
+      ${selArrow(cx,top-13,sc)}
+    </svg>`;
+  },
+  eggcup(c,pct,sc,sw,gm,sf,lv,idx){
+    const W=46,H=58,cx=W/2,cBot=38,cRx=17,cRy=15;
+    const fh=Math.round(pct*cRy*1.8),fy=cBot-fh;
+    const cid=`ec-${curLevelN}-${idx}`;
+    return `<svg width="${W+4}" height="${H+8}" viewBox="0 0 ${W+4} ${H+8}">
+      <defs><clipPath id="${cid}"><ellipse cx="${cx}" cy="${cBot-cRy}" rx="${cRx}" ry="${cRy+4}"/></clipPath></defs>
+      <path d="M${cx-cRx},${cBot-cRy} Q${cx-cRx},${cBot+8} ${cx},${cBot+8} Q${cx+cRx},${cBot+8} ${cx+cRx},${cBot-cRy} Q${cx+cRx},8 ${cx},8 Q${cx-cRx},8 ${cx-cRx},${cBot-cRy}" fill="${gm?'#e8f5e0':'white'}" stroke="${sc}" stroke-width="${sw}"/>
+      ${liqRect(cid,cx-cRx,fy,cRx*2,fh,c.liq)}
+      <line x1="${cx}" y1="${cBot+8}" x2="${cx}" y2="52" stroke="${sc}" stroke-width="${sw+0.5}"/>
+      <ellipse cx="${cx}" cy="55" rx="13" ry="4" fill="#c8b8a8" stroke="${sc}" stroke-width="${sw}"/>
+      ${selArrow(cx,7,sc)}
+    </svg>`;
+  },
+  flowervase(c,pct,sc,sw,gm,sf,lv,idx,split){
+    const W=52,H=78,cx=W/2,fh=Math.round(pct*54),fy=72-fh;
+    const cid=`fv-${curLevelN}-${idx}`;
+    return `<svg width="${W+4}" height="${H+8}" viewBox="0 0 ${W+4} ${H+8}">
+      <defs><clipPath id="${cid}"><path d="M${cx-15},18 Q${cx-21},38 ${cx-11},50 Q${cx-21},56 ${cx-17},72 L${cx+17},72 Q${cx+21},56 ${cx+11},50 Q${cx+21},38 ${cx+15},18 Z"/></clipPath></defs>
+      <path d="M${cx-15},18 Q${cx-21},38 ${cx-11},50 Q${cx-21},56 ${cx-17},72 L${cx+17},72 Q${cx+21},56 ${cx+11},50 Q${cx+21},38 ${cx+15},18 Z" fill="${gm?'#e8f5e0':'#e0e8f8'}" stroke="${sc}" stroke-width="${sw}"/>
+      ${split?splitFillSVG(cid,cx-21,18,42,54,split):fh>0?liqRect(cid,cx-21,fy,42,fh,c.liq):''}
+      <ellipse cx="${cx}" cy="18" rx="15" ry="5" fill="${gm?'#e8f5e0':'#e0e8f8'}" stroke="${sc}" stroke-width="${sw}"/>
+      <ellipse cx="${cx}" cy="72" rx="17" ry="5" fill="#c8b8a8" stroke="${sc}" stroke-width="${sw}"/>
+      ${selArrow(cx,11,sc)}
+    </svg>`;
+  },
+  testtube(c,pct,sc,sw,gm,sf,lv,idx){
+    const W=30,H=88,cx=W/2,r=9,top=8,bot=H-12;
+    const ih=bot-top,fh=Math.round(pct*ih),fy=bot-fh;
+    const cid=`tt-${curLevelN}-${idx}`;
+    return `<svg width="${W+4}" height="${H+8}" viewBox="0 0 ${W+4} ${H+8}">
+      <defs><clipPath id="${cid}"><rect x="${cx-r}" y="${top}" width="${r*2}" height="${ih+r}"/></clipPath></defs>
+      <path d="M${cx-r},${top} L${cx-r},${bot} Q${cx-r},${bot+r} ${cx},${bot+r} Q${cx+r},${bot+r} ${cx+r},${bot} L${cx+r},${top}" fill="${gm?'#e8f5e0':'white'}" stroke="${sc}" stroke-width="${sw}"/>
+      ${liqRect(cid,cx-r+1,fy,r*2-2,fh+r,c.liq)}
+      <rect x="${cx-r-2}" y="${top-8}" width="${r*2+4}" height="9" rx="2" fill="#c8b8a8" stroke="${sc}" stroke-width="${sw}"/>
+      ${selArrow(cx,top-9,sc)}
+    </svg>`;
+  },
+  sink(c,pct,sc,sw){
+    const W=62,H=50;
+    return `<svg width="${W}" height="${H+10}" viewBox="0 0 ${W} ${H+10}">
+      <rect x="0" y="0" width="${W}" height="${H}" rx="3" fill="#e0d8cc" stroke="${sc}" stroke-width="${sw}"/>
+      <rect x="5" y="7" width="${W-10}" height="${H-14}" rx="3" fill="#d0e8f4" stroke="${sc}" stroke-width="1.5"/>
+      <circle cx="${W/2}" cy="${H-10}" r="5" fill="none" stroke="${sc}" stroke-width="1.5"/>
+      <line x1="${W/2}" y1="${H-15}" x2="${W/2}" y2="${H-5}" stroke="${sc}" stroke-width="1"/>
+      <line x1="${W/2-5}" y1="${H-10}" x2="${W/2+5}" y2="${H-10}" stroke="${sc}" stroke-width="1"/>
+      <rect x="${W/2-4}" y="0" width="8" height="10" rx="3" fill="#b0b8c0" stroke="${sc}" stroke-width="1"/>
+      <path d="M${W/2} 10 Q${W/2-10} 14 ${W/2-10} 22" fill="none" stroke="#b0b8c0" stroke-width="3" stroke-linecap="round"/>
+      ${sc==='#4a8c38'?`<text x="${W/2}" y="${H+9}" text-anchor="middle" font-size="9" fill="#4a8c38">discard</text>`:''}
+    </svg>`;
+  },
+};
+
+// ══════════════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════════════
+load();
+buildWorld();
+</script>
+</body>
+</html>

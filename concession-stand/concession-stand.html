@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Stand & Deliver — Concession Stand Simulator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #1a1a2e;
+    --panel: #16213e;
+    --stand-floor: #2d4a1e;
+    --stand-wall: #3a2d1a;
+    --counter: #5a3e20;
+    --gold: #f5c842;
+    --green: #4caf50;
+    --red: #e53935;
+    --blue: #42a5f5;
+    --pink: #f48fb1;
+    --text: #f0e6d3;
+    --muted: #8a7a6a;
+    --accent: #ff6b35;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Nunito', sans-serif;
+    color: var(--text);
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; flex-direction: column; height: 100dvh; overflow: hidden; }
+  .screen.active { display: flex; }
+
+  /* ===== VENUE SELECT ===== */
+  #screen-venue {
+    background: linear-gradient(160deg, #0d1b2a 0%, #1a1a2e 60%, #2d1b0e 100%);
+    align-items: center;
+    justify-content: flex-start;
+    padding: 16px;
+    overflow-y: auto;
+  }
+
+  .game-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.4rem, 8vw, 3.5rem);
+    color: var(--gold);
+    text-align: center;
+    letter-spacing: 3px;
+    line-height: 1;
+    text-shadow: 0 0 30px rgba(245,200,66,0.4);
+    margin-bottom: 4px;
+  }
+
+  .game-sub {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .section-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  .venue-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    width: 100%;
+    max-width: 500px;
+    margin-bottom: 20px;
+  }
+
+  .venue-card {
+    background: rgba(255,255,255,0.05);
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 14px 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .venue-card.selected {
+    border-color: var(--gold);
+    background: rgba(245,200,66,0.1);
+  }
+
+  .venue-card:active { transform: scale(0.97); }
+
+  .venue-icon { font-size: 2rem; margin-bottom: 6px; }
+  .venue-name { font-weight: 800; font-size: 0.85rem; }
+  .venue-meta { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+
+  .btn-primary {
+    background: var(--gold);
+    color: #1a1a00;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 2px;
+    padding: 14px 40px;
+    cursor: pointer;
+    width: 100%;
+    max-width: 500px;
+    transition: all 0.15s;
+    margin-bottom: 20px;
+  }
+  .btn-primary:active { transform: scale(0.98); filter: brightness(0.9); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ===== INVENTORY SETUP ===== */
+  #screen-inventory {
+    background: var(--bg);
+    padding: 14px;
+    overflow-y: auto;
+  }
+
+  .budget-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+  }
+
+  .budget-label { font-size: 0.75rem; color: var(--muted); }
+  .budget-amount { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; color: var(--green); }
+
+  .inv-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .inv-item {
+    background: rgba(255,255,255,0.05);
+    border: 2px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 10px;
+  }
+
+  .inv-item-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .inv-icon { font-size: 1.6rem; }
+  .inv-name { font-weight: 800; font-size: 0.8rem; line-height: 1.2; }
+  .inv-cost { font-size: 0.68rem; color: var(--muted); }
+
+  .inv-controls { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .qty-btn {
+    width: 28px; height: 28px;
+    background: rgba(255,255,255,0.1);
+    border: none; border-radius: 6px;
+    color: var(--text); font-size: 1rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .qty-btn:active { background: rgba(255,255,255,0.2); }
+  .qty-display { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; min-width: 28px; text-align: center; }
+
+  .price-row { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; }
+  .price-row label { color: var(--muted); }
+  .price-input {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.8rem;
+    padding: 3px 6px;
+    width: 60px;
+  }
+
+  /* ===== GAME SCREEN ===== */
+  #screen-game {
+    display: none;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+    background: #0d1b0d;
+  }
+  #screen-game.active { display: flex; }
+
+  /* HUD */
+  .hud {
+    background: rgba(10,10,20,0.95);
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .hud-item {
+    display: flex; flex-direction: column; align-items: center;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 4px 8px;
+    min-width: 56px;
+  }
+  .hud-label { font-size: 0.55rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .hud-value { font-family: 'Bebas Neue', sans-serif; font-size: 1.05rem; line-height: 1; }
+  .hud-value.money { color: var(--green); }
+  .hud-value.time { color: var(--gold); }
+  .hud-value.phase { color: var(--accent); font-size: 0.8rem; }
+
+  .time-bar-wrap { flex: 1; min-width: 80px; }
+  .time-bar-bg {
+    height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;
+  }
+  .time-bar-fill {
+    height: 100%; background: linear-gradient(90deg, var(--green), var(--gold), var(--red));
+    border-radius: 4px; transition: width 0.5s;
+  }
+
+  /* GAME AREA */
+  .game-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* FIELD (outside the stand) */
+  #field-canvas {
+    width: 100%;
+    flex-shrink: 0;
+    touch-action: none;
+  }
+
+  /* STAND INTERIOR */
+  .stand-interior {
+    flex: 1;
+    background: var(--stand-floor);
+    position: relative;
+    overflow: hidden;
+    border-top: 4px solid var(--counter);
+  }
+
+  #stand-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+  }
+
+  /* ORDER PANEL */
+  .order-panel {
+    background: rgba(10,10,20,0.97);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding: 8px 10px;
+    flex-shrink: 0;
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 45vh;
+    overflow-y: auto;
+    pointer-events: none;
+  }
+  .order-panel.visible {
+    display: flex;
+    pointer-events: all;
+  }
+
+  .order-header {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.8rem; font-weight: 800;
+  }
+  .customer-name { color: var(--gold); }
+  .order-budget { color: var(--green); font-size: 0.75rem; }
+
+  .order-wants {
+    font-size: 0.72rem; color: var(--muted);
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px; padding: 5px 8px;
+  }
+
+  .order-items-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .order-item-btn {
+    background: rgba(255,255,255,0.07);
+    border: 2px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 8px 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .order-item-btn.added { border-color: var(--green); background: rgba(76,175,80,0.2); }
+  .order-item-btn.out-of-stock { opacity: 0.4; cursor: not-allowed; }
+  .order-item-btn .oi-icon { font-size: 1.3rem; }
+  .order-item-btn .oi-name { font-size: 0.6rem; font-weight: 700; }
+  .order-item-btn .oi-price { font-size: 0.6rem; color: var(--gold); }
+  .order-item-btn .oi-qty { position: absolute; top: -4px; right: -4px; background: var(--green); color: #000; border-radius: 50%; width: 16px; height: 16px; font-size: 0.6rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+
+  .order-total-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.8rem; font-weight: 700;
+  }
+
+  .btn-complete {
+    background: var(--green);
+    color: #000;
+    border: none; border-radius: 10px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem; letter-spacing: 1px;
+    padding: 10px;
+    cursor: pointer; width: 100%;
+  }
+  .btn-complete:active { filter: brightness(0.9); }
+
+  .btn-dismiss {
+    background: rgba(255,255,255,0.08);
+    color: var(--text);
+    border: none; border-radius: 10px;
+    font-size: 0.75rem; font-weight: 700;
+    padding: 8px;
+    cursor: pointer; width: 100%;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+    background: rgba(10,10,20,0.95);
+    border: 1px solid var(--gold);
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 0.8rem; font-weight: 700;
+    color: var(--gold);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 100;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  /* END SCREEN */
+  #screen-end {
+    background: linear-gradient(160deg, #0d1b2a 0%, #1a1a2e 100%);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .end-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 30px 24px;
+    width: 100%; max-width: 360px;
+    text-align: center;
+  }
+
+  .end-trophy { font-size: 3rem; margin-bottom: 10px; }
+  .end-title { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; color: var(--gold); letter-spacing: 2px; }
+  .end-stats { text-align: left; margin: 12px 0 8px; }
+  .end-stat-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.82rem; }
+  .end-stat-row span:last-child { font-weight: 800; color: var(--green); }
+
+  .end-btn-row { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .btn-secondary {
+    background: rgba(255,255,255,0.08);
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    padding: 12px;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.15s;
+  }
+  .btn-secondary:active { background: rgba(255,255,255,0.15); }
+
+  .hs-section { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); }
+  .hs-title { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; color: var(--accent); margin-bottom: 8px; }
+  .hs-tabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+  .hs-tab {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px; color: var(--muted); font-size: 0.68rem; font-weight: 700;
+    padding: 4px 9px; cursor: pointer;
+  }
+  .hs-tab.active { background: rgba(245,200,66,0.15); border-color: var(--gold); color: var(--gold); }
+  .hs-list { display: flex; flex-direction: column; gap: 4px; }
+  .hs-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(255,255,255,0.04); border-radius: 6px; padding: 5px 10px; font-size: 0.76rem;
+  }
+  .hs-rank { color: var(--muted); font-weight: 700; min-width: 20px; }
+  .hs-name { flex: 1; padding: 0 8px; font-size: 0.72rem; }
+  .hs-score { color: var(--green); font-weight: 800; }
+  .hs-row.highlight { background: rgba(245,200,66,0.12); border: 1px solid rgba(245,200,66,0.3); }
+
+  .new-hs-badge {
+    display: inline-block; background: var(--accent); color: #fff;
+    font-size: 0.6rem; font-weight: 800; padding: 2px 6px; border-radius: 4px;
+    letter-spacing: 1px; margin-left: 6px; vertical-align: middle;
+  }
+
+  /* REPUTATION */
+  .rep-bar-wrap { display: flex; flex-direction: column; min-width: 70px; }
+  .rep-bar-bg { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-top: 2px; }
+  .rep-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s, background 0.4s; }
+
+  /* In-game stock panel */
+  .stock-strip {
+    background: rgba(10,10,20,0.92);
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding: 4px 8px;
+    display: flex; gap: 6px; flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  .stock-chip {
+    display: flex; align-items: center; gap: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 6px; padding: 3px 7px;
+    font-size: 0.7rem; font-weight: 700;
+  }
+  .stock-chip.low { background: rgba(229,57,53,0.2); color: #ff8a80; }
+  .stock-chip.out { background: rgba(100,60,60,0.4); color: #666; text-decoration: line-through; }
+
+  /* DIFFICULTY */
+  .diff-banner {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 8px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; max-width: 500px;
+    margin-bottom: 14px;
+    font-size: 0.8rem;
+  }
+  .diff-label { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+  .diff-value { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 1px; }
+  .diff-pips { display: flex; gap: 4px; align-items: center; }
+  .diff-pip {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .diff-pip.filled { background: var(--gold); border-color: var(--gold); }
+  .diff-pip.current { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+  .diff-up-badge {
+    display: inline-block; background: var(--green); color: #000;
+    font-size: 0.65rem; font-weight: 800; padding: 2px 7px;
+    border-radius: 4px; letter-spacing: 1px; margin-left: 8px;
+  }
+  .diff-down-badge {
+    display: inline-block; background: var(--red); color: #fff;
+    font-size: 0.65rem; font-weight: 800; padding: 2px 7px;
+    border-radius: 4px; letter-spacing: 1px; margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- VENUE SELECT -->
+<div id="screen-venue" class="screen active">
+  <div class="game-title">STAND &amp; DELIVER</div>
+  <div class="game-sub">Concession Stand Simulator</div>
+  <div id="diff-banner" class="diff-banner">
+    <div>
+      <div class="diff-label">Difficulty</div>
+      <div class="diff-value" id="diff-value-label">Level 0 — Easy</div>
+    </div>
+    <div>
+      <div class="diff-label" style="text-align:right;margin-bottom:4px">Crowd Size</div>
+      <div class="diff-pips" id="diff-pips"></div>
+    </div>
+  </div>
+  <div class="section-label">Choose Your Venue</div>
+  <div class="venue-grid" id="venue-grid"></div>
+  <button class="btn-primary" id="btn-venue-next" disabled>Set Up Inventory →</button>
+</div>
+
+<!-- INVENTORY SETUP -->
+<div id="screen-inventory" class="screen">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+    <button onclick="showScreen('venue')" style="background:rgba(255,255,255,0.08);border:none;border-radius:8px;color:var(--text);padding:6px 12px;font-size:0.8rem;cursor:pointer;">← Back</button>
+    <div class="section-label" style="margin:0">Stock Your Stand</div>
+  </div>
+  <div class="budget-bar">
+    <div>
+      <div class="budget-label">Starting Budget</div>
+      <div class="budget-amount" id="budget-display">$150.00</div>
+    </div>
+    <div style="text-align:right">
+      <div class="budget-label">Spent on Stock</div>
+      <div class="budget-amount" id="spent-display" style="color:var(--accent)">$0.00</div>
+    </div>
+  </div>
+  <button id="btn-default-stock" style="
+    background:rgba(255,255,255,0.07);
+    border:1px dashed rgba(255,255,255,0.2);
+    border-radius:10px;
+    color:var(--text);
+    font-family:'Nunito',sans-serif;
+    font-size:0.82rem;
+    font-weight:700;
+    padding:9px 14px;
+    cursor:pointer;
+    width:100%;
+    max-width:500px;
+    margin-bottom:10px;
+    transition:all 0.15s;
+  ">📦 Default Stock — 10 of Everything</button>
+  <div class="inv-grid" id="inv-grid"></div>
+  <button class="btn-primary" id="btn-start-game">Open The Stand! 🎉</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="screen-game" class="screen">
+  <div class="hud">
+    <div class="hud-item">
+      <div class="hud-label">Cash</div>
+      <div class="hud-value money" id="hud-cash">$150</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-label">Sales</div>
+      <div class="hud-value" id="hud-sales">0</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-label">Difficulty</div>
+      <div class="hud-value" id="hud-diff" style="color:var(--gold)">Lv 0</div>
+    </div>
+    <div class="hud-item">
+      <div class="hud-label">Phase</div>
+      <div class="hud-value phase" id="hud-phase">Pre-Game</div>
+    </div>
+    <div class="rep-bar-wrap hud-item" style="min-width:72px;">
+      <div class="hud-label">Rep <span id="hud-rep-label" style="color:var(--gold)">😐</span></div>
+      <div class="rep-bar-bg"><div class="rep-bar-fill" id="rep-bar" style="width:50%;background:#ff9800"></div></div>
+    </div>
+    <div class="time-bar-wrap">
+      <div class="hud-label" style="font-size:0.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;" id="hud-time-label">0:00 / 0:00</div>
+      <div class="time-bar-bg"><div class="time-bar-fill" id="time-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="game-area" style="flex:1;position:relative;overflow:hidden;">
+    <canvas id="scene-canvas" style="width:100%;height:100%;display:block;touch-action:none;"></canvas>
+  </div>
+
+  <div class="stock-strip" id="stock-strip"></div>
+
+  <div class="order-panel" id="order-panel">
+    <div class="order-header">
+      <span class="customer-name" id="order-customer-name">Customer</span>
+      <span class="order-budget" id="order-customer-budget"></span>
+    </div>
+    <div class="order-wants" id="order-wants"></div>
+    <div class="order-items-grid" id="order-items-grid"></div>
+    <div class="order-total-row">
+      <span>Order Total:</span>
+      <span id="order-total" style="color:var(--gold)">$0.00</span>
+    </div>
+    <button class="btn-complete" id="btn-complete-sale">✓ Complete Sale</button>
+    <button class="btn-dismiss" id="btn-dismiss-customer">Send Away (No Sale)</button>
+  </div>
+</div>
+
+<!-- END SCREEN -->
+<div id="screen-end" class="screen">
+  <div style="overflow-y:auto;flex:1;padding:16px;display:flex;flex-direction:column;align-items:center;">
+    <div class="end-card" style="max-width:400px;width:100%">
+      <div class="end-trophy" id="end-trophy">🏆</div>
+      <div class="end-title">Event Over!</div>
+      <div id="end-new-hs" style="text-align:center;margin-bottom:4px;"></div>
+      <div class="end-stats" id="end-stats"></div>
+
+      <div class="end-btn-row">
+        <button class="btn-primary" id="btn-continue-next">🎟️ Continue to Next Event</button>
+        <button class="btn-secondary" id="btn-end-new-game">Start Fresh (New Game)</button>
+      </div>
+
+      <!-- HIGH SCORES -->
+      <div class="hs-section">
+        <div class="hs-title">🏅 High Scores</div>
+        <div class="hs-tabs" id="hs-tabs"></div>
+        <div class="hs-list" id="hs-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== DIFFICULTY SYSTEM =====
+// Level 0 = 10% crowd, Level 10 = 100% crowd. Each profitable event advances +1.
+// Losing money resets to 0. Beating level 10 = champion.
+const DIFF_KEY = 'standdeliver_diff_v1';
+const DIFF_MAX = 10;
+
+function loadDifficulty() {
+  try { return Math.max(0, Math.min(DIFF_MAX, parseInt(localStorage.getItem(DIFF_KEY)) || 0)); }
+  catch(e) { return 0; }
+}
+
+function saveDifficulty(level) {
+  localStorage.setItem(DIFF_KEY, String(Math.max(0, Math.min(DIFF_MAX, level))));
+}
+
+function getDifficultyLabel(level) {
+  if (level === 0)  return 'Starter';
+  if (level <= 2)   return 'Easy';
+  if (level <= 4)   return 'Moderate';
+  if (level <= 6)   return 'Tough';
+  if (level <= 8)   return 'Hard';
+  if (level < DIFF_MAX) return 'Brutal';
+  return '🏆 MAX';
+}
+
+// What fraction of normal crowd spawns at this level
+function getDifficultyCrowdFraction(level) {
+  // Level 0 = 10%, Level 10 = 100%, linear
+  return 0.10 + (level / DIFF_MAX) * 0.90;
+}
+
+function renderDifficultyBanner() {
+  const level = loadDifficulty();
+  const label = document.getElementById('diff-value-label');
+  const pips  = document.getElementById('diff-pips');
+  if (!label || !pips) return;
+
+  label.textContent = `Level ${level} — ${getDifficultyLabel(level)}`;
+  label.style.color = level >= 8 ? '#e53935' : level >= 5 ? '#ff9800' : 'var(--gold)';
+
+  pips.innerHTML = '';
+  for (let i = 0; i <= DIFF_MAX; i++) {
+    const pip = document.createElement('div');
+    pip.className = 'diff-pip' + (i < level ? ' filled' : i === level ? ' current' : '');
+    pips.appendChild(pip);
+  }
+}
+
+// ===== DATA =====
+
+const VENUES = [
+  { id:'basketball', name:'Basketball', icon:'🏀', indoor:true, duration:48, crowd:[80,180], peakMultiplier:2.2, halftimeAt:0.5 },
+  { id:'volleyball', name:'Volleyball', icon:'🏐', indoor:true, duration:40, crowd:[50,120], peakMultiplier:1.8, halftimeAt:0.5 },
+  { id:'football', name:'Football', icon:'🏈', indoor:false, duration:60, crowd:[200,500], peakMultiplier:2.5, halftimeAt:0.5 },
+  { id:'soccer', name:'Soccer', icon:'⚽', indoor:false, duration:50, crowd:[100,300], peakMultiplier:2.0, halftimeAt:0.5 },
+  { id:'baseball', name:'Baseball', icon:'⚾', indoor:false, duration:55, crowd:[80,200], peakMultiplier:1.7, halftimeAt:0.45 },
+  { id:'track', name:'Track & Field', icon:'🏃', indoor:false, duration:45, crowd:[60,150], peakMultiplier:1.6, halftimeAt:0.5 },
+];
+
+const MENU_ITEMS = [
+  { id:'hotdog',    name:'Hot Dog',       icon:'🌭', cost:0.75, defaultPrice:2.50, category:'food',  perishable:true  },
+  { id:'hamburger', name:'Hamburger',     icon:'🍔', cost:1.25, defaultPrice:3.50, category:'food',  perishable:true  },
+  { id:'nachos',    name:'Nachos',        icon:'🧀', cost:0.50, defaultPrice:2.00, category:'food',  perishable:true  },
+  { id:'popcorn',   name:'Popcorn',       icon:'🍿', cost:0.30, defaultPrice:1.50, category:'food',  perishable:false },
+  { id:'pretzel',   name:'Pretzel',       icon:'🥨', cost:0.40, defaultPrice:1.75, category:'food',  perishable:true  },
+  { id:'chips',     name:'Chips',         icon:'🥔', cost:0.25, defaultPrice:1.25, category:'food',  perishable:false },
+  { id:'soda',      name:'Soda',          icon:'🥤', cost:0.30, defaultPrice:1.75, category:'drink', perishable:false },
+  { id:'water',     name:'Water',         icon:'💧', cost:0.15, defaultPrice:1.00, category:'drink', perishable:false },
+  { id:'sports',    name:'Sports Drink',  icon:'🧴', cost:0.45, defaultPrice:2.25, category:'drink', perishable:false },
+  { id:'coffee',    name:'Coffee',        icon:'☕', cost:0.25, defaultPrice:1.50, category:'drink', perishable:false },
+  { id:'candy',     name:'Candy Bar',     icon:'🍫', cost:0.35, defaultPrice:1.25, category:'snack', perishable:false },
+  { id:'icecream',  name:'Ice Cream',     icon:'🍦', cost:0.60, defaultPrice:2.00, category:'snack', perishable:true  },
+];
+
+const FIRST_NAMES_M = ['James','Liam','Noah','Oliver','Ethan','Mason','Logan','Lucas','Aiden','Jackson','Carter','Owen','Wyatt','Dylan','Hunter'];
+const FIRST_NAMES_F = ['Emma','Olivia','Ava','Sophia','Isabella','Mia','Charlotte','Amelia','Harper','Evelyn','Aria','Lily','Zoe','Grace','Chloe'];
+const LAST_NAMES = ['Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Wilson','Moore','Taylor','Anderson','Thomas','Martin','White'];
+
+// ===== STATE =====
+let selectedVenue = null;
+let playerInventory = {}; // id -> { qty, price }
+let gameState = null;
+
+// ===== UTILITY =====
+function rnd(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function rndF(min, max) { return Math.random() * (max - min) + min; }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function fmtMoney(n) { return '$' + n.toFixed(2); }
+
+function showToast(msg, duration = 2000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+// ===== VENUE SCREEN =====
+function buildVenueGrid() {
+  const grid = document.getElementById('venue-grid');
+  grid.innerHTML = '';
+  VENUES.forEach(v => {
+    const card = document.createElement('div');
+    card.className = 'venue-card';
+    card.innerHTML = `
+      <div class="venue-icon">${v.icon}</div>
+      <div class="venue-name">${v.name}</div>
+      <div class="venue-meta">${v.indoor ? '🏠 Indoor' : '🌤️ Outdoor'} · ~${v.duration} min</div>
+      <div class="venue-meta">Est. ${v.crowd[0]}–${v.crowd[1]} fans</div>
+    `;
+    card.onclick = () => {
+      document.querySelectorAll('.venue-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedVenue = v;
+      document.getElementById('btn-venue-next').disabled = false;
+    };
+    grid.appendChild(card);
+  });
+}
+
+document.getElementById('btn-venue-next').onclick = () => {
+  if (!selectedVenue) return;
+  if (window._carryOverMode && carryOver) {
+    // Carry-over: pre-fill inventory with leftover stock, use carryOver cash as budget
+    buildInventoryScreen();
+    buildContinueInventoryScreen(carryOver.cash);
+    // Update the header label
+    document.querySelector('#screen-inventory .section-label').textContent = 'Restock Your Stand';
+    document.querySelector('#screen-inventory .budget-label').textContent = 'Cash Carried Over';
+    document.getElementById('btn-start-game').textContent = '🎟️ Continue to Event!';
+  } else {
+    buildInventoryScreen();
+    document.querySelector('#screen-inventory .section-label').textContent = 'Stock Your Stand';
+    document.querySelector('#screen-inventory .budget-label').textContent = 'Starting Budget';
+    document.getElementById('btn-start-game').textContent = 'Open The Stand! 🎉';
+  }
+  showScreen('inventory');
+};
+
+// ===== INVENTORY SCREEN =====
+const STARTING_BUDGET = 150;
+let invState = {}; // id -> qty
+
+function buildInventoryScreen() {
+  invState = {};
+  MENU_ITEMS.forEach(item => { invState[item.id] = { qty: 0, price: item.defaultPrice }; });
+  renderInventoryGrid();
+}
+
+function renderInventoryGrid() {
+  const grid = document.getElementById('inv-grid');
+  grid.innerHTML = '';
+  MENU_ITEMS.forEach(item => {
+    const s = invState[item.id];
+    const div = document.createElement('div');
+    div.className = 'inv-item';
+    div.innerHTML = `
+      <div class="inv-item-top">
+        <div class="inv-icon">${item.icon}</div>
+        <div>
+          <div class="inv-name">${item.name}${item.perishable ? ' <span style="font-size:0.58rem;background:rgba(229,57,53,0.25);color:#ff7070;border-radius:3px;padding:1px 4px;font-weight:700">PERISHABLE</span>' : ''}</div>
+          <div class="inv-cost">Cost: ${fmtMoney(item.cost)}/ea</div>
+        </div>
+      </div>
+      <div class="inv-controls">
+        <button class="qty-btn" data-id="${item.id}" data-delta="-1">−</button>
+        <div class="qty-display" id="qty-${item.id}">${s.qty}</div>
+        <button class="qty-btn" data-id="${item.id}" data-delta="1">+</button>
+        <div style="font-size:0.65rem;color:var(--muted);margin-left:4px">units</div>
+      </div>
+      <div class="price-row">
+        <label>Sell $</label>
+        <input class="price-input" type="number" id="price-${item.id}" value="${s.price.toFixed(2)}" min="0.25" step="0.25">
+      </div>
+    `;
+    grid.appendChild(div);
+  });
+
+  grid.querySelectorAll('.qty-btn').forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.id;
+      const delta = parseInt(btn.dataset.delta);
+      const item = MENU_ITEMS.find(m => m.id === id);
+      const spent = calcSpent();
+      const newQty = Math.max(0, invState[id].qty + delta);
+      if (delta > 0 && spent + item.cost > STARTING_BUDGET) {
+        showToast('Not enough budget!');
+        return;
+      }
+      invState[id].qty = newQty;
+      document.getElementById('qty-' + id).textContent = newQty;
+      updateBudgetDisplay();
+    };
+  });
+
+  grid.querySelectorAll('.price-input').forEach(inp => {
+    inp.onchange = () => {
+      const id = inp.id.replace('price-', '');
+      invState[id].price = Math.max(0.25, parseFloat(inp.value) || 0.25);
+      inp.value = invState[id].price.toFixed(2);
+    };
+  });
+
+  updateBudgetDisplay();
+}
+
+function calcSpent() {
+  return MENU_ITEMS.reduce((sum, item) => sum + invState[item.id].qty * item.cost, 0);
+}
+
+function updateBudgetDisplay() {
+  const spent = calcSpent();
+  document.getElementById('spent-display').textContent = fmtMoney(spent);
+  document.getElementById('budget-display').textContent = fmtMoney(STARTING_BUDGET - spent);
+}
+
+document.getElementById('btn-default-stock').onclick = () => {
+  const budget = window._carryOverMode && carryOver ? window._continueBudget : STARTING_BUDGET;
+  const costOf10Each = MENU_ITEMS.reduce((sum, item) => {
+    // In continue mode, only count cost of units above what's already carried over free
+    const alreadyHave = invState[item.id]?._carriedQty || 0;
+    const toBuy = Math.max(0, 10 - alreadyHave);
+    return sum + toBuy * item.cost;
+  }, 0);
+
+  const alreadySpent = window._carryOverMode && carryOver ? calcContinueSpent() : calcSpent();
+  const remaining = budget - alreadySpent;
+
+  if (costOf10Each > remaining) {
+    showToast(`Need ${fmtMoney(costOf10Each)} — only ${fmtMoney(remaining)} left!`, 2500);
+    return;
+  }
+
+  // Set all items to 10, preserving prices and _carriedQty
+  MENU_ITEMS.forEach(item => {
+    invState[item.id] = {
+      qty: 10,
+      price: invState[item.id]?.price || item.defaultPrice,
+      _carriedQty: invState[item.id]?._carriedQty || 0,
+    };
+  });
+
+  // Re-render the grid so qty displays update
+  if (window._carryOverMode && carryOver) {
+    buildContinueInventoryScreen(window._continueBudget);
+  } else {
+    renderInventoryGrid();
+    updateBudgetDisplay();
+  }
+  showToast('📦 Stocked 10 of everything!');
+};
+
+document.getElementById('btn-start-game').onclick = () => {
+  const totalItems = MENU_ITEMS.reduce((s, m) => s + invState[m.id].qty, 0);
+  if (totalItems === 0) { showToast('Stock at least one item!'); return; }
+  playerInventory = {};
+  MENU_ITEMS.forEach(item => {
+    if (invState[item.id].qty > 0) {
+      playerInventory[item.id] = { qty: invState[item.id].qty, price: invState[item.id].price };
+    }
+  });
+  // If continuing, override starting cash
+  if (window._carryOverMode && carryOver) {
+    const spent = calcContinueSpent();
+    window._startingCash = carryOver.cash - spent;
+  } else {
+    window._startingCash = null; // use default
+  }
+  window._carryOverMode = false;
+  startGame();
+};
+
+// ===== CUSTOMER GENERATION =====
+function generateCustomer(id) {
+  const isMale = Math.random() < 0.5;
+  const age = rnd(8, 65);
+  const hunger = rndF(0.2, 1.0);
+  const thirst = rndF(0.2, 1.0);
+  let priceSensitivity = rndF(0.5, 1.5);
+  if (age < 14) priceSensitivity = rndF(0.8, 1.4);
+  if (age > 50) priceSensitivity = rndF(0.6, 1.1);
+  const budget = rndF(2, 12) * (priceSensitivity * 0.8 + 0.4);
+  const wants = generateWants(hunger, thirst, age);
+
+  return {
+    id,
+    name: (isMale ? pick(FIRST_NAMES_M) : pick(FIRST_NAMES_F)) + ' ' + pick(LAST_NAMES),
+    isMale,
+    age,
+    hunger,
+    thirst,
+    priceSensitivity,
+    budget: parseFloat(budget.toFixed(2)),
+    wants,
+    isVip: false,
+    state: 'approaching',
+    x: 0, y: 0,
+    targetX: 0, targetY: 0,
+    speed: rndF(0.6, 1.1),
+    waitTimer: 0,
+    selected: false,
+    patience: rnd(15, 40),
+    patienceTimer: 0,
+  };
+}
+
+function generateVipCustomer(id) {
+  const isMale = Math.random() < 0.5;
+  const availableIds = Object.keys(playerInventory);
+  // VIPs want lots of stuff — 3 to 6 items
+  const wantCount = rnd(3, 6);
+  const wants = [];
+  const pool = [...availableIds];
+  for (let i = 0; i < wantCount && pool.length; i++) {
+    const idx = rnd(0, pool.length - 1);
+    wants.push(pool.splice(idx, 1)[0]);
+  }
+
+  return {
+    id,
+    name: '⭐ ' + (isMale ? pick(FIRST_NAMES_M) : pick(FIRST_NAMES_F)) + ' ' + pick(LAST_NAMES),
+    isMale,
+    age: rnd(25, 55),
+    hunger: rndF(0.7, 1.0),
+    thirst: rndF(0.7, 1.0),
+    priceSensitivity: rndF(1.2, 2.0), // pays above average prices happily
+    budget: rndF(20, 45),             // big spender
+    wants,
+    isVip: true,
+    state: 'approaching',
+    x: 0, y: 0,
+    targetX: 0, targetY: 0,
+    speed: rndF(0.8, 1.1),
+    waitTimer: 0,
+    selected: false,
+    patience: rnd(8, 16),   // leaves faster if ignored
+    patienceTimer: 0,
+    revealedAsVip: false,   // only show star shape once at counter
+  };
+}
+
+function generateWants(hunger, thirst, age) {
+  const wants = [];
+  // Customers want from the FULL menu — they don't know what's stocked
+  const foodItems  = MENU_ITEMS.filter(m => m.category === 'food');
+  const drinkItems = MENU_ITEMS.filter(m => m.category === 'drink');
+  const snackItems = MENU_ITEMS.filter(m => m.category === 'snack');
+
+  if (hunger > 0.6)               wants.push(pick(foodItems).id);
+  if (hunger > 0.85)              wants.push(pick(foodItems).id);
+  if (thirst > 0.5)               wants.push(pick(drinkItems).id);
+  if (thirst > 0.8)               wants.push(pick(drinkItems).id);
+  if (Math.random() < 0.35)       wants.push(pick(snackItems).id);
+  if (wants.length === 0) {
+    // Always want at least something
+    wants.push(pick([...foodItems, ...drinkItems, ...snackItems]).id);
+  }
+  return [...new Set(wants)]; // dedupe
+}
+
+// ===== GAME LOGIC =====
+function startGame() {
+  const venue = selectedVenue;
+  const currentDiff = loadDifficulty();
+  const crowdFraction = getDifficultyCrowdFraction(currentDiff);
+  const rawCrowd = rnd(...venue.crowd);
+  const totalCustomers = Math.max(5, Math.round(rawCrowd * crowdFraction));
+  const realDurationMs = venue.duration * 2000;
+
+  gameState = {
+    venue,
+    difficulty: currentDiff,
+    cash: window._startingCash !== null && window._startingCash !== undefined
+      ? window._startingCash
+      : STARTING_BUDGET - calcSpent(),
+    sales: 0,
+    profit: 0,
+    startTime: Date.now(),
+    realDuration: realDurationMs,
+    gameDuration: venue.duration, // minutes
+    totalCustomers,
+    spawnedCount: 0,
+    customers: [],
+    nextCustomerId: 0,
+    selectedCustomer: null,
+    currentOrder: [], // [{itemId, qty}]
+    gameOver: false,
+    paused: false,
+    phase: 'Pre-Game',
+    lastSpawnTime: Date.now(),
+    spawnCooldown: 4000,
+    vipSales: 0,
+    vipRevenue: 0,
+    lastVipTime: 0,
+    reputation: 50,       // 0–100, starts neutral
+    repOrders: 0,         // total orders scored
+    repScore: 0,          // cumulative accuracy points
+  };
+
+  showScreen('game');
+  requestAnimationFrame(() => {
+    buildGameCanvas();
+    document.getElementById('hud-cash').textContent = fmtMoney(gameState.cash);
+    document.getElementById('hud-diff').textContent = `Lv ${gameState.difficulty}`;
+    updateStockStrip();
+    updateRepHud();
+    requestAnimationFrame(gameLoop);
+  });
+}
+
+// ===== CANVAS =====
+let sceneCanvas, sceneCtx, sceneW, sceneH;
+// Legacy aliases kept so any remaining references don't crash
+let fieldCanvas, fieldCtx, standCanvas, standCtx, fieldW, fieldH, standW, standH;
+
+function buildGameCanvas() {
+  // Remove old references in case of re-init
+  sceneCanvas = document.getElementById('scene-canvas');
+  sceneCtx = sceneCanvas.getContext('2d');
+  // Also keep fieldCanvas/standCanvas vars pointing somewhere harmless so
+  // old code that might reference them doesn't crash
+  fieldCanvas = sceneCanvas; fieldCtx = sceneCtx;
+  standCanvas = sceneCanvas; standCtx = sceneCtx;
+
+  resizeCanvases();
+  window.addEventListener('resize', resizeCanvases);
+  sceneCanvas.addEventListener('pointerdown', onFieldTap);
+}
+
+function resizeCanvases() {
+  const el = sceneCanvas;
+  sceneW = el.offsetWidth  || el.parentElement.clientWidth  || 360;
+  sceneH = el.offsetHeight || el.parentElement.clientHeight || 500;
+  el.width  = sceneW;
+  el.height = sceneH;
+  // Keep legacy vars in sync
+  fieldW = sceneW; fieldH = sceneH;
+  standW = sceneW; standH = sceneH;
+}
+
+// ─── Scene layout constants ────────────────────────────────────────────────
+// horizonY  : where the "sky" ends and the ground begins (perspective vanishing line)
+// counterY  : top edge of the counter (player stands behind it)
+// groundTop : start of the walkable path (just below horizon)
+function horizonY() { return sceneH * 0.30; }
+function counterY() { return sceneH * 0.68; }
+// How big a customer gets at the counter vs at horizon
+const CUST_SCALE_FAR  = 0.12; // tiny at horizon
+const CUST_SCALE_NEAR = 1.00; // full size at counter
+
+// Map customer c.y (0=horizon, 1=counter) to pixel position and scale
+function custWorld(c) {
+  const t   = c.y;  // 0 = far/horizon, 1 = at counter
+  const hy  = horizonY();
+  const cy  = counterY();
+  const py  = hy + t * (cy - hy);        // pixel y
+  const px  = sceneW * 0.5 + (c.x - 0.5) * sceneW * (0.2 + t * 0.8);
+  const scl = CUST_SCALE_FAR + t * (CUST_SCALE_NEAR - CUST_SCALE_FAR);
+  return { px, py, scl };
+}
+
+// Base radius of a customer at scale=1 — evaluated at draw time, not parse time
+function baseR() { return sceneW > 400 ? 22 : 18; }
+
+// ─── Main draw ─────────────────────────────────────────────────────────────
+function drawScene() {
+  const ctx = sceneCtx;
+  const W = sceneW, H = sceneH;
+  ctx.clearRect(0, 0, W, H);
+
+  drawBackground(ctx, W, H);
+  drawCounterBack(ctx, W, H);  // shelves + items behind counter (above counter line)
+
+  // Sort customers by depth so nearer ones draw on top
+  const sorted = [...gameState.customers].sort((a, b) => a.y - b.y);
+  sorted.forEach(c => drawCustomer3D(ctx, c));
+  sorted.forEach(c => drawDisappointmentBubble3D(ctx, c));
+
+  drawCounterFront(ctx, W, H); // counter surface + overhang in front of customers
+}
+
+// Alias so old loop still works
+function drawField()  { drawScene(); }
+function drawStand()  { /* merged */ }
+
+// ─── Background ────────────────────────────────────────────────────────────
+function drawBackground(ctx, W, H) {
+  const hy = horizonY();
+  const isIndoor = selectedVenue.indoor;
+
+  if (isIndoor) {
+    // Ceiling / bleachers gradient
+    const skyGrd = ctx.createLinearGradient(0, 0, 0, hy);
+    skyGrd.addColorStop(0, '#1a1030');
+    skyGrd.addColorStop(1, '#2d1e50');
+    ctx.fillStyle = skyGrd;
+    ctx.fillRect(0, 0, W, hy);
+
+    // Bleacher rows at top
+    for (let row = 0; row < 5; row++) {
+      const ry = hy * 0.15 + row * (hy * 0.12);
+      ctx.fillStyle = `rgba(80,60,120,${0.5 - row*0.08})`;
+      ctx.fillRect(0, ry, W, hy * 0.08);
+      // Tiny spectators on bleachers
+      for (let s = 0; s < 14; s++) {
+        const sx = (s / 13) * W * 0.9 + W * 0.05;
+        const sy = ry + hy * 0.03;
+        const sr = 3 + Math.random() * 0;
+        ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI*2);
+        ctx.fillStyle = s % 2 === 0 ? '#42a5f5' : '#f48fb1';
+        ctx.fill();
+      }
+    }
+
+    // Court/floor ground (horizon to counter)
+    const floorGrd = ctx.createLinearGradient(0, hy, 0, H);
+    floorGrd.addColorStop(0, '#7a4e18');
+    floorGrd.addColorStop(0.6, '#9a6a28');
+    floorGrd.addColorStop(1, '#6b3d10');
+    ctx.fillStyle = floorGrd;
+    ctx.fillRect(0, hy, W, H - hy);
+
+    // Perspective floor lines
+    ctx.strokeStyle = 'rgba(255,220,140,0.18)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 8; i++) {
+      const fx = (i / 8) * W;
+      ctx.beginPath();
+      ctx.moveTo(W/2 + (fx - W/2) * 0.05, hy);
+      ctx.lineTo(fx, H);
+      ctx.stroke();
+    }
+    // Horizontal depth lines
+    for (let d = 1; d <= 6; d++) {
+      const dy = hy + (d / 7) * (H - hy);
+      ctx.beginPath(); ctx.moveTo(0, dy); ctx.lineTo(W, dy); ctx.stroke();
+    }
+  } else {
+    // Outdoor sky
+    const skyGrd = ctx.createLinearGradient(0, 0, 0, hy);
+    skyGrd.addColorStop(0, '#0a1628');
+    skyGrd.addColorStop(1, '#1e3a5f');
+    ctx.fillStyle = skyGrd;
+    ctx.fillRect(0, 0, W, hy);
+
+    // Stars
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    for (let i = 0; i < 30; i++) {
+      const sx = ((i * 137.5) % 1) * W;
+      const sy = ((i * 91.3) % 1) * hy * 0.8;
+      ctx.fillRect(sx, sy, 1.5, 1.5);
+    }
+
+    // Stands/bleachers silhouette at horizon
+    ctx.fillStyle = '#0d2040';
+    for (let b = 0; b < 6; b++) {
+      const bx = b * (W/5) - W*0.1;
+      const bw = W * 0.22;
+      const bh = hy * 0.35;
+      ctx.fillRect(bx, hy - bh, bw, bh);
+      // Lights
+      ctx.fillStyle = '#ffee88';
+      ctx.beginPath(); ctx.arc(bx + bw - 8, hy - bh - 4, 3, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#0d2040';
+    }
+
+    // Grass ground
+    const grassGrd = ctx.createLinearGradient(0, hy, 0, H);
+    grassGrd.addColorStop(0, '#1a3a0a');
+    grassGrd.addColorStop(0.5, '#2d5a1b');
+    grassGrd.addColorStop(1, '#1e3d12');
+    ctx.fillStyle = grassGrd;
+    ctx.fillRect(0, hy, W, H - hy);
+
+    // Grass stripes
+    for (let i = 0; i < 8; i++) {
+      if (i % 2 === 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.025)';
+        ctx.fillRect(i * W/8, hy, W/8, H - hy);
+      }
+    }
+
+    // Perspective path lines
+    ctx.strokeStyle = 'rgba(150,255,100,0.10)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 6; i++) {
+      const fx = (i / 6) * W;
+      ctx.beginPath();
+      ctx.moveTo(W/2 + (fx - W/2) * 0.05, hy);
+      ctx.lineTo(fx, H);
+      ctx.stroke();
+    }
+  }
+
+  // Crowd haze at horizon
+  const hazeGrd = ctx.createLinearGradient(0, hy - 12, 0, hy + 20);
+  hazeGrd.addColorStop(0, 'transparent');
+  hazeGrd.addColorStop(0.5, 'rgba(0,0,0,0.25)');
+  hazeGrd.addColorStop(1, 'transparent');
+  ctx.fillStyle = hazeGrd;
+  ctx.fillRect(0, hy - 12, W, 32);
+
+  // Venue sign above stand
+  const signY = counterY() - 52;
+  ctx.fillStyle = 'rgba(30,15,5,0.92)';
+  ctx.beginPath();
+  ctx.roundRect(W*0.1, signY - 18, W*0.8, 26, 6);
+  ctx.fill();
+  ctx.strokeStyle = '#f5c842';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = '#f5c842';
+  ctx.font = `bold ${Math.max(11, W * 0.028)}px Nunito, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`🍿 ${selectedVenue.name.toUpperCase()} CONCESSION STAND`, W/2, signY - 5);
+}
+
+// ─── Counter back: shelves and inventory items ──────────────────────────────
+function drawCounterBack(ctx, W, H) {
+  const cy = counterY();
+  const shelfTop = cy - 110;
+  const shelfH = 100;
+
+  // Back wall of stand
+  ctx.fillStyle = '#2a1800';
+  ctx.fillRect(0, shelfTop - 10, W, cy - shelfTop + 10);
+
+  // Wood paneling
+  for (let p = 0; p < 5; p++) {
+    ctx.fillStyle = p % 2 === 0 ? 'rgba(255,200,100,0.04)' : 'rgba(0,0,0,0.1)';
+    ctx.fillRect(p * W/5, shelfTop - 10, W/5, cy - shelfTop + 10);
+  }
+
+  // Shelf plank
+  ctx.fillStyle = '#6b3d10';
+  ctx.fillRect(0, shelfTop, W, 8);
+  ctx.fillStyle = 'rgba(255,200,100,0.3)';
+  ctx.fillRect(0, shelfTop, W, 2);
+
+  // Items on shelf
+  const invIds = Object.keys(playerInventory);
+  if (invIds.length === 0) return;
+  const itemW = Math.min(52, (W - 20) / invIds.length);
+  const startX = (W - itemW * invIds.length) / 2 + itemW / 2;
+
+  invIds.forEach((id, i) => {
+    const inv = playerInventory[id];
+    const item = MENU_ITEMS.find(m => m.id === id);
+    if (!item) return;
+    const ix = startX + i * itemW;
+    const iy = shelfTop + 14;
+    const out = inv.qty === 0;
+
+    // Item crate/box
+    ctx.fillStyle = out ? 'rgba(80,30,30,0.7)' : 'rgba(70,45,15,0.85)';
+    ctx.strokeStyle = out ? 'rgba(180,60,60,0.4)' : 'rgba(180,140,60,0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(ix - itemW*0.42, iy - 2, itemW*0.84, itemW*0.84, 4);
+    ctx.fill(); ctx.stroke();
+
+    ctx.globalAlpha = out ? 0.25 : 1.0;
+    ctx.font = `${Math.round(itemW * 0.48)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(item.icon, ix, iy + itemW * 0.25);
+    ctx.globalAlpha = 1.0;
+
+    ctx.font = `bold ${Math.max(7, Math.round(itemW * 0.18))}px Nunito, sans-serif`;
+    ctx.fillStyle = out ? '#c06060' : '#e8d080';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(out ? 'OUT' : `×${inv.qty}`, ix, iy + itemW * 0.78);
+  });
+}
+
+// ─── Counter front: surface, overhang, player ──────────────────────────────
+function drawCounterFront(ctx, W, H) {
+  const cy = counterY();
+
+  // Counter surface (thick plank)
+  const ctGrd = ctx.createLinearGradient(0, cy, 0, cy + 28);
+  ctGrd.addColorStop(0, '#a0651a');
+  ctGrd.addColorStop(0.4, '#7a4810');
+  ctGrd.addColorStop(1, '#3a2000');
+  ctx.fillStyle = ctGrd;
+  ctx.fillRect(0, cy, W, 28);
+
+  // Top highlight on counter
+  ctx.fillStyle = 'rgba(255,220,130,0.35)';
+  ctx.fillRect(0, cy, W, 4);
+
+  // Counter front face
+  ctx.fillStyle = '#3a2000';
+  ctx.fillRect(0, cy + 28, W, H - cy - 28);
+
+  // Wood grain lines on front face
+  ctx.strokeStyle = 'rgba(255,200,80,0.07)';
+  ctx.lineWidth = 1;
+  for (let g = 0; g < 8; g++) {
+    const gy = cy + 32 + g * 14;
+    if (gy > H) break;
+    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+  }
+
+  // Player figure visible behind counter (head + shoulders peeking over)
+  const ph = cy - 12;
+  const pw = W / 2;
+
+  // Body/shoulders (just visible above counter)
+  ctx.fillStyle = '#4a6fa5'; // blue shirt
+  ctx.beginPath();
+  ctx.ellipse(pw, ph + 8, 28, 14, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Head
+  ctx.fillStyle = '#f5d5a0';
+  ctx.beginPath();
+  ctx.arc(pw, ph - 12, 14, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Hat
+  ctx.fillStyle = '#e53935';
+  ctx.beginPath();
+  ctx.ellipse(pw, ph - 22, 16, 6, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillRect(pw - 11, ph - 30, 22, 12);
+  ctx.fillStyle = '#ffb300';
+  ctx.fillRect(pw - 14, ph - 20, 28, 3); // brim
+
+  // YOU label
+  ctx.fillStyle = '#f5c842';
+  ctx.font = `bold ${Math.max(8, W * 0.022)}px Nunito, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('YOU', pw, ph + 28);
+}
+
+// ─── Draw a customer with perspective scale ─────────────────────────────────
+function drawCustomer3D(ctx, c) {
+  const { px, py, scl } = custWorld(c);
+  const r = Math.max(0, baseR() * scl);
+  const isRevealedVip = c.isVip && c.revealedAsVip;
+
+  // Shadow on ground
+  ctx.beginPath();
+  ctx.ellipse(px, py + r * 0.5, r * 0.7, r * 0.22, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fill();
+
+  if (isRevealedVip) {
+    // Gold aura
+    const grd = ctx.createRadialGradient(px, py, r * 0.5, px, py, r * 2.2);
+    grd.addColorStop(0, 'rgba(255,215,0,0.4)');
+    grd.addColorStop(1, 'rgba(255,215,0,0)');
+    ctx.beginPath(); ctx.arc(px, py, r * 2.2, 0, Math.PI*2);
+    ctx.fillStyle = grd; ctx.fill();
+
+    ctx.beginPath();
+    drawStarPath(ctx, px, py, 5, r * 1.15, r * 0.46);
+    ctx.fillStyle = c.selected ? '#fff700' : '#ffd700';
+    ctx.fill();
+    ctx.strokeStyle = c.selected ? '#ff6b35' : 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = c.selected ? 3 * scl : 1.5 * scl;
+    ctx.stroke();
+
+    if (c.state === 'waiting') {
+      const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 250);
+      ctx.beginPath(); ctx.arc(px, py, r * 1.7 + pulse * 4 * scl, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(255,215,0,${0.4 + pulse * 0.3})`;
+      ctx.lineWidth = 1.5; ctx.stroke();
+    }
+  } else {
+    // Body circle
+    ctx.beginPath();
+    ctx.arc(px, py, r, 0, Math.PI*2);
+    if (c.selected) {
+      ctx.fillStyle = '#fff700';
+      ctx.fill();
+      ctx.strokeStyle = '#ff6b35';
+      ctx.lineWidth = 3 * scl; ctx.stroke();
+    } else {
+      ctx.fillStyle = c.isMale ? '#42a5f5' : '#f48fb1';
+      ctx.fill();
+      if (c.state === 'waiting') {
+        ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+        ctx.lineWidth = 2 * scl; ctx.stroke();
+      }
+    }
+  }
+
+  // Face emoji — only at reasonable size
+  if (r > 6) {
+    ctx.font = `${Math.round(r * 1.1)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(
+      isRevealedVip ? '🤩' : (c.hunger > 0.8 ? '😋' : c.thirst > 0.8 ? '😅' : '😊'),
+      px, py
+    );
+  }
+
+  // Patience bar (only at close range, ie waiting at counter)
+  if (c.state === 'waiting' && scl > 0.55) {
+    const remain = 1 - (c.patienceTimer / c.patience);
+    const barW   = r * 2.4;
+    const barY   = py - r - 10 * scl;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(px - barW/2, barY, barW, 4 * scl);
+    ctx.fillStyle = remain > 0.5 ? '#4caf50' : remain > 0.25 ? '#ff9800' : '#e53935';
+    ctx.fillRect(px - barW/2, barY, barW * remain, 4 * scl);
+    if (isRevealedVip) {
+      ctx.font = `bold ${Math.round(8 * scl)}px Nunito, sans-serif`;
+      ctx.fillStyle = '#ffd700';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText('⭐ VIP', px, barY - 3 * scl);
+    }
+  }
+}
+
+// ─── Disappointment bubble with depth ──────────────────────────────────────
+function drawDisappointmentBubble3D(ctx, c) {
+  if (!c.disappointedAbout || !(c.disappointedTimer > 0)) return;
+  const { px, py, scl } = custWorld(c);
+  if (scl < 0.3) return; // too far away to see
+  const r   = (sceneW > 400 ? 22 : 18) * scl;
+  const txt = c.disappointedAbout;
+  const fs  = Math.max(8, Math.round(10 * scl));
+  ctx.font  = `bold ${fs}px Nunito, sans-serif`;
+  const tw  = Math.min(ctx.measureText(txt).width + 12, sceneW * 0.7);
+  const bx  = Math.max(tw/2 + 4, Math.min(sceneW - tw/2 - 4, px));
+  const by  = py - r - 14 * scl;
+  ctx.fillStyle = 'rgba(20,5,5,0.9)';
+  ctx.beginPath(); ctx.roundRect(bx - tw/2, by - 14, tw, 16, 4); ctx.fill();
+  ctx.strokeStyle = '#c62828'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(px - 4, by + 2); ctx.lineTo(px, by + 7); ctx.lineTo(px + 4, by + 2);
+  ctx.fillStyle = 'rgba(20,5,5,0.9)'; ctx.fill();
+  ctx.fillStyle = '#ffcdd2';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(txt.length > 38 ? txt.slice(0, 36) + '…' : txt, bx, by - 6);
+}
+
+function drawStarPath(ctx, cx, cy, points, outerR, innerR) {
+  const step = Math.PI / points;
+  ctx.moveTo(cx, cy - outerR);
+  for (let i = 0; i < points * 2; i++) {
+    const r2 = i % 2 === 0 ? outerR : innerR;
+    const angle = i * step - Math.PI / 2;
+    ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
+  }
+  ctx.closePath();
+}
+
+// ===== SPAWN LOGIC =====
+function getSpawnRate() {
+  // Returns customers per second target based on current game progress
+  const elapsed = Date.now() - gameState.startTime;
+  const progress = elapsed / gameState.realDuration; // 0 to 1
+  const v = gameState.venue;
+
+  let multiplier = 1.0;
+
+  // Pre-game rush (first 15%)
+  if (progress < 0.15) multiplier = 1.4;
+  // Slow mid-first-half
+  else if (progress < 0.4) multiplier = 0.7;
+  // Pre-halftime rush
+  else if (progress < v.halftimeAt - 0.05) multiplier = 0.8;
+  // Halftime PEAK
+  else if (progress < v.halftimeAt + 0.08) multiplier = v.peakMultiplier;
+  // Post-halftime slow
+  else if (progress < 0.65) multiplier = 0.6;
+  // End-game rush
+  else if (progress < 0.9) multiplier = 0.5;
+  // Last stretch
+  else multiplier = 1.2;
+
+  return multiplier;
+}
+
+function getPhaseLabel() {
+  const elapsed = Date.now() - gameState.startTime;
+  const progress = elapsed / gameState.realDuration;
+  const h = gameState.venue.halftimeAt;
+  if (progress < 0.15) return 'Pre-Game';
+  if (progress < h - 0.05) return '1st Half';
+  if (progress < h + 0.08) return '🔥 HALFTIME';
+  if (progress < 0.9) return '2nd Half';
+  return 'Final!';
+}
+
+// ===== GAME LOOP =====
+let lastTick = 0;
+function gameLoop(ts) {
+  if (gameState.gameOver) return;
+
+  const elapsed = Date.now() - gameState.startTime;
+  if (elapsed >= gameState.realDuration) {
+    endGame();
+    return;
+  }
+
+  const dt = (ts - lastTick) / 1000; // seconds
+  lastTick = ts;
+
+  // Update phase
+  gameState.phase = getPhaseLabel();
+  document.getElementById('hud-phase').textContent = gameState.phase;
+
+  // Update time display
+  const realElapsed = elapsed / 1000;
+  const realTotal = gameState.realDuration / 1000;
+  const gameMinElapsed = (elapsed / gameState.realDuration) * gameState.gameDuration;
+  const gameMinTotal = gameState.gameDuration;
+  document.getElementById('hud-time-label').textContent =
+    `${fmtMin(gameMinElapsed)} / ${fmtMin(gameMinTotal)}`;
+  document.getElementById('time-bar').style.width = (elapsed / gameState.realDuration * 100) + '%';
+
+  // Spawn customers — reputation affects foot traffic
+  const repFactor = 0.5 + (gameState.reputation / 100); // 0.5–1.5×
+  const spawnRate = getSpawnRate() * repFactor;
+  const cooldown = Math.max(800, 3500 / spawnRate);
+  if (Date.now() - gameState.lastSpawnTime > cooldown && gameState.spawnedCount < gameState.totalCustomers) {
+    spawnCustomer();
+    gameState.lastSpawnTime = Date.now();
+  }
+
+  // Update customers
+  gameState.customers.forEach(c => updateCustomer(c, dt));
+
+  // Remove done customers
+  gameState.customers = gameState.customers.filter(c => c.state !== 'gone');
+
+  drawField();
+  drawStand();
+
+  requestAnimationFrame(gameLoop);
+}
+
+function fmtMin(m) {
+  const mm = Math.floor(m);
+  const ss = Math.floor((m - mm) * 60);
+  return `${mm}:${ss.toString().padStart(2,'0')}`;
+}
+
+function spawnCustomer() {
+  // ~8% chance of a VIP, max 1 VIP on field at a time, and not too frequently
+  const vipOnField = gameState.customers.some(c => c.isVip && c.state !== 'gone');
+  const elapsed = Date.now() - gameState.startTime;
+  const progress = elapsed / gameState.realDuration;
+  const vipReady = Date.now() - (gameState.lastVipTime || 0) > 30000;
+  const spawnVip = !vipOnField && vipReady && progress > 0.1 && Math.random() < 0.08
+    && Object.keys(playerInventory).length >= 2;
+
+  const c = spawnVip ? generateVipCustomer(gameState.nextCustomerId++) : generateCustomer(gameState.nextCustomerId++);
+  if (spawnVip) gameState.lastVipTime = Date.now();
+
+  // Reputation scales patience: good rep = more patient customers
+  if (!spawnVip) {
+    const repMult = 0.6 + (gameState.reputation / 100) * 0.8;
+    c.patience = Math.round(c.patience * repMult);
+  }
+
+  // Spawn at horizon (y=0), random x
+  c.x = rndF(0.15, 0.85);
+  c.y = 0;
+
+  // Target: walk to counter (y=1)
+  c.targetX = rndF(0.15, 0.85);
+  c.targetY = 1.0;
+  c.state = 'approaching';
+
+  gameState.customers.push(c);
+  gameState.spawnedCount++;
+}
+
+function updateCustomer(c, dt) {
+  if (c.state === 'approaching') {
+    const dx = c.targetX - c.x;
+    const dy = c.targetY - c.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 0.02) {
+      c.x = c.targetX; c.y = c.targetY;
+      c.state = 'waiting';
+      c.patienceTimer = 0;
+      // Reveal VIP status on arrival
+      if (c.isVip && !c.revealedAsVip) {
+        c.revealedAsVip = true;
+        showToast('⭐ VIP at the counter! Don\'t keep them waiting!', 3000);
+      }
+    } else {
+      const spd = 0.25 * c.speed * dt;
+      c.x += (dx/dist) * spd;
+      c.y += (dy/dist) * spd;
+    }
+  } else if (c.state === 'waiting') {
+    c.patienceTimer += dt;
+    if (c.patienceTimer >= c.patience) {
+      c.state = 'leaving';
+      c.targetX = rndF(0.15, 0.85);
+      c.targetY = -0.05;
+      // Rep penalty for ignoring a customer
+      gameState.repOrders++;
+      gameState.repScore -= 8;
+      const rawRep = 50 + (gameState.repScore / Math.max(1, gameState.repOrders)) * 4;
+      gameState.reputation = Math.max(0, Math.min(100, rawRep));
+      updateRepHud();
+      c.disappointedAbout = c.isVip ? '😤 NEVER coming back!' : '😤 Too slow!';
+      c.disappointedTimer = 3.0;
+      if (c.isVip) showToast('💸 VIP left without ordering!', 2500);
+      if (gameState.selectedCustomer === c.id) dismissOrder();
+    }
+  } else if (c.state === 'leaving' || c.state === 'served') {
+    if (c.disappointedTimer > 0) c.disappointedTimer -= dt;
+    const dx = c.targetX - c.x;
+    const dy = c.targetY - c.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 0.03) { c.state = 'gone'; }
+    else {
+      const spd = 0.35 * c.speed * dt;
+      c.x += (dx/dist) * spd;
+      c.y += (dy/dist) * spd;
+    }
+  }
+}
+
+// ===== TAPPING CUSTOMERS =====
+function onFieldTap(e) {
+  if (gameState.gameOver) return;
+  // Don't steal taps when the order panel is open — let its buttons handle them
+  if (document.getElementById('order-panel').classList.contains('visible')) return;
+  e.preventDefault();
+  const rect = sceneCanvas.getBoundingClientRect();
+  const tx = (e.clientX - rect.left) * (sceneW / rect.width);
+  const ty = (e.clientY - rect.top)  * (sceneH / rect.height);
+
+  // Find waiting customer under tap using perspective pixel coords
+  let tapped = null;
+  let minDist = 999;
+  gameState.customers.forEach(c => {
+    if (c.state !== 'waiting') return;
+    const { px, py, scl } = custWorld(c);
+    const r = Math.max(0, baseR() * scl);
+    const hitR = Math.max(r, 22); // minimum tap target
+    const dist = Math.sqrt((tx - px) ** 2 + (ty - py) ** 2);
+    if (dist < hitR && dist < minDist) { minDist = dist; tapped = c; }
+  });
+
+  if (tapped) {
+    gameState.customers.forEach(c => c.selected = false);
+    tapped.selected = true;
+    gameState.selectedCustomer = tapped.id;
+    openOrder(tapped);
+  }
+}
+
+// ===== ORDER PANEL =====
+function openOrder(customer) {
+  gameState.currentOrder = [];
+  const panel = document.getElementById('order-panel');
+  panel.classList.add('visible');
+
+  const vipBadge = customer.isVip
+    ? ' <span style="background:#ffd700;color:#1a1a00;font-size:0.65rem;font-weight:800;padding:2px 7px;border-radius:4px;letter-spacing:1px">⭐ VIP</span>'
+    : '';
+  document.getElementById('order-customer-name').innerHTML = customer.name + vipBadge;
+  document.getElementById('order-customer-budget').textContent = `Budget: ${fmtMoney(customer.budget)}`;
+
+  const wantNames = customer.wants.map(id => {
+    const item = MENU_ITEMS.find(m => m.id === id);
+    if (!item) return id;
+    const inv = playerInventory[id];
+    if (!inv) return `${item.name} ✗`; // not stocked at all
+    if (inv.qty <= 0) return `${item.name} (sold out)`; // stocked but empty
+    return item.name;
+  }).join(', ');
+  document.getElementById('order-wants').textContent = `Wants: ${wantNames}`;
+
+  renderOrderItems(customer);
+  updateOrderTotal(customer);
+}
+
+function renderOrderItems(customer) {
+  const grid = document.getElementById('order-items-grid');
+  grid.innerHTML = '';
+  Object.entries(playerInventory).forEach(([id, inv]) => {
+    const item = MENU_ITEMS.find(m => m.id === id);
+    if (!item) return;
+    const added = gameState.currentOrder.filter(o => o === id).length;
+    const outOfStock = inv.qty === 0;
+    const btn = document.createElement('div');
+    btn.className = 'order-item-btn' + (added ? ' added' : '') + (outOfStock ? ' out-of-stock' : '');
+    btn.innerHTML = `
+      <div class="oi-icon">${item.icon}</div>
+      <div class="oi-name">${item.name}</div>
+      <div class="oi-price">${fmtMoney(inv.price)}</div>
+      ${added ? `<div class="oi-qty">${added}</div>` : ''}
+    `;
+    if (!outOfStock) {
+      btn.onclick = () => {
+        // Check if adding this would exceed customer budget
+        const total = getCurrentOrderTotal() + inv.price;
+        if (total > customer.budget * 1.5) {
+          showToast('Customer can\'t afford that much!');
+          return;
+        }
+        gameState.currentOrder.push(id);
+        renderOrderItems(customer);
+        updateOrderTotal(customer);
+      };
+    }
+    grid.appendChild(btn);
+  });
+}
+
+function getCurrentOrderTotal() {
+  return gameState.currentOrder.reduce((sum, id) => {
+    return sum + (playerInventory[id]?.price || 0);
+  }, 0);
+}
+
+function updateOrderTotal(customer) {
+  const total = getCurrentOrderTotal();
+  document.getElementById('order-total').textContent = fmtMoney(total);
+}
+
+document.getElementById('btn-complete-sale').onclick = () => {
+  const customer = gameState.customers.find(c => c.id === gameState.selectedCustomer);
+  if (!customer) return;
+  if (gameState.currentOrder.length === 0) { showToast('Add items to the order!'); return; }
+
+  // ===== INVENTORY ENFORCEMENT =====
+  // Check we actually have stock for everything in the order
+  const stockCheck = {};
+  let stockFail = false;
+  gameState.currentOrder.forEach(id => {
+    stockCheck[id] = (stockCheck[id] || 0) + 1;
+  });
+  for (const [id, needed] of Object.entries(stockCheck)) {
+    const avail = playerInventory[id]?.qty || 0;
+    if (needed > avail) { stockFail = true; break; }
+  }
+  if (stockFail) {
+    showToast("You don't have enough stock for that order!");
+    return;
+  }
+
+  // Deduct inventory (clamped to 0)
+  gameState.currentOrder.forEach(id => {
+    if (playerInventory[id]) {
+      playerInventory[id].qty = Math.max(0, playerInventory[id].qty - 1);
+    }
+  });
+  updateStockStrip();
+
+  const total = getCurrentOrderTotal();
+
+  // ===== REPUTATION SCORING =====
+  // wantedItems = items the customer asked for that are IN the order
+  const wantedInOrder   = customer.wants.filter(id => gameState.currentOrder.includes(id));
+  // unwantedInOrder = items added that customer did NOT ask for
+  const unwantedInOrder = gameState.currentOrder.filter(id => !customer.wants.includes(id));
+  // missingWants = items customer wanted but aren't in the order OR are out of stock
+  const missingWants    = customer.wants.filter(id => !gameState.currentOrder.includes(id));
+
+  // Each wanted item filled: +10 rep pts. Each unwanted item pushed: -6. Missing want: -4.
+  const repDelta = (wantedInOrder.length * 10)
+                 - (unwantedInOrder.length * 6)
+                 - (missingWants.length * 4);
+
+  // Price gouging check — if we're charging > 2× default on any item, hit rep
+  let gougeHit = false;
+  gameState.currentOrder.forEach(id => {
+    const item = MENU_ITEMS.find(m => m.id === id);
+    const price = playerInventory[id]?.price || item?.defaultPrice;
+    if (item && price > item.defaultPrice * 2) gougeHit = true;
+  });
+  const gouge = gougeHit ? -5 : 0;
+
+  gameState.repOrders++;
+  gameState.repScore += repDelta + gouge;
+  // Sliding average: reputation = clamp(50 + repScore/repOrders * 5, 0, 100)
+  const rawRep = 50 + (gameState.repScore / Math.max(1, gameState.repOrders)) * 4;
+  gameState.reputation = Math.max(0, Math.min(100, rawRep));
+  updateRepHud();
+
+  // ===== DISAPPOINTMENT FACES =====
+  // Mark which wants weren't filled (stocked but not added, or not stocked)
+  const missingNotStocked = customer.wants.filter(id => !playerInventory[id] || playerInventory[id].qty <= 0);
+  const missingNotAdded   = customer.wants.filter(id => playerInventory[id]?.qty > 0 && !gameState.currentOrder.includes(id));
+
+  if (missingNotStocked.length > 0) {
+    const names = missingNotStocked.map(id => MENU_ITEMS.find(m => m.id === id)?.name).filter(Boolean).join(', ');
+    customer.disappointedAbout = `😞 We're out of: ${names}`;
+    customer.disappointedTimer = 3.5;
+  } else if (missingNotAdded.length > 0) {
+    customer.disappointedAbout = `😕 Didn't get: ${missingNotAdded.map(id => MENU_ITEMS.find(m=>m.id===id)?.name).filter(Boolean).join(', ')}`;
+    customer.disappointedTimer = 3.0;
+  } else if (unwantedInOrder.length > 0) {
+    customer.disappointedAbout = `🙄 Didn't want that…`;
+    customer.disappointedTimer = 2.5;
+  }
+
+  // ===== PAYMENT =====
+  // Reputation affects willingness to pay above-default prices
+  // Low rep: customer pays less / more likely to just pay budget cap
+  const repFactor = gameState.reputation / 100; // 0–1
+  let saleMsg = `+${fmtMoney(total)} 🎉`;
+  let mood = '';
+
+  if (total > customer.budget) {
+    const paid = customer.budget;
+    gameState.cash += paid;
+    gameState.profit += paid;
+    saleMsg = `Overcharged! Paid ${fmtMoney(paid)}`;
+  } else {
+    gameState.cash += total;
+    gameState.profit += total;
+    if (wantedInOrder.length === customer.wants.length && unwantedInOrder.length === 0) {
+      mood = customer.isVip ? ' ⭐ VIP happy!' : ' 😊 Happy!';
+    } else if (wantedInOrder.length > 0 && unwantedInOrder.length === 0) {
+      mood = ' 🙂 OK';
+    } else if (unwantedInOrder.length > 0 && wantedInOrder.length === 0) {
+      mood = ' 😠 Unhappy!';
+    }
+  }
+
+  gameState.sales++;
+  if (customer.isVip) {
+    gameState.vipSales = (gameState.vipSales || 0) + 1;
+    gameState.vipRevenue = (gameState.vipRevenue || 0) + Math.min(total, customer.budget);
+    if (!saleMsg.includes('Overcharged')) saleMsg = `⭐ VIP Sale! +${fmtMoney(total)} 💰`;
+  }
+
+  document.getElementById('hud-cash').textContent = fmtMoney(gameState.cash);
+  document.getElementById('hud-sales').textContent = gameState.sales;
+
+  if (gougeHit) showToast('💸 Price gouging hurts your reputation!', 2200);
+  else showToast(saleMsg + mood);
+
+  // Send customer away
+  customer.state = 'served';
+  customer.selected = false;
+  customer.targetX = rndF(0.15, 0.85);
+  customer.targetY = -0.05;
+
+  dismissOrder();
+};
+
+document.getElementById('btn-dismiss-customer').onclick = () => {
+  const customer = gameState.customers.find(c => c.id === gameState.selectedCustomer);
+  if (customer) {
+    customer.selected = false;
+    customer.state = 'leaving';
+    customer.targetX = rndF(0.15, 0.85);
+    customer.targetY = -0.05;
+  }
+  dismissOrder();
+};
+
+function dismissOrder() {
+  gameState.selectedCustomer = null;
+  gameState.currentOrder = [];
+  document.getElementById('order-panel').classList.remove('visible');
+  gameState.customers.forEach(c => c.selected = false);
+}
+
+// ===== REPUTATION =====
+function updateRepHud() {
+  const rep = gameState.reputation;
+  const bar = document.getElementById('rep-bar');
+  const label = document.getElementById('hud-rep-label');
+  bar.style.width = rep + '%';
+  if (rep >= 80)      { bar.style.background = '#4caf50'; label.textContent = '😍'; }
+  else if (rep >= 60) { bar.style.background = '#8bc34a'; label.textContent = '😊'; }
+  else if (rep >= 40) { bar.style.background = '#ff9800'; label.textContent = '😐'; }
+  else if (rep >= 20) { bar.style.background = '#ff5722'; label.textContent = '😟'; }
+  else                { bar.style.background = '#e53935'; label.textContent = '😡'; }
+}
+
+function getRepLabel() {
+  const rep = gameState.reputation;
+  if (rep >= 80) return 'Beloved';
+  if (rep >= 60) return 'Liked';
+  if (rep >= 40) return 'Neutral';
+  if (rep >= 20) return 'Disliked';
+  return 'Hated';
+}
+
+// ===== STOCK STRIP =====
+function updateStockStrip() {
+  const strip = document.getElementById('stock-strip');
+  if (!strip) return;
+  strip.innerHTML = '';
+  Object.entries(playerInventory).forEach(([id, inv]) => {
+    const item = MENU_ITEMS.find(m => m.id === id);
+    if (!item) return;
+    const chip = document.createElement('div');
+    const out = inv.qty === 0;
+    const low = !out && inv.qty <= 3;
+    chip.className = 'stock-chip' + (out ? ' out' : low ? ' low' : '');
+    chip.textContent = `${item.icon} ${inv.qty}`;
+    chip.title = item.name + ': ' + inv.qty + ' left';
+    strip.appendChild(chip);
+  });
+}
+
+// ===== HIGH SCORES =====
+const HS_KEY = 'standdeliver_hs_v1';
+
+function loadHighScores() {
+  try { return JSON.parse(localStorage.getItem(HS_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+
+function saveHighScore(venueId, score, sales, venueName) {
+  const hs = loadHighScores();
+  if (!hs[venueId]) hs[venueId] = [];
+  const entry = {
+    score: parseFloat(score.toFixed(2)),
+    sales,
+    venueName,
+    date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })
+  };
+  hs[venueId].push(entry);
+  hs[venueId].sort((a, b) => b.score - a.score);
+  hs[venueId] = hs[venueId].slice(0, 5); // top 5
+  localStorage.setItem(HS_KEY, JSON.stringify(hs));
+  // Return rank (1-based), or null if didn't make it
+  const rank = hs[venueId].findIndex(e => e.score === entry.score && e.date === entry.date);
+  return rank >= 0 ? rank + 1 : null;
+}
+
+function renderHighScores(activeVenueId, highlightRank) {
+  const hs = loadHighScores();
+  const tabs = document.getElementById('hs-tabs');
+  const list = document.getElementById('hs-list');
+
+  tabs.innerHTML = '';
+  VENUES.forEach(v => {
+    const hasData = hs[v.id] && hs[v.id].length > 0;
+    if (!hasData && v.id !== activeVenueId) return;
+    const tab = document.createElement('div');
+    tab.className = 'hs-tab' + (v.id === activeVenueId ? ' active' : '');
+    tab.textContent = v.icon + ' ' + v.name;
+    tab.onclick = () => renderHighScores(v.id, v.id === activeVenueId ? highlightRank : null);
+    tabs.appendChild(tab);
+  });
+
+  const entries = hs[activeVenueId] || [];
+  if (entries.length === 0) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:0.75rem;padding:8px 0;">No scores yet for this venue.</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  const medals = ['🥇','🥈','🥉','4.','5.'];
+  entries.forEach((e, i) => {
+    const isHighlight = highlightRank !== null && (i + 1) === highlightRank;
+    const row = document.createElement('div');
+    row.className = 'hs-row' + (isHighlight ? ' highlight' : '');
+    row.innerHTML = `
+      <span class="hs-rank">${medals[i] || (i+1)+'.'}</span>
+      <span class="hs-name">${fmtMoney(e.score)} profit${isHighlight ? '<span class="new-hs-badge">NEW</span>' : ''}</span>
+      <span class="hs-score">${e.sales} sales</span>
+      <span style="color:var(--muted);font-size:0.68rem;margin-left:8px">${e.date}</span>
+    `;
+    list.appendChild(row);
+  });
+}
+
+// ===== CONTINUE / RESTOCK =====
+// carryOver holds cash + inventory between events when player hits Continue
+let carryOver = null; // null = fresh start
+
+function buildContinueInventoryScreen(cash) {
+  MENU_ITEMS.forEach(item => {
+    const existing = carryOver?.inventory?.[item.id];
+    // Perishables never carry over — always start at 0
+    const carriedQty = (item.perishable) ? 0 : (existing?.qty || 0);
+    invState[item.id] = {
+      qty: carriedQty,
+      price: existing?.price || item.defaultPrice,
+      _carriedQty: carriedQty, // track what was free
+    };
+  });
+
+  document.getElementById('budget-display').textContent = fmtMoney(cash);
+  document.getElementById('spent-display').textContent = fmtMoney(0);
+  window._continueBudget = cash;
+
+  renderInventoryGrid();
+
+  // Re-patch qty buttons to use carry-over budget and respect perishable carry-over qty as free
+  document.getElementById('inv-grid').querySelectorAll('.qty-btn').forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.id;
+      const delta = parseInt(btn.dataset.delta);
+      const item = MENU_ITEMS.find(m => m.id === id);
+      const newQty = Math.max(0, invState[id].qty + delta);
+      if (delta > 0) {
+        const carriedQty = invState[id]._carriedQty || 0;
+        const prevNewUnits = Math.max(0, invState[id].qty - carriedQty);
+        const nextNewUnits = Math.max(0, newQty - carriedQty);
+        const extraCost = (nextNewUnits - prevNewUnits) * item.cost;
+        if (calcContinueSpent() + extraCost > window._continueBudget) {
+          showToast('Not enough cash!'); return;
+        }
+      }
+      invState[id].qty = newQty;
+      document.getElementById('qty-' + id).textContent = newQty;
+      updateContinueBudgetDisplay();
+    };
+  });
+}
+
+function calcContinueSpent() {
+  return MENU_ITEMS.reduce((sum, item) => {
+    const carriedQty = invState[item.id]?._carriedQty || 0;
+    const newUnits = Math.max(0, (invState[item.id]?.qty || 0) - carriedQty);
+    return sum + newUnits * item.cost;
+  }, 0);
+}
+
+function updateContinueBudgetDisplay() {
+  const spent = calcContinueSpent();
+  document.getElementById('spent-display').textContent = fmtMoney(spent);
+  document.getElementById('budget-display').textContent = fmtMoney((window._continueBudget || STARTING_BUDGET) - spent);
+}
+
+// ===== END GAME =====
+function endGame() {
+  gameState.gameOver = true;
+  const netProfit = gameState.cash - STARTING_BUDGET;
+  const currentDiff = gameState.difficulty;
+  const madeProfit = netProfit > 0;
+
+  // ===== DIFFICULTY PROGRESSION =====
+  let newDiff = currentDiff;
+  let diffChangeMsg = '';
+  let diffChangeBadge = '';
+
+  if (madeProfit) {
+    if (currentDiff >= DIFF_MAX) {
+      // Already at max and still profitable — champion!
+      diffChangeMsg = '🏆 You beat MAX difficulty!';
+      diffChangeBadge = `<span class="diff-up-badge">CHAMPION!</span>`;
+    } else {
+      newDiff = currentDiff + 1;
+      diffChangeMsg = `Difficulty increased to Level ${newDiff}!`;
+      diffChangeBadge = `<span class="diff-up-badge">▲ LV ${newDiff}</span>`;
+    }
+  } else {
+    if (currentDiff > 0) {
+      newDiff = 0;
+      diffChangeMsg = 'Lost money — difficulty reset to Level 0.';
+      diffChangeBadge = `<span class="diff-down-badge">▼ RESET</span>`;
+    } else {
+      diffChangeMsg = 'Try to turn a profit to advance!';
+    }
+  }
+  saveDifficulty(newDiff);
+
+  const trophy = currentDiff >= DIFF_MAX && madeProfit ? '🏆'
+               : netProfit > 80 ? '🥇'
+               : netProfit > 30 ? '🥈'
+               : netProfit > 0  ? '🥉'
+               : '😬';
+
+  // Save high score
+  const rank = saveHighScore(gameState.venue.id, netProfit, gameState.sales, gameState.venue.name);
+
+  document.getElementById('end-trophy').textContent = trophy;
+
+  const nhsEl = document.getElementById('end-new-hs');
+  if (rank === 1) nhsEl.innerHTML = `<span class="new-hs-badge" style="font-size:0.75rem;padding:3px 10px;">🎉 NEW #1 HIGH SCORE!</span>`;
+  else if (rank && rank <= 3) nhsEl.innerHTML = `<span class="new-hs-badge" style="font-size:0.75rem;padding:3px 10px;">TOP ${rank} HIGH SCORE!</span>`;
+  else nhsEl.innerHTML = '';
+
+  document.getElementById('end-stats').innerHTML = `
+    <div class="end-stat-row"><span>Venue</span><span>${gameState.venue.icon} ${gameState.venue.name}</span></div>
+    <div class="end-stat-row"><span>Difficulty</span><span>Level ${currentDiff} — ${getDifficultyLabel(currentDiff)}</span></div>
+    <div class="end-stat-row"><span>Customers</span><span>${gameState.sales} served / ${gameState.spawnedCount} attended</span></div>
+    ${gameState.vipSales > 0 ? `<div class="end-stat-row"><span>⭐ VIP Orders</span><span style="color:#ffd700">${gameState.vipSales} · ${fmtMoney(gameState.vipRevenue)}</span></div>` : ''}
+    <div class="end-stat-row"><span>Final Reputation</span><span>${Math.round(gameState.reputation)}/100 — ${getRepLabel()}</span></div>
+    <div class="end-stat-row"><span>Cash on Hand</span><span>${fmtMoney(gameState.cash)}</span></div>
+    <div class="end-stat-row"><span>Net Profit</span><span style="color:${netProfit>=0?'var(--green)':'var(--red)'}">${fmtMoney(netProfit)}</span></div>
+    <div class="end-stat-row"><span>Leftover Stock</span><span>${countLeftoverStock()} items</span></div>
+    <div class="end-stat-row" style="border-top:1px solid rgba(255,255,255,0.12);margin-top:4px;padding-top:8px;">
+      <span style="color:var(--muted)">${diffChangeMsg}</span>
+      <span>${diffChangeBadge}</span>
+    </div>
+  `;
+
+  // Update continue button label to show upcoming difficulty
+  const nextDiff = newDiff;
+  document.getElementById('btn-continue-next').textContent =
+    `🎟️ Continue → Level ${nextDiff} (${Math.round(getDifficultyCrowdFraction(nextDiff)*100)}% crowd)`;
+
+  // Store carry-over snapshot
+  carryOver = {
+    cash: gameState.cash,
+    inventory: JSON.parse(JSON.stringify(playerInventory))
+  };
+
+  showScreen('end');
+  renderHighScores(gameState.venue.id, rank);
+  renderDifficultyBanner(); // refresh banner for next session
+}
+
+function countLeftoverStock() {
+  return Object.values(playerInventory).reduce((s, v) => s + v.qty, 0);
+}
+
+document.getElementById('btn-continue-next').onclick = () => {
+  // Go to venue select with carry-over intact
+  document.querySelectorAll('.venue-card').forEach(c => c.classList.remove('selected'));
+  selectedVenue = null;
+  document.getElementById('btn-venue-next').disabled = true;
+  // Change label of inventory screen to signal carry-over mode
+  window._carryOverMode = true;
+  showScreen('venue');
+};
+
+document.getElementById('btn-end-new-game').onclick = () => {
+  carryOver = null;
+  window._carryOverMode = false;
+  window._continueBudget = null;
+  resetGame();
+  showScreen('venue');
+};
+
+function resetGame() {
+  selectedVenue = null;
+  playerInventory = {};
+  invState = {};
+  carryOver = null;
+  window._carryOverMode = false;
+  window._continueBudget = null;
+  document.querySelectorAll('.venue-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('btn-venue-next').disabled = true;
+  renderDifficultyBanner();
+}
+
+// ===== INIT =====
+buildVenueGrid();
+renderDifficultyBanner();
+</script>
+</body>
+</html>

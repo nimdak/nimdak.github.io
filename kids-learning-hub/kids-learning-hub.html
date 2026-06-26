@@ -1,0 +1,4602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌟 Kids Learning Hub</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800;900&family=Atkinson+Hyperlegible:wght@400;700&display=swap');
+
+:root {
+  --coral:    #FF7043;
+  --sun:      #FFD54F;
+  --grass:    #66BB6A;
+  --sky:      #4FC3F7;
+  --lavender: #CE93D8;
+  --pink:     #F06292;
+  --teal:     #4DB6AC;
+  --dark:     #37474F;
+  --cream:    #FFFDE7;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: linear-gradient(160deg, #E1F5FE 0%, #F3E5F5 100%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 16px 32px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Floating background stars */
+.bg-stars {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none; z-index: 0;
+  overflow: hidden;
+}
+.bg-star {
+  position: absolute;
+  font-size: 22px;
+  opacity: 0.18;
+  animation: floatStar linear infinite;
+}
+@keyframes floatStar {
+  0%   { transform: translateY(0) rotate(0deg); }
+  100% { transform: translateY(-110vh) rotate(360deg); }
+}
+
+/* ─── SCREENS ───────────────────────────────────────────────── */
+.screen { width: 100%; max-width: 620px; display: none; flex-direction: column; align-items: center; position: relative; z-index: 1; }
+.screen.active { display: flex; }
+
+/* ─── MENU ──────────────────────────────────────────────────── */
+#menuScreen { gap: 24px; padding-top: 10px; }
+
+.hub-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(34px, 8vw, 60px);
+  color: var(--coral);
+  text-shadow: 4px 4px 0 var(--sun);
+  text-align: center;
+  line-height: 1.1;
+}
+.hub-sub {
+  font-size: 18px; font-weight: 800; color: #607D8B;
+  text-align: center; margin-top: -8px;
+}
+
+.game-cards {
+  display: flex; flex-direction: column; gap: 18px; width: 100%;
+}
+
+.game-card {
+  background: white;
+  border-radius: 28px;
+  padding: 22px 24px;
+  display: flex; align-items: center; gap: 20px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.10);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border: 4px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+.game-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.game-card:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 16px 36px rgba(0,0,0,0.14); }
+.game-card:active { transform: translateY(0) scale(0.98); }
+
+.game-card.words    { border-color: var(--sky);      background: linear-gradient(135deg, #ffffff, #E3F2FD); }
+.game-card.math     { border-color: var(--grass);    background: linear-gradient(135deg, #ffffff, #E8F5E9); }
+.game-card.sentence { border-color: var(--lavender); background: linear-gradient(135deg, #ffffff, #F3E5F5); }
+
+.game-icon {
+  font-size: 62px; line-height: 1;
+  filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.12));
+  flex-shrink: 0;
+  animation: bounceIcon 2.5s ease-in-out infinite;
+}
+.game-card.math     .game-icon { animation-delay: 0.6s; }
+.game-card.sentence .game-icon { animation-delay: 1.1s; }
+@keyframes bounceIcon {
+  0%,100% { transform: translateY(0) rotate(-4deg); }
+  50%      { transform: translateY(-6px) rotate(4deg); }
+}
+
+.game-info { flex: 1; }
+.game-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(22px, 5vw, 30px);
+  color: var(--dark);
+  line-height: 1.1;
+}
+.game-desc { font-size: 14px; font-weight: 700; color: #78909C; margin-top: 4px; line-height: 1.4; }
+
+.game-levels {
+  display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px;
+}
+.lvl-pip {
+  font-family: 'Fredoka One', cursive;
+  font-size: 11px; padding: 2px 10px; border-radius: 99px;
+  color: white; background: var(--sky);
+}
+.game-card.math .lvl-pip     { background: var(--grass); }
+.game-card.sentence .lvl-pip { background: var(--lavender); }
+
+.game-card.math     .game-icon { animation-delay: 0.6s; }
+.game-card.sentence .game-icon { animation-delay: 1.1s; }
+
+.play-arrow {
+  font-size: 28px; opacity: 0.5; flex-shrink: 0;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.game-card:hover .play-arrow { transform: translateX(4px); opacity: 1; }
+
+/* ─── GAME WRAPPER (shared top bar) ────────────────────────── */
+#wordScreen, #mathScreen, #sentenceScreen, #subScreen, #addScreen { gap: 0; }
+
+.game-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; margin-bottom: 14px;
+}
+.back-btn {
+  font-family: 'Fredoka One', cursive;
+  font-size: 16px; padding: 8px 18px;
+  border-radius: 99px; border: none; cursor: pointer;
+  background: white; color: var(--dark);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.back-btn:active { transform: translateY(2px); box-shadow: 0 1px 4px rgba(0,0,0,0.10); }
+
+.game-topbar-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(20px, 5vw, 28px);
+  color: var(--coral);
+  text-shadow: 2px 2px 0 var(--sun);
+}
+.topbar-spacer { width: 80px; }
+
+/* ─── SHARED CARD SHELL ─────────────────────────────────────── */
+.card {
+  background: white;
+  border-radius: 28px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.12);
+  padding: 20px 22px 18px;
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  border: 4px solid var(--sun);
+  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes popIn {
+  from { transform: scale(0.78); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+.section-label {
+  font-size: 11px; font-weight: 800; color: #90A4AE;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+
+/* nudge */
+.nudge {
+  font-family: 'Fredoka One', cursive;
+  font-size: 17px; color: var(--coral);
+  text-align: center; min-height: 24px;
+  transition: opacity 0.3s; opacity: 0;
+}
+.nudge.show { opacity: 1; }
+
+/* win banner */
+.win-banner { display: none; flex-direction: column; align-items: center; gap: 3px; }
+.win-banner.show { display: flex; animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+.win-emoji { font-size: 44px; }
+.win-text  { font-family: 'Fredoka One', cursive; font-size: 26px; color: var(--grass); text-shadow: 2px 2px 0 var(--sun); }
+.win-word  { font-family: 'Fredoka One', cursive; font-size: 18px; color: var(--coral); text-align: center; }
+
+/* shared buttons */
+.btn {
+  font-family: 'Fredoka One', cursive; font-size: 17px;
+  padding: 10px 24px; border-radius: 99px; border: none; cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.13);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.13); }
+.btn-next  { background: var(--coral); color: white; }
+.btn-clear { background: #ECEFF1;      color: #607D8B; }
+.controls  { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* confetti */
+.confetti { position: fixed; pointer-events: none; top: 0; left: 0; right: 0; bottom: 0; z-index: 999; }
+.cf { position: absolute; border-radius: 2px; animation: fall linear forwards; }
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+/* ════════════════════════════════════════════════════════════════
+   WORD GAME STYLES
+════════════════════════════════════════════════════════════════ */
+.w-card-counter { font-size: 15px; font-weight: 800; color: var(--dark); }
+.w-level-badge {
+  display: inline-block; font-family: 'Fredoka One', cursive;
+  font-size: 13px; padding: 3px 14px; border-radius: 99px; color: white;
+}
+.w-instruction { font-size: 16px; font-weight: 700; color: #546E7A; text-align: center; }
+
+.picture-area {
+  background: linear-gradient(135deg, #E3F2FD, #F8BBD0);
+  border-radius: 18px; padding: 8px 14px; width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  border: 3px dashed #B0BEC5;
+}
+.picture-emoji {
+  font-size: clamp(48px, 10vw, 70px); line-height: 1;
+  filter: drop-shadow(2px 4px 5px rgba(0,0,0,0.12));
+  animation: wiggle 3s ease-in-out infinite;
+}
+@keyframes wiggle {
+  0%,100% { transform: rotate(-3deg) scale(1); }
+  50%      { transform: rotate(3deg)  scale(1.05); }
+}
+
+.shape-stage { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.shape-canvas {
+  position: relative;
+  background: linear-gradient(135deg, #F9FBE7, #E8F5E9);
+  border-radius: 18px; border: 3px dashed #A5D6A7;
+  width: 100%; overflow: hidden;
+}
+
+.letter-tile {
+  position: absolute; font-family: 'Fredoka One', cursive;
+  font-size: 24px; color: white; border-radius: 12px;
+  width: 50px; height: 50px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.18); cursor: pointer; user-select: none;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  animation: tileIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.letter-tile:hover { transform: scale(1.16) !important; box-shadow: 0 8px 0 rgba(0,0,0,0.18); z-index: 20; }
+.letter-tile.shake { animation: shake 0.45s ease both !important; }
+@keyframes shake {
+  0%   { transform: translateX(0) scale(1.1); background: #EF5350 !important; }
+  20%  { transform: translateX(-8px) scale(1.1); }
+  40%  { transform: translateX(8px) scale(1.1); }
+  60%  { transform: translateX(-5px) scale(1.1); }
+  80%  { transform: translateX(5px) scale(1.1); }
+  100% { transform: translateX(0) scale(1); }
+}
+@keyframes tileIn { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.answer-area { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.answer-slots { display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; }
+.answer-slot {
+  width: 50px; height: 50px; border-radius: 12px;
+  border: 3px dashed #B0BEC5; background: #FAFAFA;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s, background 0.2s;
+}
+.answer-slot.filled { border-color: transparent; background: transparent; }
+.answer-slot.next-slot {
+  border-color: #66BB6A; border-style: solid; background: #F1F8E9;
+  box-shadow: 0 0 0 3px rgba(102,187,106,0.25);
+}
+.placed-tile {
+  font-family: 'Fredoka One', cursive; font-size: 24px; color: white;
+  border-radius: 12px; width: 50px; height: 50px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.18); cursor: pointer;
+  animation: popIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
+}
+.placed-tile:hover { filter: brightness(1.1); }
+
+/* ════════════════════════════════════════════════════════════════
+   MATH GAME STYLES
+════════════════════════════════════════════════════════════════ */
+.m-card-counter { font-size: 15px; font-weight: 800; color: var(--dark); }
+.m-level-badge {
+  display: inline-block; font-family: 'Fredoka One', cursive;
+  font-size: 13px; padding: 3px 14px; border-radius: 99px; color: white;
+}
+.m-instruction { font-size: 16px; font-weight: 700; color: #546E7A; text-align: center; }
+
+/* Question area */
+.math-question-area {
+  background: linear-gradient(135deg, #E8F5E9, #F3E5F5);
+  border-radius: 20px; padding: 16px 20px; width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  border: 3px dashed #A5D6A7;
+}
+.math-equation {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(36px, 8vw, 54px);
+  color: var(--dark);
+  letter-spacing: 4px;
+  text-align: center;
+}
+.math-equation .blank {
+  display: inline-block;
+  background: var(--sun);
+  color: var(--dark);
+  min-width: 56px; height: 56px;
+  border-radius: 14px;
+  line-height: 56px;
+  vertical-align: middle;
+  font-size: 36px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.14);
+  padding: 0 8px;
+}
+
+/* Emoji counting display */
+.emoji-groups {
+  display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap;
+}
+.emoji-group {
+  background: white; border-radius: 16px; padding: 8px 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  display: flex; flex-wrap: wrap; gap: 3px; max-width: 160px;
+  justify-content: center;
+}
+.emoji-group span { font-size: 26px; line-height: 1; }
+.emoji-op {
+  font-family: 'Fredoka One', cursive;
+  font-size: 40px; color: var(--coral);
+}
+
+/* Answer choices */
+.math-choices {
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+}
+.math-choice {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(22px, 5vw, 30px);
+  color: white;
+  width: 72px; height: 72px;
+  border-radius: 18px; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 5px 0 rgba(0,0,0,0.18);
+  transition: transform 0.1s, box-shadow 0.1s;
+  animation: tileIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.math-choice:hover { transform: scale(1.1) translateY(-2px); box-shadow: 0 9px 0 rgba(0,0,0,0.18); }
+.math-choice:active { transform: scale(0.96) translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,0.18); }
+.math-choice.wrong { animation: shake 0.45s ease both !important; background: #EF5350 !important; }
+.math-choice.correct { animation: correctPop 0.35s ease both !important; background: #66BB6A !important; }
+@keyframes correctPop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.3); }
+  100% { transform: scale(1.15); }
+}
+.math-choice.dismissed {
+  animation: dismissChoice 0.5s ease forwards !important;
+  pointer-events: none;
+}
+@keyframes dismissChoice {
+  0%   { transform: scale(1);    opacity: 1; }
+  30%  { transform: scale(1.08); opacity: 0.7; }
+  100% { transform: scale(0);    opacity: 0; }
+}
+
+/* Score bar */
+.score-row {
+  display: flex; gap: 20px; align-items: center; justify-content: center;
+}
+.score-pill {
+  font-family: 'Fredoka One', cursive;
+  font-size: 16px; padding: 5px 18px; border-radius: 99px; color: white;
+  background: var(--grass);
+}
+.streak-pill {
+  font-family: 'Fredoka One', cursive;
+  font-size: 16px; padding: 5px 18px; border-radius: 99px; color: white;
+  background: var(--coral);
+}
+
+/* ── NUMBER LINE ─────────────────────────────────────────────── */
+.number-line-wrap {
+  width: 100%;
+  display: none;   /* shown only for add/subtract */
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.number-line-wrap.show { display: flex; }
+
+.number-line-svg-wrap {
+  width: 100%;
+  overflow: visible;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SUBTRACTION FLASHCARD STYLES
+════════════════════════════════════════════════════════════════ */
+#subScreen { gap: 0; }
+
+.sub-counter { font-size: 15px; font-weight: 800; color: var(--dark); }
+.sub-badge {
+  display: inline-block; font-family: 'Fredoka One', cursive;
+  font-size: 13px; padding: 3px 14px; border-radius: 99px; color: white;
+  background: var(--coral);
+}
+
+/* The big flashcard */
+.sub-card-wrap {
+  background: white;
+  border-radius: 32px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.13);
+  padding: 28px 24px 22px;
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  border: 5px solid var(--coral);
+  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* Flashcard number display */
+.sub-flashcard {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 0; width: 100%;
+  padding: 0 16px;
+}
+.sub-num-top {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(72px, 20vw, 110px);
+  color: var(--dark);
+  line-height: 1;
+  text-align: right; width: 100%;
+  animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.sub-num-bottom-row {
+  display: flex; align-items: center; justify-content: flex-end;
+  width: 100%; gap: 10px;
+}
+.sub-minus {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(56px, 16vw, 88px);
+  color: var(--coral); line-height: 1;
+}
+.sub-num-bottom {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(72px, 20vw, 110px);
+  color: var(--coral); line-height: 1;
+  animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.sub-divider {
+  width: 100%; height: 6px;
+  background: var(--dark); border-radius: 3px;
+  margin: 8px 0 20px;
+}
+
+/* Answer choice buttons */
+.sub-choices {
+  display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+  width: 100%; margin-top: 4px;
+}
+.sub-choice {
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(28px, 8vw, 46px);
+  color: white;
+  width: 88px; height: 88px;
+  border-radius: 22px; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.18);
+  transition: transform 0.1s, box-shadow 0.1s;
+  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.sub-choice:hover  { transform: scale(1.1) translateY(-3px); box-shadow: 0 11px 0 rgba(0,0,0,0.18); }
+.sub-choice:active { transform: scale(0.96) translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,0.18); }
+
+.sub-choice.wrong {
+  animation: subShake 0.45s ease both !important;
+}
+@keyframes subShake {
+  0%   { transform: translateX(0)   scale(1.05); background: #EF5350 !important; }
+  20%  { transform: translateX(-10px) scale(1.05); }
+  40%  { transform: translateX(10px)  scale(1.05); }
+  60%  { transform: translateX(-6px)  scale(1.05); }
+  80%  { transform: translateX(6px)   scale(1.05); }
+  100% { transform: translateX(0)   scale(1); }
+}
+.sub-choice.correct {
+  animation: subCorrect 0.4s ease both !important;
+  background: var(--grass) !important;
+}
+@keyframes subCorrect {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.35); }
+  100% { transform: scale(1.15); }
+}
+.sub-choice.dismissed {
+  animation: subDismiss 0.45s ease forwards !important;
+  pointer-events: none;
+}
+@keyframes subDismiss {
+  0%   { transform: scale(1);    opacity: 1; }
+  30%  { transform: scale(1.08); opacity: 0.8; background: #EF5350 !important; }
+  100% { transform: scale(0);    opacity: 0; }
+}
+
+.sub-nudge {
+  font-family: 'Fredoka One', cursive;
+  font-size: 17px; color: var(--coral);
+  text-align: center; min-height: 24px;
+  transition: opacity 0.3s; opacity: 0;
+  margin-top: 10px;
+}
+.sub-nudge.show { opacity: 1; }
+
+/* Score / progress */
+.sub-progress {
+  display: flex; gap: 4px; flex-wrap: wrap; justify-content: center;
+  margin-top: 6px; width: 100%;
+}
+.sub-pip {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #ECEFF1; border: 2px solid #B0BEC5;
+  transition: background 0.3s, border-color 0.3s;
+}
+.sub-pip.done    { background: var(--grass);  border-color: var(--grass); }
+.sub-pip.current { background: var(--coral);  border-color: var(--coral); }
+.sub-pip.wrong   { background: #EF5350; border-color: #EF5350; }
+
+.game-card.sub { border-color: var(--coral); background: linear-gradient(135deg,#ffffff,#FBE9E7); }
+.game-card.sub .lvl-pip { background: var(--coral); }
+.game-card.sub .game-icon { animation-delay: 1.6s; }
+#sentenceScreen { gap: 0; }
+
+.s-counter { font-size: 15px; font-weight: 800; color: var(--dark); }
+.s-level-badge {
+  display: inline-block; font-family: 'Fredoka One', cursive;
+  font-size: 13px; padding: 3px 14px; border-radius: 99px; color: white;
+  background: var(--lavender);
+}
+
+/* Scene SVG canvas */
+.s-scene {
+  background: linear-gradient(160deg, #E8F5E9 0%, #E3F2FD 100%);
+  border-radius: 20px; width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  border: 3px solid #CE93D8;
+  overflow: hidden;
+  position: relative;
+  min-height: 170px;
+}
+.s-scene-svg {
+  width: 100%; max-height: 170px;
+  display: block;
+}
+
+/* Countdown overlay — sits on top of scene while words are hidden */
+.s-countdown-overlay {
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,0.82);
+  border-radius: 17px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 6px;
+  transition: opacity 0.5s;
+  pointer-events: none;
+  z-index: 5;
+}
+.s-countdown-overlay.hidden { opacity: 0; pointer-events: none; }
+.s-countdown-num {
+  font-family: 'Fredoka One', cursive;
+  font-size: 54px; color: var(--lavender);
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.08);
+  line-height: 1;
+}
+.s-countdown-label {
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-size: 15px; font-weight: 700; color: #607D8B;
+}
+
+/* Sentence blanks row — Atkinson Hyperlegible for legibility */
+.s-blanks-area {
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.s-blanks-row {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center;
+}
+
+/* Static sentence words */
+.s-static-word {
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-size: clamp(18px, 4.5vw, 26px);
+  font-weight: 700;
+  color: #263238;
+  padding: 6px 2px;
+  line-height: 1.2;
+  letter-spacing: 0.3px;
+}
+
+/* Blank drop slot */
+.s-blank {
+  min-width: 70px; height: 48px;
+  border-radius: 12px; border: 3px dashed #CE93D8;
+  background: #FAF0FE;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  position: relative; padding: 0 6px;
+}
+.s-blank.drag-over {
+  border-color: var(--lavender); background: #EDE7F6;
+  transform: scale(1.06);
+  box-shadow: 0 0 0 3px rgba(206,147,216,0.4);
+}
+.s-blank.filled { border-color: transparent; background: transparent; }
+.s-blank.wrong-slot {
+  animation: slotShake 0.4s ease both;
+  border-color: #EF5350 !important;
+}
+@keyframes slotShake {
+  0%   { transform: translateX(0); background: #FFEBEE; }
+  25%  { transform: translateX(-7px); }
+  50%  { transform: translateX(7px); }
+  75%  { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
+}
+
+/* Chip placed in a slot */
+.s-chip-in-slot {
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-size: clamp(16px, 4vw, 21px);
+  font-weight: 700;
+  color: white; border-radius: 10px;
+  padding: 6px 12px; cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.16);
+  white-space: nowrap;
+  animation: popIn 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  user-select: none;
+}
+.s-chip-in-slot:hover { filter: brightness(1.1); }
+
+/* Word bank */
+.s-word-bank {
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  min-height: 60px; position: relative;
+  transition: opacity 0.4s;
+}
+.s-word-bank.hidden-bank { opacity: 0; pointer-events: none; }
+
+.s-word-chip {
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-size: clamp(18px, 4.5vw, 23px);
+  font-weight: 700;
+  color: white; border-radius: 14px;
+  padding: 10px 22px; cursor: grab;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.16);
+  white-space: nowrap; user-select: none;
+  transition: transform 0.12s, box-shadow 0.12s, opacity 0.2s;
+}
+.s-word-chip:active { cursor: grabbing; transform: scale(1.1); box-shadow: 0 8px 0 rgba(0,0,0,0.16); }
+.s-word-chip.dragging { opacity: 0.45; transform: scale(0.95); }
+.s-word-chip.used { display: none; }
+
+/* Glide animations */
+@keyframes glideFromLeft {
+  from { transform: translateX(-110vw) rotate(-6deg); opacity: 0; }
+  to   { transform: translateX(0) rotate(0deg);       opacity: 1; }
+}
+@keyframes glideFromRight {
+  from { transform: translateX(110vw) rotate(6deg); opacity: 0; }
+  to   { transform: translateX(0) rotate(0deg);     opacity: 1; }
+}
+.s-word-chip.from-left  { animation: glideFromLeft  0.6s cubic-bezier(0.22,1,0.36,1) both; }
+.s-word-chip.from-right { animation: glideFromRight 0.6s cubic-bezier(0.22,1,0.36,1) both; }
+
+/* Nudge */
+.s-nudge {
+  font-family: 'Atkinson Hyperlegible', sans-serif;
+  font-size: 17px; font-weight: 700; color: var(--coral);
+  text-align: center; min-height: 24px;
+  transition: opacity 0.3s; opacity: 0;
+}
+.s-nudge.show { opacity: 1; }
+
+/* Scene sprite animations — shared keyframes */
+@keyframes spriteWalk {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+@keyframes spriteEat {
+  0%,100% { transform: rotate(0deg); }
+  30%      { transform: rotate(-15deg) translateY(-3px); }
+  60%      { transform: rotate(10deg)  translateY(-1px); }
+}
+@keyframes spriteBounce {
+  0%,100% { transform: translateY(0) scaleY(1); }
+  40%      { transform: translateY(-18px) scaleY(1.1); }
+  70%      { transform: translateY(-8px) scaleY(0.95); }
+}
+@keyframes spriteWave {
+  0%,100% { transform: rotate(0deg); transform-origin: bottom center; }
+  25%      { transform: rotate(20deg); transform-origin: bottom center; }
+  75%      { transform: rotate(-20deg); transform-origin: bottom center; }
+}
+@keyframes spriteFloat {
+  0%,100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-10px) rotate(2deg); }
+}
+@keyframes spriteSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes spriteShine {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.7; transform: scale(1.08); }
+}
+
+/* ── SUBTRACTION STATS MODAL ─────────────────────────────── */
+.sub-stats-btn {
+  font-family: 'Fredoka One', cursive;
+  font-size: 13px; padding: 5px 14px; border-radius: 99px; border: none;
+  background: #ECEFF1; color: #607D8B; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+  transition: background 0.15s;
+}
+.sub-stats-btn:hover { background: #CFD8DC; }
+
+.sub-modal-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: rgba(0,0,0,0.55);
+  display: none; align-items: flex-start; justify-content: center;
+  padding: 16px 8px; overflow-y: auto;
+}
+.sub-modal-overlay.open { display: flex; }
+
+.sub-modal {
+  background: white; border-radius: 24px; width: 100%; max-width: 560px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+  overflow: hidden;
+  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  margin: auto;
+}
+.sub-modal-header {
+  background: linear-gradient(135deg, var(--coral), #FF8A65);
+  padding: 18px 20px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sub-modal-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 22px; color: white;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.15);
+}
+.sub-modal-close {
+  font-family: 'Fredoka One', cursive;
+  font-size: 18px; color: white; background: none; border: none;
+  cursor: pointer; opacity: 0.8; padding: 4px 8px;
+}
+.sub-modal-close:hover { opacity: 1; }
+
+.sub-modal-body { padding: 16px 18px 20px; }
+
+/* PIN gate */
+.sub-pin-section { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px 0; }
+.sub-pin-label { font-weight: 800; font-size: 15px; color: #546E7A; text-align: center; }
+.sub-pin-input {
+  font-family: 'Fredoka One', cursive; font-size: 28px; letter-spacing: 10px;
+  width: 160px; text-align: center; border: 3px solid #B0BEC5;
+  border-radius: 14px; padding: 8px; outline: none;
+  transition: border-color 0.2s;
+}
+.sub-pin-input:focus { border-color: var(--coral); }
+.sub-pin-input.wrong { border-color: #EF5350; animation: subShake 0.4s ease; }
+.sub-pin-enter {
+  font-family: 'Fredoka One', cursive; font-size: 16px;
+  padding: 10px 28px; border-radius: 99px; border: none; cursor: pointer;
+  background: var(--coral); color: white;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.13);
+}
+
+/* Stats table */
+.sub-stats-section { display: none; flex-direction: column; gap: 12px; }
+.sub-stats-section.visible { display: flex; }
+.sub-stats-summary {
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+}
+.sub-stat-pill {
+  font-family: 'Fredoka One', cursive; font-size: 13px;
+  padding: 4px 14px; border-radius: 99px; color: white;
+}
+.sub-stats-table-wrap { overflow-x: auto; }
+.sub-stats-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.sub-stats-table th {
+  background: #ECEFF1; padding: 8px 10px;
+  text-align: left; font-weight: 800; color: #546E7A;
+  border-bottom: 2px solid #CFD8DC; white-space: nowrap;
+}
+.sub-stats-table td {
+  padding: 7px 10px; border-bottom: 1px solid #ECEFF1;
+  font-weight: 700; color: var(--dark);
+}
+.sub-stats-table tr:hover td { background: #F5F5F5; }
+.acc-bar-cell { min-width: 80px; }
+.acc-bar-bg {
+  background: #ECEFF1; border-radius: 99px; height: 10px; width: 100%; overflow: hidden;
+}
+.acc-bar-fill { height: 100%; border-radius: 99px; transition: width 0.4s; }
+.acc-great { background: var(--grass); }
+.acc-ok    { background: var(--sun); }
+.acc-hard  { background: var(--coral); }
+.mastered-row td { opacity: 0.45; }
+
+.sub-stats-actions {
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; padding-top: 6px;
+}
+.sub-action-btn {
+  font-family: 'Fredoka One', cursive; font-size: 14px;
+  padding: 8px 18px; border-radius: 99px; border: none; cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.12);
+}
+.sub-btn-save   { background: var(--grass); color: white; }
+.sub-btn-reset  { background: #ECEFF1; color: #546E7A; }
+.sub-btn-export { background: var(--sky); color: white; }
+.sub-mastered-note {
+  font-size: 12px; font-weight: 700; color: #78909C; text-align: center;
+}
+/* ── ADDITION GAME EXTRAS ──────────────────────────── */
+.game-card.add { border-color: var(--grass); background: linear-gradient(135deg,#ffffff,#E8F5E9); }
+.game-card.add .lvl-pip { background: var(--grass); }
+.game-card.add .game-icon { animation-delay: 2.1s; }
+
+.add-modal-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: rgba(0,0,0,0.55);
+  display: none; align-items: flex-start; justify-content: center;
+  padding: 16px 8px; overflow-y: auto;
+}
+.add-modal-overlay.open { display: flex; }
+
+/* ════════════════════════════════════════════════════════════════
+   PARENT DASHBOARD
+════════════════════════════════════════════════════════════════ */
+.dash-overlay {
+  position: fixed; inset: 0; z-index: 9900;
+  background: rgba(15,23,42,0.72);
+  display: none; align-items: flex-start; justify-content: center;
+  padding: 0; overflow-y: auto;
+}
+.dash-overlay.open { display: flex; }
+
+.dash-modal {
+  background: #F8FAFC; width: 100%; max-width: 600px; min-height: 100vh;
+  display: flex; flex-direction: column;
+  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* Header */
+.dash-header {
+  background: linear-gradient(135deg,#37474F,#546E7A);
+  padding: 18px 20px 14px;
+  display: flex; align-items: center; gap: 12px;
+}
+.dash-header-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 22px; color: white; flex: 1;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+}
+.dash-close {
+  font-family: 'Fredoka One', cursive; font-size: 18px;
+  color: white; background: none; border: none; cursor: pointer;
+  opacity: 0.8; padding: 4px 10px; border-radius: 8px;
+}
+.dash-close:hover { opacity: 1; background: rgba(255,255,255,0.15); }
+
+/* PIN screen */
+.dash-pin-wrap {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px; padding: 40px 24px;
+}
+.dash-pin-icon { font-size: 52px; }
+.dash-pin-title {
+  font-family: 'Fredoka One', cursive; font-size: 22px; color: var(--dark);
+}
+.dash-pin-sub { font-size: 14px; color: #78909C; font-weight: 700; text-align:center; }
+.dash-pin-row { display: flex; gap: 10px; align-items: center; }
+.dash-pin-input {
+  font-family: 'Fredoka One', cursive; font-size: 30px; letter-spacing: 12px;
+  width: 168px; text-align: center;
+  border: 3px solid #B0BEC5; border-radius: 16px;
+  padding: 10px 8px; outline: none; transition: border-color 0.2s;
+}
+.dash-pin-input:focus { border-color: var(--coral); }
+.dash-pin-input.wrong { border-color:#EF5350; animation: subShake2 0.4s ease; }
+.dash-pin-btn {
+  font-family: 'Fredoka One', cursive; font-size: 16px;
+  padding: 12px 24px; border-radius: 99px; border: none; cursor: pointer;
+  background: var(--coral); color: white;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.13);
+}
+.dash-default-note { font-size: 12px; color: #90A4AE; font-weight: 700; }
+
+/* Main dashboard body */
+.dash-body { display: none; flex-direction: column; gap: 0; padding-bottom: 32px; }
+.dash-body.visible { display: flex; }
+
+/* Game summary cards */
+.dash-game-cards { display: flex; flex-direction: column; gap: 12px; padding: 16px 16px 4px; }
+.dash-game-card {
+  background: white; border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer; border: 3px solid transparent;
+  transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+}
+.dash-game-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+.dash-game-card:active { transform: scale(0.98); }
+.dash-game-icon { font-size: 40px; flex-shrink: 0; }
+.dash-game-info { flex: 1; min-width: 0; }
+.dash-game-name {
+  font-family: 'Fredoka One', cursive; font-size: 18px; color: var(--dark);
+}
+.dash-game-meta { font-size: 12px; font-weight: 700; color: #78909C; margin-top: 2px; }
+.dash-game-mini-bar {
+  height: 6px; border-radius: 99px; background: #ECEFF1;
+  margin-top: 6px; overflow: hidden;
+}
+.dash-game-mini-fill { height: 100%; border-radius: 99px; transition: width 0.5s; }
+.dash-chevron { font-size: 20px; color: #B0BEC5; flex-shrink: 0; }
+
+/* Detail view */
+.dash-detail { display: none; flex-direction: column; }
+.dash-detail.visible { display: flex; }
+.dash-detail-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px 10px;
+  border-bottom: 2px solid #ECEFF1;
+}
+.dash-back-btn {
+  font-family: 'Fredoka One', cursive; font-size: 14px;
+  padding: 6px 14px; border-radius: 99px; border: none; cursor: pointer;
+  background: #ECEFF1; color: #546E7A;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+.dash-detail-title {
+  font-family: 'Fredoka One', cursive; font-size: 20px; color: var(--dark); flex: 1;
+}
+.dash-summary-pills {
+  display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 16px 4px;
+}
+.dash-pill {
+  font-family: 'Fredoka One', cursive; font-size: 13px;
+  padding: 4px 14px; border-radius: 99px; color: white;
+}
+.dash-section-label {
+  font-size: 11px; font-weight: 800; color: #90A4AE;
+  text-transform: uppercase; letter-spacing: 1px;
+  padding: 10px 16px 4px;
+}
+.dash-table-wrap { overflow-x: auto; padding: 0 16px; }
+.dash-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.dash-table th {
+  background: #F1F5F9; padding: 8px 10px;
+  text-align: left; font-weight: 800; color: #546E7A;
+  border-bottom: 2px solid #E2E8F0; white-space: nowrap;
+  position: sticky; top: 0;
+}
+.dash-table td {
+  padding: 7px 10px; border-bottom: 1px solid #F1F5F9;
+  font-weight: 700; color: var(--dark);
+}
+.dash-table tr:hover td { background: #F8FAFC; }
+.dash-acc-bar { min-width: 70px; }
+.dash-bar-bg { background:#E2E8F0; border-radius:99px; height:9px; overflow:hidden; }
+.dash-bar-fill { height:100%; border-radius:99px; }
+.bar-great { background: var(--grass); }
+.bar-ok    { background: var(--sun); }
+.bar-hard  { background: var(--coral); }
+.dash-mastered-row td { opacity: 0.4; }
+
+/* Actions footer */
+.dash-actions {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  padding: 14px 16px 4px; justify-content: flex-end;
+  border-top: 2px solid #ECEFF1; margin-top: 8px;
+}
+.dash-action-btn {
+  font-family: 'Fredoka One', cursive; font-size: 13px;
+  padding: 8px 16px; border-radius: 99px; border: none; cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.10);
+}
+.dash-btn-save  { background: var(--grass); color: white; }
+.dash-btn-reset { background: #ECEFF1; color: #546E7A; }
+
+/* Settings panel */
+.dash-settings { padding: 14px 16px; border-top: 2px solid #ECEFF1; margin-top: 4px; }
+.dash-settings-title {
+  font-family: 'Fredoka One', cursive; font-size: 16px; color: var(--dark);
+  margin-bottom: 10px;
+}
+.dash-pin-change-row {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px;
+}
+.dash-pin-change-row input {
+  width: 100px; padding: 6px 10px; border: 2px solid #CFD8DC;
+  border-radius: 10px; font-size: 16px; font-family: 'Fredoka One', cursive;
+}
+.dash-btn-pin { background: var(--lavender); color: white; }
+
+/* Parent button in topbar (shared) */
+.parent-dash-btn {
+  font-family: 'Fredoka One', cursive; font-size: 13px;
+  padding: 5px 14px; border-radius: 99px; border: none;
+  background: #ECEFF1; color: #607D8B; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+}
+.parent-dash-btn:hover { background: #CFD8DC; }
+
+</style>
+</head>
+<body>
+
+<!-- ── FLOATING BG STARS ──────────────────────────── -->
+<div class="bg-stars" id="bgStars"></div>
+
+<!-- ══════════════════════════════════════════════════
+     MENU SCREEN
+══════════════════════════════════════════════════ -->
+<div class="screen active" id="menuScreen">
+  <div style="text-align:center; margin-bottom:6px; margin-top:8px;">
+    <div class="hub-title">🌟 Learning Hub</div>
+    <div class="hub-sub">Pick a game to play!</div>
+    <button class="parent-dash-btn" onclick="dashOpen()" style="margin-top:10px;">📊 Parent Dashboard</button>
+  </div>
+
+  <div class="game-cards">
+    <!-- Word Game -->
+    <div class="game-card words" onclick="showScreen('wordScreen'); initWordGame();">
+      <div class="game-icon">🔤</div>
+      <div class="game-info">
+        <div class="game-title">Word Shapes</div>
+        <div class="game-desc">Tap the letters to spell each word! 100 words to discover.</div>
+        <div class="game-levels">
+          <span class="lvl-pip">3 letters</span>
+          <span class="lvl-pip">4 letters</span>
+          <span class="lvl-pip">5 letters</span>
+          <span class="lvl-pip">6 letters</span>
+          <span class="lvl-pip">7 letters</span>
+        </div>
+      </div>
+      <div class="play-arrow">▶</div>
+    </div>
+
+    <!-- Math Game -->
+    <div class="game-card math" onclick="showScreen('mathScreen'); initMathGame();">
+      <div class="game-icon">🔢</div>
+      <div class="game-info">
+        <div class="game-title">Number Fun</div>
+        <div class="game-desc">Count emojis, add and subtract! Tap the right answer.</div>
+        <div class="game-levels">
+          <span class="lvl-pip">Counting</span>
+          <span class="lvl-pip">Adding</span>
+          <span class="lvl-pip">Subtracting</span>
+          <span class="lvl-pip">Mixed</span>
+        </div>
+      </div>
+      <div class="play-arrow">▶</div>
+    </div>
+    <!-- Sentence Game -->
+    <div class="game-card sentence" onclick="showScreen('sentenceScreen'); initSentenceGame();">
+      <div class="game-icon">📝</div>
+      <div class="game-info">
+        <div class="game-title">Sentence Builder</div>
+        <div class="game-desc">Drag words into the blanks to build the sentence! 25 sentences to complete.</div>
+        <div class="game-levels">
+          <span class="lvl-pip">3 words</span>
+          <span class="lvl-pip">4 words</span>
+          <span class="lvl-pip">5 words</span>
+          <span class="lvl-pip">6 words</span>
+          <span class="lvl-pip">7 words</span>
+        </div>
+      </div>
+      <div class="play-arrow">▶</div>
+    </div>
+    <!-- Subtraction Flashcards -->
+    <div class="game-card sub" onclick="showScreen('subScreen'); initSubGame();">
+      <div class="game-icon">➖</div>
+      <div class="game-info">
+        <div class="game-title">Take Away!</div>
+        <div class="game-desc">Subtraction flashcards 1–10. Pick the right answer!</div>
+        <div class="game-levels">
+          <span class="lvl-pip">1–5</span>
+          <span class="lvl-pip">6–10</span>
+          <span class="lvl-pip">All</span>
+        </div>
+      </div>
+      <div class="play-arrow">▶</div>
+    </div>
+<!-- Addition Flashcards -->
+    <div class="game-card add" onclick="showScreen('addScreen'); initAddGame();">
+      <div class="game-icon">➕</div>
+      <div class="game-info">
+        <div class="game-title">Add It Up!</div>
+        <div class="game-desc">Addition flashcards 1–10. Pick the right answer!</div>
+        <div class="game-levels">
+          <span class="lvl-pip">1–5</span>
+          <span class="lvl-pip">6–10</span>
+          <span class="lvl-pip">All</span>
+        </div>
+      </div>
+      <div class="play-arrow">▶</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SUBTRACTION FLASHCARD SCREEN
+══════════════════════════════════════════════════ -->
+<div class="screen" id="subScreen">
+  <div class="game-topbar">
+    <button class="back-btn" onclick="showScreen('menuScreen'); clearInterval(subNudgeTimer);">← Menu</button>
+    <div class="game-topbar-title">➖ Take Away!</div>
+    <button class="parent-dash-btn" onclick="dashOpen()">📊 Parent</button>
+  </div>
+
+  <div style="text-align:center; margin-bottom:8px;">
+    <div class="sub-counter" id="subCounter">Card 1 of 30</div>
+    <div class="sub-badge"   id="subBadge">⭐ Round 1 — Small Numbers</div>
+  </div>
+
+  <div class="sub-card-wrap" id="subCard">
+
+    <!-- Flashcard -->
+    <div class="sub-flashcard">
+      <div class="sub-num-top"    id="subNumTop">8</div>
+      <div class="sub-num-bottom-row">
+        <div class="sub-minus">−</div>
+        <div class="sub-num-bottom" id="subNumBot">3</div>
+      </div>
+      <div class="sub-divider"></div>
+    </div>
+
+    <!-- Answer choices -->
+    <div class="sub-choices" id="subChoices"></div>
+
+    <!-- Nudge -->
+    <div class="sub-nudge" id="subNudge">Not quite — try another! 😊</div>
+
+    <!-- Progress pips -->
+    <div class="sub-progress" id="subProgress"></div>
+
+    <!-- Win banner (reuse shared style) -->
+    <div class="win-banner" id="subWinBanner" style="margin-top:12px;">
+      <div class="win-emoji" id="subWinEmoji">🥳</div>
+      <div class="win-text"  id="subWinText">Correct!!</div>
+      <div class="win-word"  id="subWinWord"></div>
+    </div>
+
+    <button class="btn btn-next" id="subNextBtn" style="display:none; margin-top:10px;">Next ➜</button>
+  </div>
+</div>
+══════════════════════════════════════════════════ -->
+<div class="screen" id="sentenceScreen">
+  <div class="game-topbar">
+    <button class="back-btn" onclick="showScreen('menuScreen')">← Menu</button>
+    <div class="game-topbar-title">📝 Sentence Builder</div>
+    <button class="parent-dash-btn" onclick="dashOpen()">📊 Parent</button>
+  </div>
+
+  <div style="text-align:center; margin-bottom:8px;">
+    <div class="s-counter"     id="sCounter">Sentence 1 of 25</div>
+    <div class="s-level-badge" id="sLevelBadge">⭐ Level 1 — 3 Words</div>
+  </div>
+
+  <div class="card" id="sCard">
+
+    <div class="s-scene" id="sScene">
+      <svg class="s-scene-svg" id="sSceneSvg" viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="s-countdown-overlay" id="sCountdown">
+        <div class="s-countdown-num" id="sCountdownNum">3</div>
+        <div class="s-countdown-label">Look at the picture…</div>
+      </div>
+    </div>
+
+    <div class="s-blanks-area">
+      <div class="section-label">Build the sentence!</div>
+      <div class="s-blanks-row" id="sBlanksRow"></div>
+    </div>
+
+    <div class="s-nudge" id="sNudge">That word doesn't go there! 😊</div>
+
+    <div class="s-blanks-area">
+      <div class="section-label">Drag a word into a blank!</div>
+      <div class="s-word-bank" id="sWordBank"></div>
+    </div>
+
+    <div class="win-banner" id="sWinBanner">
+      <div class="win-emoji" id="sWinEmoji">🥳</div>
+      <div class="win-text"  id="sWinText">Amazing!!</div>
+      <div class="win-word"  id="sWinWord"></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-clear" id="sClearBtn">↩ Clear</button>
+      <button class="btn btn-next"  id="sNextBtn">Next ➜</button>
+    </div>
+  </div>
+</div>
+══════════════════════════════════════════════════ -->
+<div class="screen" id="wordScreen">
+  <div class="game-topbar">
+    <button class="back-btn" onclick="showScreen('menuScreen')">← Menu</button>
+    <div class="game-topbar-title">🔤 Word Shapes</div>
+    <button class="parent-dash-btn" onclick="dashOpen()">📊 Parent</button>
+  </div>
+
+  <div style="text-align:center; margin-bottom:8px;">
+    <div class="w-card-counter" id="wCardCounter">Card 1 of 100</div>
+    <div class="w-level-badge" id="wLevelBadge">⭐ Level 1</div>
+  </div>
+
+  <div class="card" id="wCard">
+    <div class="w-instruction">Tap the letters in the right order! 🎉</div>
+
+    <div class="picture-area">
+      <div class="section-label">What is it?</div>
+      <div class="picture-emoji" id="wPictureEmoji">🚗</div>
+    </div>
+
+    <div class="shape-stage">
+      <div class="section-label">Find the hidden letters!</div>
+      <div class="shape-canvas" id="wShapeCanvas"></div>
+    </div>
+
+    <div class="nudge" id="wNudge">Try a different letter! 😊</div>
+
+    <div class="answer-area">
+      <div class="section-label" id="wAnswerLabel">Spell it here!</div>
+      <div class="answer-slots" id="wAnswerSlots"></div>
+    </div>
+
+    <div class="win-banner" id="wWinBanner">
+      <div class="win-emoji" id="wWinEmoji">🥳</div>
+      <div class="win-text"  id="wWinText">Amazing!!</div>
+      <div class="win-word"  id="wWinWord"></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-clear" id="wClearBtn">↩ Clear</button>
+      <button class="btn btn-next"  id="wNextBtn">Next ➜</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     MATH GAME SCREEN
+══════════════════════════════════════════════════ -->
+<div class="screen" id="mathScreen">
+  <div class="game-topbar">
+    <button class="back-btn" onclick="showScreen('menuScreen')">← Menu</button>
+    <div class="game-topbar-title">🔢 Number Fun</div>
+    <button class="parent-dash-btn" onclick="dashOpen()">📊 Parent</button>
+  </div>
+
+  <div style="text-align:center; margin-bottom:8px;">
+    <div class="m-card-counter" id="mCardCounter">Question 1</div>
+    <div class="m-level-badge" id="mLevelBadge" style="background:#66BB6A;">⭐ Level 1 — Counting</div>
+  </div>
+
+  <div class="card" id="mCard">
+    <div class="m-instruction" id="mInstruction">How many are there? Tap the right number!</div>
+
+    <div class="score-row">
+      <div class="score-pill"  id="mScore">⭐ Score: 0</div>
+      <div class="streak-pill" id="mStreak">🔥 Streak: 0</div>
+    </div>
+
+    <div class="math-question-area">
+      <div class="section-label" id="mQuestionLabel">Count the emojis!</div>
+      <div class="emoji-groups"  id="mEmojiGroups"></div>
+      <div class="math-equation" id="mEquation" style="display:none;"></div>
+    </div>
+
+    <div class="nudge" id="mNudge">Not quite — try again! 😊</div>
+
+    <div class="number-line-wrap" id="mNumberLineWrap">
+      <div class="section-label">Number Line</div>
+      <div class="number-line-svg-wrap" id="mNumberLineSvg"></div>
+    </div>
+
+    <div class="section-label">Pick the right answer!</div>
+    <div class="math-choices" id="mChoices"></div>
+
+    <div class="win-banner" id="mWinBanner">
+      <div class="win-emoji" id="mWinEmoji">🥳</div>
+      <div class="win-text"  id="mWinText">Correct!!</div>
+      <div class="win-word"  id="mWinWord"></div>
+    </div>
+
+    <button class="btn btn-next" id="mNextBtn" style="display:none;">Next ➜</button>
+  </div>
+</div>
+
+<div class="confetti" id="confettiLayer"></div>
+
+
+<!-- ══════════════════════════════════════════════════
+     ADDITION FLASHCARD SCREEN
+══════════════════════════════════════════════════ -->
+<div class="screen" id="addScreen">
+  <div class="game-topbar">
+    <button class="back-btn" onclick="showScreen('menuScreen'); clearInterval(addNudgeTimer);">← Menu</button>
+    <div class="game-topbar-title">➖ Add It Up!</div>
+    <button class="parent-dash-btn" onclick="dashOpen()">📊 Parent</button>
+  </div>
+
+  <div style="text-align:center; margin-bottom:8px;">
+    <div class="sub-counter" id="addCounter">Card 1 of 30</div>
+    <div class="sub-badge"   id="addBadge">⭐ Round 1 — Small Numbers</div>
+  </div>
+
+  <div class="sub-card-wrap" id="addCard">
+
+    <!-- Flashcard -->
+    <div class="sub-flashcard">
+      <div class="sub-num-top"    id="addNumTop">8</div>
+      <div class="sub-num-bottom-row">
+        <div class="sub-minus" id="addOperator">+</div>
+        <div class="sub-num-bottom" id="addNumBot">3</div>
+      </div>
+      <div class="sub-divider"></div>
+    </div>
+
+    <!-- Answer choices -->
+    <div class="sub-choices" id="addChoices"></div>
+
+    <!-- Nudge -->
+    <div class="sub-nudge" id="addNudge">Not quite — try another! 😊</div>
+
+    <!-- Progress pips -->
+    <div class="sub-progress" id="addProgress"></div>
+
+    <!-- Win banner (reuse shared style) -->
+    <div class="win-banner" id="addWinBanner" style="margin-top:12px;">
+      <div class="win-emoji" id="addWinEmoji">🥳</div>
+      <div class="win-text"  id="addWinText">Correct!!</div>
+      <div class="win-word"  id="addWinWord"></div>
+    </div>
+
+    <button class="btn btn-next" id="addNextBtn" style="display:none; margin-top:10px;">Next ➜</button>
+  </div>
+</div>
+══════════════════════════════════════════════════ -->
+<div class="screen" id="sentenceScreen">
+  <div class="game-topbar">
+    <button class="back-btn" onclick="showScreen('menuScreen')">← Menu</button>
+    <div class="game-topbar-title">📝 Sentence Builder</div>
+    <div class="topbar-spacer"></div>
+  </div>
+
+  <div style="text-align:center; margin-bottom:8px;">
+    <div class="s-counter"     id="sCounter">Sentence 1 of 25</div>
+    <div class="s-level-badge" id="sLevelBadge">⭐ Level 1 — 3 Words</div>
+  </div>
+
+  <div class="card" id="sCard">
+
+    <div class="s-scene" id="sScene">
+      <svg class="s-scene-svg" id="sSceneSvg" viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="s-countdown-overlay" id="sCountdown">
+        <div class="s-countdown-num" id="sCountdownNum">3</div>
+        <div class="s-countdown-label">Look at the picture…</div>
+      </div>
+    </div>
+
+    <div class="s-blanks-area">
+      <div class="section-label">Build the sentence!</div>
+      <div class="s-blanks-row" id="sBlanksRow"></div>
+    </div>
+
+    <div class="s-nudge" id="sNudge">That word doesn't go there! 😊</div>
+
+    <div class="s-blanks-area">
+      <div class="section-label">Drag a word into a blank!</div>
+      <div class="s-word-bank" id="sWordBank"></div>
+    </div>
+
+    <div class="win-banner" id="sWinBanner">
+      <div class="win-emoji" id="sWinEmoji">🥳</div>
+      <div class="win-text"  id="sWinText">Amazing!!</div>
+      <div class="win-word"  id="sWinWord"></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-clear" id="sClearBtn">↩ Clear</button>
+      <button class="btn btn-next"  id="sNextBtn">Next ➜</button>
+    </div>
+  </div>
+</div>
+══════════════════════════════════════════════════ -->
+<div class="screen" id="wordScreen">
+  <div class="game-topbar">
+    <button class="back-btn" onclick="showScreen('menuScreen')">← Menu</button>
+    <div class="game-topbar-title">🔤 Word Shapes</div>
+    <div class="topbar-spacer"></div>
+  </div>
+
+  <div style="text-align:center; margin-bottom:8px;">
+    <div class="w-card-counter" id="wCardCounter">Card 1 of 100</div>
+    <div class="w-level-badge" id="wLevelBadge">⭐ Level 1</div>
+  </div>
+
+  <div class="card" id="wCard">
+    <div class="w-instruction">Tap the letters in the right order! 🎉</div>
+
+    <div class="picture-area">
+      <div class="section-label">What is it?</div>
+      <div class="picture-emoji" id="wPictureEmoji">🚗</div>
+    </div>
+
+    <div class="shape-stage">
+      <div class="section-label">Find the hidden letters!</div>
+      <div class="shape-canvas" id="wShapeCanvas"></div>
+    </div>
+
+    <div class="nudge" id="wNudge">Try a different letter! 😊</div>
+
+    <div class="answer-area">
+      <div class="section-label" id="wAnswerLabel">Spell it here!</div>
+      <div class="answer-slots" id="wAnswerSlots"></div>
+    </div>
+
+    <div class="win-banner" id="wWinBanner">
+      <div class="win-emoji" id="wWinEmoji">🥳</div>
+      <div class="win-text"  id="wWinText">Amazing!!</div>
+      <div class="win-word"  id="wWinWord"></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-clear" id="wClearBtn">↩ Clear</button>
+      <button class="btn btn-next"  id="wNextBtn">Next ➜</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     MATH GAME SCREEN
+══════════════════════════════════════════════════ -->
+<div class="screen" id="mathScreen">
+  <div class="game-topbar">
+    <button class="back-btn" onclick="showScreen('menuScreen')">← Menu</button>
+    <div class="game-topbar-title">🔢 Number Fun</div>
+    <div class="topbar-spacer"></div>
+  </div>
+
+  <div style="text-align:center; margin-bottom:8px;">
+    <div class="m-card-counter" id="mCardCounter">Question 1</div>
+    <div class="m-level-badge" id="mLevelBadge" style="background:#66BB6A;">⭐ Level 1 — Counting</div>
+  </div>
+
+  <div class="card" id="mCard">
+    <div class="m-instruction" id="mInstruction">How many are there? Tap the right number!</div>
+
+    <div class="score-row">
+      <div class="score-pill"  id="mScore">⭐ Score: 0</div>
+      <div class="streak-pill" id="mStreak">🔥 Streak: 0</div>
+    </div>
+
+    <div class="math-question-area">
+      <div class="section-label" id="mQuestionLabel">Count the emojis!</div>
+      <div class="emoji-groups"  id="mEmojiGroups"></div>
+      <div class="math-equation" id="mEquation" style="display:none;"></div>
+    </div>
+
+    <div class="nudge" id="mNudge">Not quite — try again! 😊</div>
+
+    <div class="number-line-wrap" id="mNumberLineWrap">
+      <div class="section-label">Number Line</div>
+      <div class="number-line-svg-wrap" id="mNumberLineSvg"></div>
+    </div>
+
+    <div class="section-label">Pick the right answer!</div>
+    <div class="math-choices" id="mChoices"></div>
+
+    <div class="win-banner" id="mWinBanner">
+      <div class="win-emoji" id="mWinEmoji">🥳</div>
+      <div class="win-text"  id="mWinText">Correct!!</div>
+      <div class="win-word"  id="mWinWord"></div>
+    </div>
+
+    <button class="btn btn-next" id="mNextBtn" style="display:none;">Next ➜</button>
+  </div>
+</div>
+
+<div class="confetti" id="confettiLayer"></div>
+
+<!-- ── SUBTRACTION STATS MODAL ──────────────────────── -->
+<div class="sub-modal-overlay" id="subStatsOverlay">
+  <div class="sub-modal">
+    <div class="sub-modal-header">
+      <div class="sub-modal-title">📊 Parent Report</div>
+      <button class="sub-modal-close" onclick="subCloseStats()">✕</button>
+    </div>
+    <div class="sub-modal-body">
+      <!-- PIN gate -->
+      <div class="sub-pin-section" id="subPinSection">
+        <div class="sub-pin-label">Enter parent PIN to view stats</div>
+        <input class="sub-pin-input" id="subPinInput" type="password"
+               maxlength="4" placeholder="••••" inputmode="numeric"/>
+        <button class="sub-pin-enter" onclick="subCheckPin()">Enter ➜</button>
+        <div style="font-size:12px;color:#90A4AE;">Default PIN: 1234 &nbsp;·&nbsp; Change in Settings</div>
+      </div>
+      <!-- Stats -->
+      <div class="sub-stats-section" id="subStatsSection">
+        <div class="sub-stats-summary" id="subStatsSummary"></div>
+        <div class="sub-stats-table-wrap">
+          <table class="sub-stats-table" id="subStatsTable">
+            <thead>
+              <tr>
+                <th>Problem</th>
+                <th>Attempts</th>
+                <th>1st Try ✓</th>
+                <th>Accuracy</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="subStatsBody"></tbody>
+          </table>
+        </div>
+        <div class="sub-mastered-note" id="subMasteredNote"></div>
+        <div class="sub-stats-actions">
+          <button class="sub-action-btn sub-btn-reset"  onclick="subResetStats()">🗑 Reset All</button>
+          <button class="sub-action-btn sub-btn-save"   onclick="subSaveMastered()">💾 Remove Mastered</button>
+        </div>
+        <!-- PIN change -->
+        <div style="margin-top:12px;border-top:1px solid #ECEFF1;padding-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:12px;font-weight:800;color:#90A4AE;">Change PIN:</span>
+          <input id="subNewPin" type="password" maxlength="4" inputmode="numeric"
+                 placeholder="New PIN" style="width:90px;padding:5px 8px;border:2px solid #CFD8DC;border-radius:8px;font-size:14px;"/>
+          <button class="sub-action-btn" style="background:var(--lavender);color:white;font-size:13px;padding:6px 14px;"
+                  onclick="subChangePin()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADDITION STATS MODAL ──────────────────────── -->
+<div class="sub-modal-overlay" id="addStatsOverlay">
+  <div class="sub-modal">
+    <div class="sub-modal-header">
+      <div class="sub-modal-title">📊 Parent Report</div>
+      <button class="sub-modal-close" onclick="addCloseStats()">✕</button>
+    </div>
+    <div class="sub-modal-body">
+      <!-- PIN gate -->
+      <div class="sub-pin-section" id="addPinSection">
+        <div class="sub-pin-label">Enter parent PIN to view stats</div>
+        <input class="sub-pin-input" id="addPinInput" type="password"
+               maxlength="4" placeholder="••••" inputmode="numeric"/>
+        <button class="sub-pin-enter" onclick="addCheckPin()">Enter ➜</button>
+        <div style="font-size:12px;color:#90A4AE;">Default PIN: 1234 &nbsp;·&nbsp; Change in Settings</div>
+      </div>
+      <!-- Stats -->
+      <div class="sub-stats-section" id="addStatsSection">
+        <div class="sub-stats-summary" id="addStatsSummary"></div>
+        <div class="sub-stats-table-wrap">
+          <table class="sub-stats-table" id="addStatsTable">
+            <thead>
+              <tr>
+                <th>Problem</th>
+                <th>Attempts</th>
+                <th>1st Try ✓</th>
+                <th>Accuracy</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="addStatsBody"></tbody>
+          </table>
+        </div>
+        <div class="sub-mastered-note" id="addMasteredNote"></div>
+        <div class="sub-stats-actions">
+          <button class="sub-action-btn sub-btn-reset"  onclick="addResetStats()">🗑 Reset All</button>
+          <button class="sub-action-btn sub-btn-save"   onclick="addSaveMastered()">💾 Remove Mastered</button>
+        </div>
+        <!-- PIN change -->
+        <div style="margin-top:12px;border-top:1px solid #ECEFF1;padding-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:12px;font-weight:800;color:#90A4AE;">Change PIN:</span>
+          <input id="addNewPin" type="password" maxlength="4" inputmode="numeric"
+                 placeholder="New PIN" style="width:90px;padding:5px 8px;border:2px solid #CFD8DC;border-radius:8px;font-size:14px;"/>
+          <button class="sub-action-btn" style="background:var(--lavender);color:white;font-size:13px;padding:6px 14px;"
+                  onclick="addChangePin()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     PARENT DASHBOARD MODAL
+══════════════════════════════════════════════════ -->
+<div class="dash-overlay" id="dashOverlay">
+  <div class="dash-modal">
+    <div class="dash-header">
+      <div class="dash-header-title">🎓 Parent Dashboard</div>
+      <button class="dash-close" onclick="dashClose()">✕ Close</button>
+    </div>
+
+    <!-- PIN gate -->
+    <div class="dash-pin-wrap" id="dashPinWrap">
+      <div class="dash-pin-icon">🔒</div>
+      <div class="dash-pin-title">Parent Access</div>
+      <div class="dash-pin-sub">Enter your PIN to view your child's progress</div>
+      <div class="dash-pin-row">
+        <input class="dash-pin-input" id="dashPinInput" type="password"
+               maxlength="4" placeholder="••••" inputmode="numeric"/>
+        <button class="dash-pin-btn" onclick="dashCheckPin()">Go ➜</button>
+      </div>
+      <div class="dash-default-note">Default PIN: 1234</div>
+    </div>
+
+    <!-- Dashboard body (shown after PIN) -->
+    <div class="dash-body" id="dashBody">
+
+      <!-- Overview cards -->
+      <div id="dashOverview">
+        <div class="dash-section-label">📊 Progress Overview — tap a game for details</div>
+        <div class="dash-game-cards" id="dashGameCards"></div>
+
+        <!-- Settings -->
+        <div class="dash-settings">
+          <div class="dash-settings-title">⚙️ Settings</div>
+          <div style="font-size:13px;font-weight:700;color:#78909C;">Change Parent PIN</div>
+          <div class="dash-pin-change-row">
+            <input id="dashNewPin" type="password" maxlength="4"
+                   inputmode="numeric" placeholder="New PIN"/>
+            <button class="dash-action-btn dash-btn-pin" onclick="dashChangePin()">Save PIN</button>
+          </div>
+          <div style="margin-top:14px;">
+            <button class="dash-action-btn dash-btn-reset" onclick="dashResetAll()">
+              🗑 Reset ALL game stats
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail view (hidden until a game card is tapped) -->
+      <div class="dash-detail" id="dashDetail">
+        <div class="dash-detail-header">
+          <button class="dash-back-btn" onclick="dashShowOverview()">← Back</button>
+          <div class="dash-detail-title" id="dashDetailTitle">Game</div>
+        </div>
+        <div class="dash-summary-pills" id="dashDetailPills"></div>
+        <div class="dash-section-label" id="dashDetailLabel">All problems</div>
+        <div class="dash-table-wrap">
+          <table class="dash-table">
+            <thead><tr id="dashDetailHead"></tr></thead>
+            <tbody id="dashDetailBody"></tbody>
+          </table>
+        </div>
+        <div class="dash-actions" id="dashDetailActions"></div>
+      </div>
+
+    </div><!-- /dash-body -->
+  </div><!-- /dash-modal -->
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  SCREEN MANAGER
+// ══════════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FLOATING STARS
+// ══════════════════════════════════════════════════════════════
+(function() {
+  const layer = document.getElementById('bgStars');
+  const icons = ['⭐','🌟','✨','💫','🌈','🎈'];
+  for (let i = 0; i < 18; i++) {
+    const s = document.createElement('div');
+    s.className = 'bg-star';
+    s.textContent = icons[i % icons.length];
+    s.style.left   = Math.random() * 100 + 'vw';
+    s.style.bottom = '-40px';
+    s.style.animationDuration = (14 + Math.random() * 18) + 's';
+    s.style.animationDelay    = (Math.random() * 16) + 's';
+    layer.appendChild(s);
+  }
+})();
+
+// ══════════════════════════════════════════════════════════════
+//  CONFETTI
+// ══════════════════════════════════════════════════════════════
+function launchConfetti() {
+  const colors = ['#FF7043','#4FC3F7','#66BB6A','#CE93D8','#FFD54F','#F06292'];
+  const layer  = document.getElementById('confettiLayer');
+  for (let i = 0; i < 75; i++) {
+    const cf = document.createElement('div');
+    cf.className = 'cf';
+    cf.style.left = Math.random() * 100 + 'vw';
+    cf.style.top  = '-16px';
+    cf.style.background = colors[i % colors.length];
+    cf.style.animationDuration = (1.1 + Math.random() * 1.4) + 's';
+    cf.style.animationDelay    = (Math.random() * 0.5) + 's';
+    cf.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    const sz = 8 + Math.random() * 10;
+    cf.style.width = sz + 'px'; cf.style.height = sz + 'px';
+    layer.appendChild(cf);
+    cf.addEventListener('animationend', () => cf.remove());
+  }
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ██╗    ██╗ ██████╗ ██████╗ ██████╗      ██████╗  █████╗ ███╗   ███╗███████╗
+//  ██║    ██║██╔═══██╗██╔══██╗██╔══██╗    ██╔════╝ ██╔══██╗████╗ ████║██╔════╝
+//  ██║ █╗ ██║██║   ██║██████╔╝██║  ██║    ██║  ███╗███████║██╔████╔██║█████╗
+//  ██║███╗██║██║   ██║██╔══██╗██║  ██║    ██║   ██║██╔══██║██║╚██╔╝██║██╔══╝
+//  ╚███╔███╔╝╚██████╔╝██║  ██║██████╔╝    ╚██████╔╝██║  ██║██║ ╚═╝ ██║███████╗
+// ══════════════════════════════════════════════════════════════
+const W_LEVELS = [
+  { name:'⭐ Level 1 — 3-Letter Words',       color:'#66BB6A' },
+  { name:'⭐⭐ Level 2 — 4-Letter Words',      color:'#4FC3F7' },
+  { name:'⭐⭐⭐ Level 3 — 5-Letter Words',    color:'#CE93D8' },
+  { name:'⭐⭐⭐⭐ Level 4 — 6-Letter Words',  color:'#FF7043' },
+  { name:'⭐⭐⭐⭐⭐ Level 5 — Big Words!',    color:'#F06292' },
+];
+
+const W_WORDS = [
+  {word:'CAR',emoji:'🚗',level:0},{word:'DOG',emoji:'🐶',level:0},{word:'CAT',emoji:'🐱',level:0},
+  {word:'SUN',emoji:'☀️',level:0},{word:'BUS',emoji:'🚌',level:0},{word:'BEE',emoji:'🐝',level:0},
+  {word:'COW',emoji:'🐄',level:0},{word:'EGG',emoji:'🥚',level:0},{word:'FLY',emoji:'🪰',level:0},
+  {word:'HAT',emoji:'🎩',level:0},{word:'HEN',emoji:'🐓',level:0},{word:'JAR',emoji:'🫙',level:0},
+  {word:'KEY',emoji:'🔑',level:0},{word:'MAP',emoji:'🗺️',level:0},{word:'OWL',emoji:'🦉',level:0},
+  {word:'PIG',emoji:'🐷',level:0},{word:'POT',emoji:'🍯',level:0},{word:'RAT',emoji:'🐭',level:0},
+  {word:'WEB',emoji:'🕸️',level:0},{word:'ZOO',emoji:'🦁',level:0},
+  {word:'BIRD',emoji:'🐦',level:1},{word:'FISH',emoji:'🐟',level:1},{word:'FROG',emoji:'🐸',level:1},
+  {word:'STAR',emoji:'⭐',level:1},{word:'DUCK',emoji:'🦆',level:1},{word:'TREE',emoji:'🌲',level:1},
+  {word:'BEAR',emoji:'🐻',level:1},{word:'BOAT',emoji:'⛵',level:1},{word:'BOOK',emoji:'📚',level:1},
+  {word:'BULL',emoji:'🐂',level:1},{word:'CAKE',emoji:'🎂',level:1},{word:'CRAB',emoji:'🦀',level:1},
+  {word:'DEER',emoji:'🦌',level:1},{word:'DRUM',emoji:'🥁',level:1},{word:'FIRE',emoji:'🔥',level:1},
+  {word:'KITE',emoji:'🪁',level:1},{word:'LION',emoji:'🦁',level:1},{word:'MOON',emoji:'🌙',level:1},
+  {word:'RAIN',emoji:'🌧️',level:1},{word:'WOLF',emoji:'🐺',level:1},
+  {word:'HORSE',emoji:'🐴',level:2},{word:'CLOUD',emoji:'☁️',level:2},{word:'PIZZA',emoji:'🍕',level:2},
+  {word:'SHEEP',emoji:'🐑',level:2},{word:'TIGER',emoji:'🐯',level:2},{word:'APPLE',emoji:'🍎',level:2},
+  {word:'BEACH',emoji:'🏖️',level:2},{word:'CAMEL',emoji:'🐫',level:2},{word:'CANDY',emoji:'🍬',level:2},
+  {word:'EAGLE',emoji:'🦅',level:2},{word:'FLAME',emoji:'🔥',level:2},{word:'GLOBE',emoji:'🌍',level:2},
+  {word:'GRAPE',emoji:'🍇',level:2},{word:'HEART',emoji:'❤️',level:2},{word:'KOALA',emoji:'🐨',level:2},
+  {word:'LEMON',emoji:'🍋',level:2},{word:'MOUSE',emoji:'🐭',level:2},{word:'OCEAN',emoji:'🌊',level:2},
+  {word:'PANDA',emoji:'🐼',level:2},{word:'PLANT',emoji:'🪴',level:2},
+  {word:'RABBIT',emoji:'🐰',level:3},{word:'FLOWER',emoji:'🌸',level:3},{word:'ROCKET',emoji:'🚀',level:3},
+  {word:'BANANA',emoji:'🍌',level:3},{word:'BRIDGE',emoji:'🌉',level:3},{word:'BUTTER',emoji:'🧈',level:3},
+  {word:'CASTLE',emoji:'🏰',level:3},{word:'CHEESE',emoji:'🧀',level:3},{word:'CHERRY',emoji:'🍒',level:3},
+  {word:'COOKIE',emoji:'🍪',level:3},{word:'DONKEY',emoji:'🫏',level:3},{word:'DRAGON',emoji:'🐉',level:3},
+  {word:'FOREST',emoji:'🌳',level:3},{word:'GUITAR',emoji:'🎸',level:3},{word:'LIZARD',emoji:'🦎',level:3},
+  {word:'MONKEY',emoji:'🐒',level:3},{word:'PARROT',emoji:'🦜',level:3},{word:'POTATO',emoji:'🥔',level:3},
+  {word:'TURTLE',emoji:'🐢',level:3},{word:'VIOLET',emoji:'💜',level:3},
+  {word:'DOLPHIN',emoji:'🐬',level:4},{word:'RAINBOW',emoji:'🌈',level:4},{word:'PENGUIN',emoji:'🐧',level:4},
+  {word:'CHICKEN',emoji:'🐔',level:4},{word:'COCONUT',emoji:'🥥',level:4},{word:'DIAMOND',emoji:'💎',level:4},
+  {word:'GORILLA',emoji:'🦍',level:4},{word:'HAMSTER',emoji:'🐹',level:4},{word:'LANTERN',emoji:'🏮',level:4},
+  {word:'LOBSTER',emoji:'🦞',level:4},{word:'OCTOPUS',emoji:'🐙',level:4},{word:'OSTRICH',emoji:'🦤',level:4},
+  {word:'PANCAKE',emoji:'🥞',level:4},{word:'PELICAN',emoji:'🦩',level:4},{word:'PUMPKIN',emoji:'🎃',level:4},
+  {word:'SANDALS',emoji:'👡',level:4},{word:'UNICORN',emoji:'🦄',level:4},{word:'VOLCANO',emoji:'🌋',level:4},
+  {word:'WALRUS',emoji:'🦭',level:3},{word:'GIRAFFE',emoji:'🦒',level:4},
+];
+
+const P3B=[[0,1],[1,0],[2,1]], P3E=[[0,0],[1,1],[2,0]];
+const P4W=[[0,1],[1,0],[2,1],[3,0]], P4Z=[[0,0],[1,1],[2,0],[3,1]];
+const P4U=[[0,0],[1,1],[2,1],[3,0]], P4A=[[0,1],[1,0],[2,0],[3,1]];
+const P5V=[[0,2],[1,1],[2,0],[3,1],[4,2]], P5D=[[0,1],[1,0],[2,1],[3,2],[4,1]];
+const P5S=[[0,0],[1,1],[2,2],[3,1],[4,0]], P5W=[[0,1],[1,0],[2,1],[3,0],[4,1]];
+const P6U=[[0,0],[1,1],[2,2],[3,2],[4,1],[5,0]], P6W=[[0,1],[1,0],[2,1],[3,2],[4,1],[5,0]];
+const P6Z=[[0,0],[1,2],[2,0],[3,2],[4,0],[5,2]], P6A=[[0,2],[1,1],[2,0],[3,0],[4,1],[5,2]];
+const P7W=[[0,0],[1,1],[2,2],[3,1],[4,0],[5,1],[6,2]];
+const P7A=[[0,2],[1,1],[2,0],[3,0],[4,0],[5,1],[6,2]];
+const P7Z=[[0,0],[1,2],[2,0],[3,2],[4,0],[5,2],[6,0]];
+const P7S=[[0,1],[1,0],[2,1],[3,2],[4,1],[5,0],[6,1]];
+
+const W_SHAPES = {
+  CAR:P3B,DOG:P3E,CAT:P3B,SUN:P3E,BUS:P3B,BEE:P3E,COW:P3B,EGG:P3E,FLY:P3B,HAT:P3E,
+  HEN:P3B,JAR:P3E,KEY:P3B,MAP:P3E,OWL:P3B,PIG:P3E,POT:P3B,RAT:P3E,WEB:P3B,ZOO:P3E,
+  BIRD:P4W,FISH:P4Z,FROG:P4U,STAR:P4A,DUCK:P4W,TREE:P4A,BEAR:P4Z,BOAT:P4U,BOOK:P4W,
+  BULL:P4Z,CAKE:P4A,CRAB:P4U,DEER:P4W,DRUM:P4Z,FIRE:P4A,KITE:P4U,LION:P4W,MOON:P4Z,
+  RAIN:P4A,WOLF:P4U,
+  HORSE:P5V,CLOUD:P5S,PIZZA:P5D,SHEEP:P5V,TIGER:P5W,APPLE:P5D,BEACH:P5S,CAMEL:P5V,
+  CANDY:P5W,EAGLE:P5D,FLAME:P5S,GLOBE:P5V,GRAPE:P5W,HEART:P5D,KOALA:P5S,LEMON:P5V,
+  MOUSE:P5W,OCEAN:P5D,PANDA:P5S,PLANT:P5V,
+  RABBIT:P6U,FLOWER:P6W,ROCKET:P6Z,BANANA:P6A,BRIDGE:P6U,BUTTER:P6W,CASTLE:P6Z,
+  CHEESE:P6A,CHERRY:P6U,COOKIE:P6W,DONKEY:P6Z,DRAGON:P6A,FOREST:P6U,GUITAR:P6W,
+  LIZARD:P6Z,MONKEY:P6A,PARROT:P6U,POTATO:P6W,TURTLE:P6Z,VIOLET:P6A,WALRUS:P6U,
+  DOLPHIN:P7W,RAINBOW:P7A,PENGUIN:P7S,CHICKEN:P7Z,COCONUT:P7W,DIAMOND:P7A,GORILLA:P7Z,
+  HAMSTER:P7S,LANTERN:P7W,LOBSTER:P7A,OCTOPUS:P7Z,OSTRICH:P7S,PANCAKE:P7W,PELICAN:P7A,
+  PUMPKIN:P7Z,SANDALS:P7S,UNICORN:P7W,VOLCANO:P7A,GIRAFFE:P7Z,
+};
+
+const W_COLORS = ['#FF7043','#4FC3F7','#66BB6A','#CE93D8','#FFD54F','#F06292','#4DB6AC','#FF8A65','#7986CB'];
+const W_NUDGE  = ['Try a different letter! 😊','Oops! Not that one 🙈','Almost! Try again 💪','That letter comes later! 😄','Keep looking! 🔍'];
+const W_TILE=50, W_GAP=10, W_CELL=60, W_PAD=14;
+
+let wCurrent=0, wPlaced=[], wNudgeTimer=null;
+
+function initWordGame() {
+  wCurrent = 0;
+  wLoadCard(0);
+}
+
+function wLoadCard(idx) {
+  wWrongCount = 0;
+  document.getElementById('confettiLayer').innerHTML = '';
+  const wb = document.getElementById('wWinBanner');
+  wb.classList.remove('show');
+  document.getElementById('wAnswerLabel').textContent = 'Spell it here!';
+  document.getElementById('wNudge').classList.remove('show');
+
+  const data    = W_WORDS[idx];
+  const letters = data.word.split('');
+  wPlaced = new Array(letters.length).fill(null);
+
+  document.getElementById('wCardCounter').textContent = `Card ${idx+1} of ${W_WORDS.length}`;
+  document.getElementById('wPictureEmoji').textContent = data.emoji;
+
+  const lv = W_LEVELS[data.level];
+  const lb = document.getElementById('wLevelBadge');
+  lb.textContent = lv.name; lb.style.background = lv.color;
+
+  const prevLevel = idx > 0 ? W_WORDS[idx-1].level : data.level;
+  if (data.level > prevLevel) {
+    document.getElementById('wWinEmoji').textContent = '🎊';
+    document.getElementById('wWinText').textContent  = 'Level Up!!';
+    document.getElementById('wWinWord').textContent  = lv.name;
+    wb.classList.add('show');
+    setTimeout(() => wb.classList.remove('show'), 2400);
+  }
+
+  wRenderShape(data.word, shuffle(letters));
+  wRenderSlots(letters.length);
+
+  // animate card
+  const card = document.getElementById('wCard');
+  card.style.animation='none'; void card.offsetWidth;
+  card.style.animation='popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+}
+
+function wRenderShape(word, shuffled) {
+  const canvas = document.getElementById('wShapeCanvas');
+  canvas.innerHTML = '';
+  const cells  = W_SHAPES[word] || shuffled.map((_,i)=>[i,0]);
+  const maxCol = Math.max(...cells.map(c=>c[0]));
+  const maxRow = Math.max(...cells.map(c=>c[1]));
+  canvas.style.height = (maxRow * W_CELL + W_TILE + W_PAD*2) + 'px';
+
+  requestAnimationFrame(() => {
+    const cw      = canvas.offsetWidth || 500;
+    const gridW   = maxCol * W_CELL + W_TILE;
+    const originX = Math.floor((cw - gridW) / 2);
+
+    shuffled.forEach((letter, i) => {
+      const [col,row] = cells[i] || [i,0];
+      const color = W_COLORS[i % W_COLORS.length];
+      const tile  = document.createElement('div');
+      tile.className = 'letter-tile';
+      tile.textContent = letter;
+      tile.style.left       = (originX + col*W_CELL) + 'px';
+      tile.style.top        = (W_PAD  + row*W_CELL)  + 'px';
+      tile.style.background = color;
+      tile.style.animationDelay = (i*0.055)+'s';
+      tile.addEventListener('click', () => wOnLetterClick(tile, letter, color));
+      canvas.appendChild(tile);
+    });
+  });
+}
+
+function wRenderSlots(count) {
+  const slots = document.getElementById('wAnswerSlots');
+  slots.innerHTML = '';
+  for (let i=0;i<count;i++) {
+    const s=document.createElement('div');
+    s.className='answer-slot';
+    slots.appendChild(s);
+  }
+  wHighlightNext();
+}
+
+function wHighlightNext() {
+  const slots = document.getElementById('wAnswerSlots');
+  Array.from(slots.children).forEach(s=>s.classList.remove('next-slot'));
+  const next = wPlaced.findIndex(v=>v===null);
+  if (next!==-1) slots.children[next].classList.add('next-slot');
+}
+
+function wOnLetterClick(tile, letter, color) {
+  if (tile.style.visibility==='hidden') return;
+  const next = wPlaced.findIndex(v=>v===null);
+  if (next===-1) return;
+
+  if (letter !== W_WORDS[wCurrent].word[next]) {
+    tile.classList.remove('shake'); void tile.offsetWidth; tile.classList.add('shake');
+    tile.addEventListener('animationend',()=>tile.classList.remove('shake'),{once:true});
+    const nudge = document.getElementById('wNudge');
+    nudge.textContent = W_NUDGE[Math.floor(Math.random()*W_NUDGE.length)];
+    nudge.classList.add('show');
+    clearTimeout(wNudgeTimer);
+    wWrongCount++;
+    wNudgeTimer = setTimeout(()=>nudge.classList.remove('show'), 1800);
+    return;
+  }
+
+  wPlaced[next] = {letter, color, tileEl: tile};
+  tile.style.visibility = 'hidden';
+  const slots = document.getElementById('wAnswerSlots');
+  const slot  = slots.children[next];
+  slot.classList.remove('next-slot'); slot.classList.add('filled');
+  const pt = document.createElement('div');
+  pt.className = 'placed-tile'; pt.textContent = letter; pt.style.background = color;
+  pt.addEventListener('click', ()=>wOnPlacedClick(next));
+  slot.appendChild(pt);
+  wHighlightNext();
+  wCheckWin();
+}
+
+function wOnPlacedClick(idx) {
+  const last = wPlaced.reduce((l,v,i)=>v!==null?i:l, -1);
+  if (idx!==last) return;
+  wPlaced[idx].tileEl.style.visibility='visible';
+  wPlaced[idx]=null;
+  const slot=document.getElementById('wAnswerSlots').children[idx];
+  slot.classList.remove('filled'); slot.innerHTML='';
+  wHighlightNext();
+}
+
+// Track wrong attempts per card
+let wWrongCount = 0;
+function wCheckWin() {
+  if (wPlaced.some(v=>v===null)) return;
+  document.getElementById('wAnswerLabel').textContent='You got it! 🎉';
+  document.getElementById('wWinEmoji').textContent='🥳';
+  document.getElementById('wWinText').textContent='Amazing!!';
+  document.getElementById('wWinWord').textContent=`You spelled ${W_WORDS[wCurrent].word}! 🎊`;
+  document.getElementById('wWinBanner').classList.add('show');
+  launchConfetti();
+  dashRecordWord(W_WORDS[wCurrent].word, wWrongCount === 0, true);
+  setTimeout(wNextCard, 2800);
+}
+
+function wNextCard() {
+  if (wCurrent >= W_WORDS.length-1) {
+    document.getElementById('wWinEmoji').textContent='🏆';
+    document.getElementById('wWinText').textContent='All words done!';
+    document.getElementById('wWinWord').textContent='You are a SUPERSTAR! 🌟';
+    document.getElementById('wWinBanner').classList.add('show');
+    return;
+  }
+  wCurrent++;
+  wLoadCard(wCurrent);
+}
+
+document.getElementById('wNextBtn').addEventListener('click', wNextCard);
+document.getElementById('wClearBtn').addEventListener('click', () => {
+  for (let i=wPlaced.length-1;i>=0;i--) {
+    if (!wPlaced[i]) continue;
+    wPlaced[i].tileEl.style.visibility='visible';
+    const s=document.getElementById('wAnswerSlots').children[i];
+    s.classList.remove('filled'); s.innerHTML=''; wPlaced[i]=null;
+  }
+  wHighlightNext();
+});
+
+
+// ══════════════════════════════════════════════════════════════
+//  ███╗   ███╗ █████╗ ████████╗██╗  ██╗     ██████╗  █████╗ ███╗   ███╗███████╗
+//  ████╗ ████║██╔══██╗╚══██╔══╝██║  ██║    ██╔════╝ ██╔══██╗████╗ ████║██╔════╝
+//  ██╔████╔██║███████║   ██║   ███████║    ██║  ███╗███████║██╔████╔██║█████╗
+//  ██║╚██╔╝██║██╔══██║   ██║   ██╔══██║    ██║   ██║██╔══██║██║╚██╔╝██║██╔══╝
+//  ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║    ╚██████╔╝██║  ██║██║ ╚═╝ ██║███████╗
+// ══════════════════════════════════════════════════════════════
+const M_LEVELS = [
+  { name:'⭐ Level 1 — Counting 1–5',        color:'#66BB6A', type:'count',    countRange:[1,5]  },
+  { name:'⭐⭐ Level 2 — Counting 6–10',      color:'#4FC3F7', type:'count',    countRange:[6,10] },
+  { name:'⭐⭐⭐ Level 3 — Adding 1–10',      color:'#CE93D8', type:'add',      countRange:[1,10] },
+  { name:'⭐⭐⭐⭐ Level 4 — Subtracting 1–10',color:'#FF7043', type:'subtract', countRange:[1,10] },
+  { name:'⭐⭐⭐⭐⭐ Level 5 — Mixed!',        color:'#F06292', type:'mixed',    countRange:[1,15] },
+];
+
+const M_EMOJIS = ['🍎','🐶','⭐','🌸','🎈','🦋','🍕','🐸','🌟','🦄','🐥','🍭','🐢','🎀','🍦'];
+const M_NUDGE  = ['Not quite — try again! 😊','Oops! Let\'s count again 🙈','Almost! 💪','Try the other number! 😄','You can do it! 🌟'];
+const M_PRAISE = ['Fantastic!! 🎉','You got it!! ⭐','Super smart!! 🧠','Brilliant!! 🌈','Amazing!! 🥳','Wow, correct!! 💫'];
+
+let mLevel=0, mQCount=0, mScore=0, mStreak=0, mAnswer=0, mNudgeTimer=null, mLocked=false;
+let mQueue = [];   // ordered list of question specs for the current level
+
+// Build a shuffled queue where each target value appears exactly twice
+function buildQueue(type, countRange) {
+  const [lo, hi] = countRange;
+  let items = [];
+
+  if (type === 'count') {
+    // Each number lo..hi appears twice
+    for (let n = lo; n <= hi; n++) items.push({ type:'count', a: n });
+    items = [...items, ...items];  // duplicate
+    return shuffle(items);
+  }
+
+  if (type === 'add') {
+    // Answers 1..10, each twice. Pick sensible addends.
+    for (let ans = lo; ans <= hi; ans++) {
+      // Two different addend pairs for this answer
+      for (let rep = 0; rep < 2; rep++) {
+        const a = Math.max(1, Math.min(ans - 1, 1 + Math.floor(Math.random() * (ans - 1))));
+        const b = ans - a;
+        items.push({ type:'add', a, b, answer: ans });
+      }
+    }
+    return shuffle(items);
+  }
+
+  if (type === 'subtract') {
+    // Answers 1..10, each twice. Pick sensible minuend/subtrahend.
+    for (let ans = lo; ans <= hi; ans++) {
+      for (let rep = 0; rep < 2; rep++) {
+        const b = Math.max(1, Math.floor(Math.random() * Math.min(ans, hi - ans + 1)) + 1);
+        const a = ans + b;
+        items.push({ type:'subtract', a, b, answer: ans });
+      }
+    }
+    return shuffle(items);
+  }
+
+  // mixed — just 20 random questions
+  for (let i = 0; i < 20; i++) {
+    const t = Math.random() < 0.5 ? 'add' : 'subtract';
+    const maxN = hi;
+    if (t === 'add') {
+      const a = 1 + Math.floor(Math.random() * Math.floor(maxN / 2));
+      const b = 1 + Math.floor(Math.random() * Math.floor(maxN / 2));
+      items.push({ type:'add', a, b, answer: a + b });
+    } else {
+      const a = 2 + Math.floor(Math.random() * (maxN - 1));
+      const b = 1 + Math.floor(Math.random() * (a - 1));
+      items.push({ type:'subtract', a, b, answer: a - b });
+    }
+  }
+  return items;
+}
+
+function initMathGame() {
+  mLevel=0; mQCount=0; mScore=0; mStreak=0;
+  mQueue = buildQueue(M_LEVELS[0].type, M_LEVELS[0].countRange);
+  updateMathScore();
+  mNextQuestion();
+}
+
+function updateMathScore() {
+  document.getElementById('mScore').textContent  = `⭐ Score: ${mScore}`;
+  document.getElementById('mStreak').textContent = `🔥 Streak: ${mStreak}`;
+}
+
+function mNextQuestion() {
+  mLocked = false;
+  document.getElementById('mWinBanner').classList.remove('show');
+  document.getElementById('mNudge').classList.remove('show');
+  document.getElementById('mNextBtn').style.display='none';
+  document.getElementById('confettiLayer').innerHTML='';
+
+  // Level up when queue is exhausted
+  if (mQueue.length === 0) {
+    if (mLevel < M_LEVELS.length - 1) {
+      mLevel++;
+      mQCount = 0;
+      mQueue = buildQueue(M_LEVELS[mLevel].type, M_LEVELS[mLevel].countRange);
+      const lv = M_LEVELS[mLevel];
+      document.getElementById('mWinEmoji').textContent = '🎊';
+      document.getElementById('mWinText').textContent  = 'Level Up!!';
+      document.getElementById('mWinWord').textContent  = lv.name;
+      document.getElementById('mWinBanner').classList.add('show');
+      setTimeout(() => {
+        document.getElementById('mWinBanner').classList.remove('show');
+        _doNextQuestion();
+      }, 2200);
+      return;
+    } else {
+      // All levels done
+      document.getElementById('mWinEmoji').textContent = '🏆';
+      document.getElementById('mWinText').textContent  = 'All done!!';
+      document.getElementById('mWinWord').textContent  = 'You are a SUPERSTAR! 🌟';
+      document.getElementById('mWinBanner').classList.add('show');
+      return;
+    }
+  }
+
+  _doNextQuestion();
+}
+
+let mCurrentSpec = null;
+let mWasWrong = false;
+function _doNextQuestion() {
+  const lv  = M_LEVELS[mLevel];
+  const spec = mQueue.shift();
+  mQCount++;
+
+  document.getElementById('mLevelBadge').textContent       = lv.name;
+  document.getElementById('mLevelBadge').style.background  = lv.color;
+  document.getElementById('mCardCounter').textContent =
+    `Question ${mQCount} · Level ${mLevel+1} of ${M_LEVELS.length}`;
+
+  const card = document.getElementById('mCard');
+  card.style.animation='none'; void card.offsetWidth;
+  card.style.animation='popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+
+  const emoji = M_EMOJIS[Math.floor(Math.random() * M_EMOJIS.length)];
+  const type  = spec.type;
+  let a = spec.a, b = spec.b || 0;
+  mAnswer = spec.answer !== undefined ? spec.answer : spec.a;
+  mCurrentSpec = spec;
+  mWasWrong = false;
+
+  if (type === 'count') {
+    document.getElementById('mInstruction').textContent    = `How many ${emoji} are there?`;
+    document.getElementById('mQuestionLabel').textContent  = `Count the ${emoji}!`;
+    document.getElementById('mEquation').style.display     = 'none';
+    renderEmojiCount(emoji, a, null, null);
+  } else if (type === 'add') {
+    document.getElementById('mInstruction').textContent    = 'What is the answer?';
+    document.getElementById('mQuestionLabel').textContent  = 'Add them up!';
+    document.getElementById('mEquation').style.display     = 'none';
+    renderEmojiCount(emoji, a, '+', b);
+  } else {
+    document.getElementById('mInstruction').textContent    = 'What is the answer?';
+    document.getElementById('mQuestionLabel').textContent  = 'Take some away!';
+    document.getElementById('mEquation').style.display     = 'none';
+    renderEmojiCount(emoji, a, '-', b);
+  }
+
+  renderChoices(mAnswer, lv.countRange);
+  renderNumberLine(mAnswer, lv.countRange[1] * 2, type, a, b);
+}
+
+function renderEmojiCount(emoji, count, op, count2) {
+  const g = document.getElementById('mEmojiGroups');
+  g.innerHTML='';
+
+  // Group 1
+  const grp1 = document.createElement('div');
+  grp1.className='emoji-group';
+  for (let i=0;i<count;i++) {
+    const s=document.createElement('span'); s.textContent=emoji; grp1.appendChild(s);
+  }
+  g.appendChild(grp1);
+
+  if (op) {
+    const opEl=document.createElement('div'); opEl.className='emoji-op'; opEl.textContent=op;
+    g.appendChild(opEl);
+
+    const emoji2 = M_EMOJIS[(M_EMOJIS.indexOf(emoji)+3)%M_EMOJIS.length];
+    const grp2   = document.createElement('div'); grp2.className='emoji-group';
+    const dispCount = op==='-' ? count2 : count2;
+    for (let i=0;i<dispCount;i++) {
+      const s=document.createElement('span');
+      s.textContent = op==='-' ? '❌' : emoji2;
+      grp2.appendChild(s);
+    }
+    g.appendChild(grp2);
+
+    // Show equation below groups for add/subtract
+    const eq = document.getElementById('mEquation');
+    eq.style.display='block';
+    eq.innerHTML = `${count} ${op} ${count2} = <span class="blank">?</span>`;
+  }
+}
+
+function renderNumberLine(answer, max, opType, a, b) {
+  const wrap = document.getElementById('mNumberLineWrap');
+  const svgWrap = document.getElementById('mNumberLineSvg');
+
+  // Only show for add/subtract
+  if (!opType || opType === 'count') {
+    wrap.classList.remove('show');
+    svgWrap.innerHTML = '';
+    return;
+  }
+  wrap.classList.add('show');
+
+  // Dynamic range: just cover the numbers actually in the problem.
+  // For add: 0 … (a + b) = answer. For subtract: 0 … a.
+  // Add a little breathing room of +1 on each end (but floor at 0).
+  const lineMin = 0;
+  const lineMax = opType === 'add' ? answer : a;  // highest number in problem
+  const nums = Array.from({length: lineMax - lineMin + 1}, (_, i) => lineMin + i);
+
+  const W = svgWrap.offsetWidth || 480;
+  const PAD_L = 22, PAD_R = 22;
+  const trackW = W - PAD_L - PAD_R;
+  const step   = nums.length > 1 ? trackW / (nums.length - 1) : trackW;
+
+  const H = 80;
+  const trackY = 50;
+  const dotR   = 14;
+
+  // Build SVG
+  let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+
+  // ── Track line ──────────────────────────────────────────────
+  svg += `<line x1="${PAD_L}" y1="${trackY}" x2="${W - PAD_R}" y2="${trackY}"
+    stroke="#B0BEC5" stroke-width="5" stroke-linecap="round"/>`;
+
+  // ── Highlight arc ───────────────────────────────────────────
+  // Add: arc from a → answer. Subtract: arc from a back to answer.
+  const arcColor = opType === 'add' ? '#66BB6A' : '#FF7043';
+  const idxA      = nums.indexOf(a);
+  const idxAnswer = nums.indexOf(answer);
+  const x1h = PAD_L + idxA      * step;
+  const x2h = PAD_L + idxAnswer * step;
+  const arcSpan = Math.abs(x2h - x1h);
+  const arcR    = arcSpan / 2;
+
+  if (arcR > 4) {
+    // Sweep direction: 1 = clockwise (left→right), 0 = counter (right→left)
+    const sweep = x2h >= x1h ? 1 : 0;
+    svg += `<path d="M ${x1h} ${trackY} A ${arcR} ${arcR * 0.65} 0 0 ${sweep} ${x2h} ${trackY}"
+      fill="none" stroke="${arcColor}" stroke-width="4"
+      stroke-dasharray="7 4" stroke-linecap="round" opacity="0.9"/>`;
+    // Arrowhead at destination
+    const dir = x2h >= x1h ? 1 : -1;
+    svg += `<polygon points="${x2h},${trackY} ${x2h - dir*10},${trackY - 7} ${x2h - dir*10},${trackY + 7}"
+      fill="${arcColor}" opacity="0.95"/>`;
+  }
+
+  // ── Dots + numbers ──────────────────────────────────────────
+  nums.forEach((n, idx) => {
+    const x = PAD_L + idx * step;
+    const isAnswer = n === answer;
+    const isA      = n === a;
+
+    let dotColor, strokeC;
+    if (isAnswer) { dotColor = '#FFD54F'; strokeC = '#FF8F00'; }
+    else if (isA) { dotColor = '#4FC3F7'; strokeC = '#0288D1'; }
+    else          { dotColor = '#E0E0E0'; strokeC = '#B0BEC5'; }
+
+    const r = isAnswer ? dotR + 3 : dotR;
+    svg += `<circle cx="${x}" cy="${trackY}" r="${r}"
+      fill="${dotColor}" stroke="${strokeC}" stroke-width="2.5"/>`;
+    svg += `<text x="${x}" y="${trackY + 5}" text-anchor="middle"
+      font-family="Fredoka One, cursive" font-size="${isAnswer ? 16 : 14}"
+      fill="${isAnswer || isA ? '#263238' : '#607D8B'}" font-weight="bold">${n}</text>`;
+  });
+
+  svg += `</svg>`;
+  svgWrap.innerHTML = svg;
+}
+
+function renderChoices(correct, countRange) {
+  const container = document.getElementById('mChoices');
+  container.innerHTML='';
+
+  // Generate 3 wrong answers (unique, non-negative)
+  const wrongs = new Set();
+  let safety = 0;
+  while (wrongs.size < 3 && safety++ < 50) {
+    const delta = Math.floor(Math.random()*4)+1;
+    const sign  = Math.random()<0.5?1:-1;
+    const w     = correct + sign*delta;
+    if (w !== correct && w >= 0 && !wrongs.has(w)) wrongs.add(w);
+  }
+
+  const choices = shuffle([correct, ...wrongs]);
+  const colors  = ['#FF7043','#4FC3F7','#66BB6A','#CE93D8'];
+
+  choices.forEach((num, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'math-choice';
+    btn.textContent = num;
+    btn.style.background = colors[i % colors.length];
+    btn.style.animationDelay = (i*0.07)+'s';
+    btn.addEventListener('click', ()=>mOnChoiceClick(btn, num));
+    container.appendChild(btn);
+  });
+}
+
+function mOnChoiceClick(btn, num) {
+  if (mLocked) return;
+
+  if (num !== mAnswer) {
+    // Shake first, then gently dismiss
+    btn.classList.remove('wrong'); void btn.offsetWidth; btn.classList.add('wrong');
+    btn.addEventListener('animationend', () => {
+      btn.classList.remove('wrong');
+      btn.classList.add('dismissed');
+      btn.disabled = true;
+    }, { once: true });
+
+    const nudge = document.getElementById('mNudge');
+    nudge.textContent = M_NUDGE[Math.floor(Math.random()*M_NUDGE.length)];
+    nudge.classList.add('show');
+    clearTimeout(mNudgeTimer);
+    mNudgeTimer = setTimeout(()=>nudge.classList.remove('show'), 1800);
+    mStreak=0; updateMathScore();
+    mWasWrong = true;
+    return;
+  }
+
+  // Correct!
+  mLocked = true;
+  btn.classList.add('correct');
+  mScore++; mStreak++;
+  updateMathScore();
+  launchConfetti();
+  // Record stat
+  (function() {
+    let label, type;
+    const spec = mCurrentSpec;
+    if (!spec) return;
+    if (spec.type === 'count') { type = 'count'; label = '' + spec.a; }
+    else if (spec.type === 'add') { type = 'add'; label = spec.a + '+' + spec.b; }
+    else { type = 'sub'; label = spec.a + '-' + spec.b; }
+    dashRecordMath(label, type, !mWasWrong);
+  })();
+
+  const praise = M_PRAISE[Math.floor(Math.random()*M_PRAISE.length)];
+  document.getElementById('mWinEmoji').textContent='🎉';
+  document.getElementById('mWinText').textContent=praise;
+  document.getElementById('mWinWord').textContent=`${mAnswer} is correct! 🌟`;
+  document.getElementById('mWinBanner').classList.add('show');
+
+  // Show Next btn after a beat
+  setTimeout(()=>{ document.getElementById('mNextBtn').style.display='block'; }, 900);
+}
+
+document.getElementById('mNextBtn').addEventListener('click', mNextQuestion);
+
+// ══════════════════════════════════════════════════════════════
+//  SENTENCE BUILDER GAME
+// ══════════════════════════════════════════════════════════════
+
+const S_LEVELS = [
+  { name: '⭐ Level 1 — 3 Words',         color: '#66BB6A' },
+  { name: '⭐⭐ Level 2 — 4 Words',        color: '#4FC3F7' },
+  { name: '⭐⭐⭐ Level 3 — 5 Words',      color: '#CE93D8' },
+  { name: '⭐⭐⭐⭐ Level 4 — 6 Words',    color: '#FF7043' },
+  { name: '⭐⭐⭐⭐⭐ Level 5 — 7 Words',  color: '#F06292' },
+];
+
+// scene: inline SVG content showing the ACTION (gives picture context)
+const S_SENTENCES = [
+  // Level 1
+  {
+    level:0,
+    scene:`<rect x="0" y="0" width="400" height="130" fill="#E1F5FE"/>
+<rect x="0" y="130" width="400" height="30" fill="#A5D6A7" rx="4"/>
+<circle cx="360" cy="30" r="20" fill="#FFD54F" style="animation:spriteShine 2s ease-in-out infinite"/>
+<g style="animation:spriteWalk 0.7s ease-in-out infinite">
+  <ellipse cx="200" cy="115" rx="38" ry="22" fill="#FF8A65"/>
+  <circle cx="238" cy="100" r="18" fill="#FF8A65"/>
+  <ellipse cx="248" cy="95" rx="5" ry="9" fill="#FF8A65" transform="rotate(-20,248,95)"/>
+  <circle cx="244" cy="96" r="4" fill="#37474F"/>
+  <rect x="172" y="118" width="8" height="16" rx="4" fill="#FF8A65"/>
+  <rect x="186" y="118" width="8" height="16" rx="4" fill="#FF8A65"/>
+  <rect x="208" y="118" width="8" height="16" rx="4" fill="#FF8A65"/>
+  <rect x="222" y="118" width="8" height="16" rx="4" fill="#FF8A65"/>
+  <line x1="162" y1="110" x2="145" y2="90" stroke="#FF8A65" stroke-width="7" stroke-linecap="round" style="animation:spriteWave 0.5s ease-in-out infinite;transform-origin:162px 110px"/>
+</g>
+<g style="animation:spriteWalk 0.6s ease-in-out infinite;animation-delay:0.15s">
+  <circle cx="100" cy="60" r="16" fill="#FFCC80"/>
+  <rect x="90" y="76" width="20" height="32" rx="6" fill="#42A5F5"/>
+  <line x1="90" y1="82" x2="72" y2="100" stroke="#FFCC80" stroke-width="5" stroke-linecap="round"/>
+  <line x1="110" y1="82" x2="128" y2="100" stroke="#FFCC80" stroke-width="5" stroke-linecap="round"/>
+  <line x1="95" y1="108" x2="88" y2="132" stroke="#5C6BC0" stroke-width="5" stroke-linecap="round"/>
+  <line x1="105" y1="108" x2="112" y2="132" stroke="#5C6BC0" stroke-width="5" stroke-linecap="round"/>
+</g>`,
+    parts:['The','[dog]','runs'], distractors:['cat','jumps','bird']
+  },
+  {
+    level:0,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#FFF9C4"/>
+<circle cx="200" cy="75" r="50" fill="#FFD54F" style="animation:spriteShine 2s ease-in-out infinite"/>
+<circle cx="185" cy="68" r="5" fill="#FF8F00"/>
+<circle cx="215" cy="68" r="5" fill="#FF8F00"/>
+<path d="M 180 88 Q 200 100 220 88" stroke="#FF8F00" stroke-width="4" fill="none" stroke-linecap="round"/>
+<g style="animation:spriteSpin 8s linear infinite;transform-origin:200px 75px">
+  <line x1="200" y1="18" x2="200" y2="28" stroke="#FFE082" stroke-width="4" opacity="0.7"/>
+  <line x1="200" y1="122" x2="200" y2="132" stroke="#FFE082" stroke-width="4" opacity="0.7"/>
+  <line x1="148" y1="75" x2="138" y2="75" stroke="#FFE082" stroke-width="4" opacity="0.7"/>
+  <line x1="252" y1="75" x2="262" y2="75" stroke="#FFE082" stroke-width="4" opacity="0.7"/>
+  <line x1="161" y1="38" x2="154" y2="31" stroke="#FFE082" stroke-width="3" opacity="0.5"/>
+  <line x1="239" y1="38" x2="246" y2="31" stroke="#FFE082" stroke-width="3" opacity="0.5"/>
+  <line x1="161" y1="112" x2="154" y2="119" stroke="#FFE082" stroke-width="3" opacity="0.5"/>
+  <line x1="239" y1="112" x2="246" y2="119" stroke="#FFE082" stroke-width="3" opacity="0.5"/>
+</g>`,
+    parts:['[The]','sun','shines'], distractors:['A','My','moon']
+  },
+  {
+    level:0,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#F3E5F5"/>
+<rect x="0" y="130" width="400" height="30" fill="#C8E6C9" rx="4"/>
+<g style="animation:spriteWave 2s ease-in-out infinite;transform-origin:250px 115px">
+  <ellipse cx="250" cy="118" rx="28" ry="22" fill="#CE93D8"/>
+  <circle cx="250" cy="92" r="18" fill="#CE93D8"/>
+  <polygon points="238,78 232,60 245,72" fill="#CE93D8"/>
+  <polygon points="262,78 268,60 255,72" fill="#CE93D8"/>
+  <circle cx="244" cy="90" r="4" fill="#37474F"/>
+  <circle cx="256" cy="90" r="4" fill="#37474F"/>
+  <path d="M 246 98 Q 250 103 254 98" stroke="#FF8A65" stroke-width="2" fill="none"/>
+  <line x1="250" y1="97" x2="225" y2="93" stroke="#B0BEC5" stroke-width="1.5"/>
+  <line x1="250" y1="97" x2="275" y2="93" stroke="#B0BEC5" stroke-width="1.5"/>
+  <line x1="250" y1="100" x2="225" y2="103" stroke="#B0BEC5" stroke-width="1.5"/>
+  <line x1="250" y1="100" x2="275" y2="103" stroke="#B0BEC5" stroke-width="1.5"/>
+</g>
+<circle cx="140" cy="62" r="16" fill="#FFCC80"/>
+<rect x="130" y="78" width="20" height="30" rx="6" fill="#EF9A9A"/>
+<line x1="130" y1="85" x2="115" y2="108" stroke="#FFCC80" stroke-width="5" stroke-linecap="round"/>
+<line x1="150" y1="85" x2="210" y2="105" stroke="#FFCC80" stroke-width="5" stroke-linecap="round"/>
+<line x1="134" y1="108" x2="127" y2="132" stroke="#F48FB1" stroke-width="5" stroke-linecap="round"/>
+<line x1="144" y1="108" x2="151" y2="132" stroke="#F48FB1" stroke-width="5" stroke-linecap="round"/>
+<text x="165" y="50" font-size="22" style="animation:spriteFloat 2s ease-in-out infinite">❤️</text>`,
+    parts:['I','love','[cats]'], distractors:['dogs','birds','stars']
+  },
+  {
+    level:0,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#FFF8E1"/>
+<rect x="0" y="130" width="400" height="30" fill="#BCAAA4" rx="4"/>
+<rect x="120" y="105" width="160" height="8" rx="4" fill="#8D6E63"/>
+<rect x="135" y="113" width="8" height="20" rx="3" fill="#8D6E63"/>
+<rect x="257" y="113" width="8" height="20" rx="3" fill="#8D6E63"/>
+<ellipse cx="200" cy="108" rx="34" ry="8" fill="#E0E0E0"/>
+<g style="animation:spriteFloat 2s ease-in-out infinite">
+  <circle cx="200" cy="82" r="22" fill="#EF5350"/>
+  <path d="M 200 60 Q 200 50 210 49" stroke="#388E3C" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <ellipse cx="213" cy="47" rx="7" ry="5" fill="#66BB6A" transform="rotate(-20,213,47)"/>
+  <circle cx="192" cy="78" r="5" fill="rgba(255,255,255,0.3)"/>
+</g>
+<circle cx="90" cy="55" r="16" fill="#FFCC80"/>
+<circle cx="90" cy="63" r="7" fill="#C62828"/>
+<rect x="80" y="71" width="20" height="30" rx="6" fill="#42A5F5"/>
+<line x1="100" y1="78" x2="158" y2="95" stroke="#FFCC80" stroke-width="6" stroke-linecap="round" style="animation:spriteEat 1s ease-in-out infinite"/>
+<line x1="80" y1="78" x2="65" y2="98" stroke="#FFCC80" stroke-width="5" stroke-linecap="round"/>
+<line x1="84" y1="101" x2="77" y2="128" stroke="#5C6BC0" stroke-width="5" stroke-linecap="round"/>
+<line x1="96" y1="101" x2="103" y2="128" stroke="#5C6BC0" stroke-width="5" stroke-linecap="round"/>`,
+    parts:['[Eat]','the','apple'], distractors:['Drop','Find','Hold']
+  },
+  {
+    level:0,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#E8F5E9"/>
+<rect x="0" y="128" width="400" height="32" fill="#A5D6A7" rx="4"/>
+<ellipse cx="130" cy="134" rx="40" ry="10" fill="#4CAF50" opacity="0.7"/>
+<ellipse cx="270" cy="138" rx="35" ry="9" fill="#4CAF50" opacity="0.6"/>
+<g style="animation:spriteBounce 0.9s ease-in-out infinite">
+  <ellipse cx="130" cy="118" rx="22" ry="14" fill="#66BB6A"/>
+  <circle cx="130" cy="104" r="13" fill="#66BB6A"/>
+  <circle cx="124" cy="99" r="5" fill="#A5D6A7"/>
+  <circle cx="136" cy="99" r="5" fill="#A5D6A7"/>
+  <circle cx="123" cy="98" r="2" fill="#37474F"/>
+  <circle cx="135" cy="98" r="2" fill="#37474F"/>
+  <path d="M 125 110 Q 130 115 135 110" stroke="#37474F" stroke-width="2" fill="none"/>
+  <line x1="108" y1="122" x2="92" y2="132" stroke="#66BB6A" stroke-width="5" stroke-linecap="round"/>
+  <line x1="152" y1="122" x2="168" y2="132" stroke="#66BB6A" stroke-width="5" stroke-linecap="round"/>
+</g>
+<g style="animation:spriteBounce 0.9s ease-in-out infinite;animation-delay:0.3s">
+  <ellipse cx="200" cy="118" rx="22" ry="14" fill="#81C784"/>
+  <circle cx="200" cy="104" r="13" fill="#81C784"/>
+  <circle cx="194" cy="99" r="5" fill="#C8E6C9"/>
+  <circle cx="206" cy="99" r="5" fill="#C8E6C9"/>
+  <circle cx="193" cy="98" r="2" fill="#37474F"/>
+  <circle cx="205" cy="98" r="2" fill="#37474F"/>
+  <line x1="178" y1="122" x2="162" y2="130" stroke="#81C784" stroke-width="5" stroke-linecap="round"/>
+  <line x1="222" y1="122" x2="238" y2="130" stroke="#81C784" stroke-width="5" stroke-linecap="round"/>
+</g>
+<g style="animation:spriteBounce 0.9s ease-in-out infinite;animation-delay:0.6s">
+  <ellipse cx="270" cy="118" rx="22" ry="14" fill="#66BB6A"/>
+  <circle cx="270" cy="104" r="13" fill="#66BB6A"/>
+  <circle cx="264" cy="99" r="5" fill="#A5D6A7"/>
+  <circle cx="276" cy="99" r="5" fill="#A5D6A7"/>
+  <circle cx="263" cy="98" r="2" fill="#37474F"/>
+  <circle cx="275" cy="98" r="2" fill="#37474F"/>
+  <line x1="248" y1="122" x2="232" y2="130" stroke="#66BB6A" stroke-width="5" stroke-linecap="round"/>
+  <line x1="292" y1="122" x2="308" y2="130" stroke="#66BB6A" stroke-width="5" stroke-linecap="round"/>
+</g>`,
+    parts:['[Frogs]','can','jump'], distractors:['Birds','Fish','Dogs']
+  },
+  // Level 2
+  {
+    level:1,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#E3F2FD"/>
+<rect x="0" y="132" width="400" height="28" fill="#C8E6C9" rx="4"/>
+<ellipse cx="80" cy="35" rx="40" ry="20" fill="white" opacity="0.9"/>
+<ellipse cx="320" cy="45" rx="35" ry="18" fill="white" opacity="0.8"/>
+<g style="animation:spriteFloat 1.5s ease-in-out infinite">
+  <ellipse cx="200" cy="70" rx="30" ry="14" fill="#42A5F5"/>
+  <circle cx="225" cy="65" r="12" fill="#42A5F5"/>
+  <circle cx="230" cy="63" r="4" fill="#FF8A65"/>
+  <circle cx="228" cy="62" r="2" fill="#37474F"/>
+  <path d="M 185 68 Q 160 45 140 55" stroke="#1E88E5" stroke-width="8" fill="none" stroke-linecap="round" style="animation:spriteWave 0.6s ease-in-out infinite;transform-origin:185px 68px"/>
+  <path d="M 215 68 Q 240 45 260 55" stroke="#1E88E5" stroke-width="8" fill="none" stroke-linecap="round" style="animation:spriteWave 0.6s ease-in-out infinite;animation-direction:alternate;transform-origin:215px 68px"/>
+</g>
+<circle cx="70" cy="90" r="15" fill="#FFCC80"/>
+<rect x="61" y="105" width="18" height="28" rx="5" fill="#EF9A9A"/>
+<line x1="61" y1="112" x2="45" y2="130" stroke="#FFCC80" stroke-width="5" stroke-linecap="round"/>
+<line x1="79" y1="110" x2="90" y2="88" stroke="#FFCC80" stroke-width="5" stroke-linecap="round"/>
+<line x1="65" y1="133" x2="58" y2="155" stroke="#F06292" stroke-width="5" stroke-linecap="round"/>
+<line x1="75" y1="133" x2="82" y2="155" stroke="#F06292" stroke-width="5" stroke-linecap="round"/>`,
+    parts:['The','[bird]','can','[fly]'], distractors:['dog','hop','swim','run']
+  },
+  {
+    level:1,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#90CAF9"/>
+<rect x="0" y="125" width="400" height="35" fill="#8D6E63" rx="4"/>
+<ellipse cx="130" cy="40" rx="60" ry="28" fill="#546E7A"/>
+<ellipse cx="160" cy="35" rx="50" ry="24" fill="#607D8B"/>
+<ellipse cx="270" cy="50" rx="55" ry="26" fill="#546E7A"/>
+<g style="animation:spriteWalk 0.5s linear infinite">
+  <ellipse cx="100" cy="80" rx="3" ry="8" fill="#64B5F6" opacity="0.9"/>
+  <ellipse cx="140" cy="88" rx="3" ry="8" fill="#64B5F6" opacity="0.9"/>
+  <ellipse cx="180" cy="75" rx="3" ry="8" fill="#64B5F6" opacity="0.9"/>
+  <ellipse cx="220" cy="90" rx="3" ry="8" fill="#64B5F6" opacity="0.9"/>
+  <ellipse cx="260" cy="78" rx="3" ry="8" fill="#64B5F6" opacity="0.9"/>
+  <ellipse cx="300" cy="88" rx="3" ry="8" fill="#64B5F6" opacity="0.9"/>
+</g>
+<g>
+  <path d="M 160 90 Q 200 55 240 90" fill="#EF5350" stroke="#C62828" stroke-width="3"/>
+  <rect x="198" y="90" width="4" height="35" rx="2" fill="#8D6E63"/>
+  <circle cx="162" cy="110" r="14" fill="#FFCC80"/>
+  <rect x="153" y="124" width="18" height="25" rx="5" fill="#42A5F5"/>
+  <line x1="153" y1="131" x2="140" y2="150" stroke="#FFCC80" stroke-width="5" stroke-linecap="round"/>
+  <line x1="171" y1="131" x2="200" y2="90" stroke="#FFCC80" stroke-width="4" stroke-linecap="round"/>
+</g>`,
+    parts:['[Rain]','falls','from','[clouds]'], distractors:['Snow','rivers','sky','trees']
+  },
+  {
+    level:1,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#B3E5FC"/>
+<rect x="0" y="120" width="400" height="40" fill="#4FC3F7" rx="4"/>
+<circle cx="80" cy="110" r="6" fill="white" opacity="0.5"/>
+<circle cx="300" cy="105" r="7" fill="white" opacity="0.5"/>
+<g style="animation:spriteWalk 1s ease-in-out infinite">
+  <ellipse cx="200" cy="80" rx="38" ry="22" fill="#FF7043"/>
+  <polygon points="162,80 140,62 140,98" fill="#FF8A65"/>
+  <circle cx="228" cy="72" r="7" fill="white"/>
+  <circle cx="230" cy="72" r="3.5" fill="#37474F"/>
+</g>
+<g style="animation:spriteWalk 1s ease-in-out infinite;animation-delay:0.4s">
+  <ellipse cx="110" cy="100" rx="28" ry="16" fill="#4FC3F7"/>
+  <polygon points="82,100 62,86 62,114" fill="#81D4FA"/>
+  <circle cx="132" cy="94" r="5" fill="white"/>
+  <circle cx="134" cy="94" r="2.5" fill="#37474F"/>
+</g>
+<g style="animation:spriteWalk 1s ease-in-out infinite;animation-delay:0.8s">
+  <ellipse cx="305" cy="95" rx="30" ry="18" fill="#CE93D8"/>
+  <polygon points="275,95 255,80 255,110" fill="#E1BEE7"/>
+  <circle cx="328" cy="88" r="6" fill="white"/>
+  <circle cx="330" cy="88" r="3" fill="#37474F"/>
+</g>`,
+    parts:['[Fish]','swim','in','water'], distractors:['Birds','Dogs','Cats','Frogs']
+  },
+  {
+    level:1,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#1A237E"/>
+<circle cx="50" cy="20" r="3" fill="white" style="animation:spriteShine 1.5s ease-in-out infinite"/>
+<circle cx="180" cy="15" r="3" fill="white" style="animation:spriteShine 1.8s ease-in-out infinite;animation-delay:0.2s"/>
+<circle cx="300" cy="30" r="2" fill="white" style="animation:spriteShine 1.3s ease-in-out infinite;animation-delay:0.6s"/>
+<circle cx="350" cy="55" r="3" fill="white" style="animation:spriteShine 2.2s ease-in-out infinite;animation-delay:0.9s"/>
+<circle cx="300" cy="68" r="44" fill="#FFD54F" style="animation:spriteShine 3s ease-in-out infinite"/>
+<circle cx="318" cy="55" r="38" fill="#1A237E"/>
+<rect x="0" y="125" width="400" height="35" fill="#2E7D32" rx="4"/>
+<circle cx="100" cy="88" r="15" fill="#FFCC80"/>
+<rect x="91" y="103" width="18" height="28" rx="5" fill="#42A5F5"/>
+<line x1="109" y1="110" x2="200" y2="70" stroke="rgba(255,255,150,0.4)" stroke-width="12" stroke-linecap="round"/>
+<rect x="108" y="108" width="14" height="8" rx="3" fill="#78909C"/>
+<line x1="91" y1="110" x2="76" y2="128" stroke="#FFCC80" stroke-width="5" stroke-linecap="round"/>
+<line x1="95" y1="131" x2="88" y2="155" stroke="#1565C0" stroke-width="5" stroke-linecap="round"/>
+<line x1="105" y1="131" x2="112" y2="155" stroke="#1565C0" stroke-width="5" stroke-linecap="round"/>`,
+    parts:['The','moon','is','[bright]'], distractors:['dark','small','big','dim']
+  },
+  {
+    level:1,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#E8F5E9"/>
+<rect x="0" y="128" width="400" height="32" fill="#8D6E63" rx="4"/>
+<polygon points="60,128 90,50 120,128" fill="#388E3C"/>
+<rect x="82" y="120" width="16" height="20" fill="#6D4C41"/>
+<polygon points="280,128 310,50 340,128" fill="#388E3C"/>
+<rect x="302" y="120" width="16" height="20" fill="#6D4C41"/>
+<g style="animation:spriteFloat 2s ease-in-out infinite">
+  <ellipse cx="230" cy="105" rx="20" ry="8" fill="#FFD54F"/>
+  <rect x="210" y="105" width="40" height="28" rx="8" fill="#FFB300"/>
+  <ellipse cx="230" cy="105" rx="20" ry="8" fill="#FFD54F"/>
+</g>
+<g style="animation:spriteWalk 0.8s ease-in-out infinite">
+  <ellipse cx="130" cy="112" rx="35" ry="24" fill="#795548"/>
+  <circle cx="160" cy="97" r="20" fill="#795548"/>
+  <circle cx="150" cy="85" r="8" fill="#8D6E63"/>
+  <circle cx="170" cy="85" r="8" fill="#8D6E63"/>
+  <circle cx="163" cy="94" r="2.5" fill="#37474F"/>
+  <rect x="105" y="120" width="10" height="18" rx="5" fill="#795548"/>
+  <rect x="120" y="120" width="10" height="18" rx="5" fill="#795548"/>
+  <rect x="140" y="120" width="10" height="18" rx="5" fill="#795548"/>
+  <rect x="155" y="120" width="10" height="18" rx="5" fill="#795548"/>
+  <line x1="175" y1="100" x2="205" y2="105" stroke="#795548" stroke-width="10" stroke-linecap="round" style="animation:spriteEat 1.2s ease-in-out infinite"/>
+</g>`,
+    parts:['[Bears]','love','to','eat'], distractors:['Dogs','Frogs','Birds','Fish']
+  },
+  // Level 3
+  {
+    level:2,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#0D0D2B"/>
+<circle cx="40" cy="20" r="2" fill="white" style="animation:spriteShine 1.5s ease-in-out infinite"/>
+<circle cx="120" cy="35" r="3" fill="white" style="animation:spriteShine 2s ease-in-out infinite;animation-delay:0.3s"/>
+<circle cx="350" cy="25" r="2" fill="white" style="animation:spriteShine 1.8s ease-in-out infinite;animation-delay:0.7s"/>
+<circle cx="60" cy="130" r="40" fill="#1565C0"/>
+<ellipse cx="55" cy="118" rx="14" ry="8" fill="#388E3C" transform="rotate(-20,55,118)"/>
+<g style="animation:spriteFloat 1.2s ease-in-out infinite">
+  <polygon points="220,20 205,80 235,80" fill="#EF5350"/>
+  <rect x="205" y="80" width="30" height="45" rx="6" fill="#E0E0E0"/>
+  <circle cx="220" cy="100" r="10" fill="#B3E5FC"/>
+  <rect x="200" y="120" width="8" height="16" rx="3" fill="#FF8A65" transform="rotate(-15,200,120)"/>
+  <rect x="232" y="120" width="8" height="16" rx="3" fill="#FF8A65" transform="rotate(15,232,120)"/>
+  <polygon points="210,125 220,155 230,125" fill="#FFD54F" style="animation:spriteShine 0.3s ease-in-out infinite"/>
+  <polygon points="213,125 220,145 227,125" fill="#FF7043" style="animation:spriteShine 0.3s ease-in-out infinite;animation-delay:0.15s"/>
+</g>
+<text x="300" y="90" font-size="28" style="animation:spriteFloat 3s ease-in-out infinite">🌌</text>`,
+    parts:['The','[rocket]','flies','through','[space]'], distractors:['plane','water','sky','clouds']
+  },
+  {
+    level:2,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#B2EBF2"/>
+<rect x="0" y="128" width="400" height="32" fill="#A5D6A7" rx="4"/>
+<path d="M 30 130 Q 200 -10 370 130" stroke="#EF5350" stroke-width="14" fill="none" opacity="0.9"/>
+<path d="M 45 130 Q 200 10 355 130" stroke="#FF8A65" stroke-width="12" fill="none" opacity="0.9"/>
+<path d="M 60 130 Q 200 28 340 130" stroke="#FFD54F" stroke-width="11" fill="none" opacity="0.9"/>
+<path d="M 74 130 Q 200 44 326 130" stroke="#66BB6A" stroke-width="11" fill="none" opacity="0.9"/>
+<path d="M 88 130 Q 200 58 312 130" stroke="#4FC3F7" stroke-width="10" fill="none" opacity="0.9"/>
+<path d="M 102 130 Q 200 70 298 130" stroke="#CE93D8" stroke-width="10" fill="none" opacity="0.9"/>
+<circle cx="200" cy="100" r="16" fill="#FFCC80"/>
+<rect x="190" y="116" width="20" height="30" rx="6" fill="#42A5F5"/>
+<line x1="190" y1="122" x2="170" y2="100" stroke="#FFCC80" stroke-width="6" stroke-linecap="round" style="animation:spriteWave 0.7s ease-in-out infinite;transform-origin:190px 122px"/>
+<line x1="210" y1="122" x2="230" y2="100" stroke="#FFCC80" stroke-width="6" stroke-linecap="round" style="animation:spriteWave 0.7s ease-in-out infinite;animation-direction:alternate;transform-origin:210px 122px"/>`,
+    parts:['[A]','rainbow','has','many','colors'], distractors:['The','One','My','This']
+  },
+  {
+    level:2,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#FFF9C4"/>
+<rect x="0" y="128" width="400" height="32" fill="#A5D6A7" rx="4"/>
+<circle cx="320" cy="80" r="36" fill="#388E3C"/>
+<rect x="312" y="110" width="14" height="30" fill="#6D4C41"/>
+<g style="animation:spriteWave 2s ease-in-out infinite;transform-origin:180px 110px">
+  <circle cx="200" cy="90" r="38" fill="#FF8F00"/>
+  <circle cx="200" cy="90" r="28" fill="#FFCC80"/>
+  <polygon points="178,68 170,50 190,65" fill="#FFCC80"/>
+  <polygon points="222,68 230,50 210,65" fill="#FFCC80"/>
+  <circle cx="190" cy="85" r="3" fill="#37474F"/>
+  <circle cx="210" cy="85" r="3" fill="#37474F"/>
+  <path d="M 186 100 Q 200 115 214 100" fill="#C62828"/>
+  <path d="M 186 100 Q 200 108 214 100" fill="white"/>
+  <ellipse cx="170" cy="125" rx="55" ry="22" fill="#FFCC80"/>
+  <ellipse cx="125" cy="140" rx="16" ry="9" fill="#FFCC80"/>
+  <ellipse cx="218" cy="140" rx="16" ry="9" fill="#FFCC80"/>
+</g>
+<text x="240" y="70" font-size="22" style="animation:spriteFloat 0.6s ease-in-out infinite">📢</text>`,
+    parts:['The','[lion]','is','very','[loud]'], distractors:['tiger','soft','big','small']
+  },
+  {
+    level:2,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#FFF8E1"/>
+<rect x="0" y="128" width="400" height="32" fill="#BCAAA4" rx="4"/>
+<rect x="110" y="105" width="180" height="8" rx="4" fill="#8D6E63"/>
+<rect x="125" y="113" width="8" height="20" rx="3" fill="#8D6E63"/>
+<rect x="267" y="113" width="8" height="20" rx="3" fill="#8D6E63"/>
+<g style="animation:spriteFloat 2s ease-in-out infinite">
+  <polygon points="200,55 155,108 245,108" fill="#FFB300"/>
+  <polygon points="200,58 158,106 242,106" fill="#EF5350" opacity="0.7"/>
+  <circle cx="188" cy="90" r="6" fill="#FF8A65"/>
+  <circle cx="208" cy="80" r="5" fill="#FF8A65"/>
+  <circle cx="220" cy="90" r="5" fill="#66BB6A" opacity="0.8"/>
+</g>
+<circle cx="90" cy="60" r="16" fill="#FFCC80"/>
+<circle cx="90" cy="68" r="6" fill="#C62828"/>
+<rect x="80" y="76" width="20" height="30" rx="6" fill="#EF9A9A"/>
+<line x1="100" y1="83" x2="150" y2="96" stroke="#FFCC80" stroke-width="6" stroke-linecap="round" style="animation:spriteEat 1s ease-in-out infinite"/>
+<line x1="80" y1="83" x2="65" y2="103" stroke="#FFCC80" stroke-width="5" stroke-linecap="round"/>`,
+    parts:['[I]','want','to','eat','pizza'], distractors:['We','She','He','They']
+  },
+  {
+    level:2,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#E8F5E9"/>
+<rect x="0" y="128" width="400" height="32" fill="#8D6E63" rx="4"/>
+<polygon points="20,128 50,60 80,128" fill="#388E3C"/>
+<rect x="42" y="118" width="14" height="22" fill="#6D4C41"/>
+<polygon points="320,128 350,60 380,128" fill="#388E3C"/>
+<rect x="342" y="118" width="14" height="22" fill="#6D4C41"/>
+<g style="animation:spriteWalk 1.2s ease-in-out infinite">
+  <ellipse cx="200" cy="115" rx="65" ry="38" fill="#90A4AE"/>
+  <circle cx="255" cy="88" r="32" fill="#90A4AE"/>
+  <ellipse cx="272" cy="85" rx="18" ry="22" fill="#B0BEC5"/>
+  <circle cx="260" cy="80" r="6" fill="#37474F"/>
+  <path d="M 245 105 Q 225 125 215 110 Q 205 95 215 85" stroke="#90A4AE" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <rect x="148" y="140" width="18" height="22" rx="8" fill="#78909C"/>
+  <rect x="172" y="140" width="18" height="22" rx="8" fill="#78909C"/>
+  <rect x="202" y="140" width="18" height="22" rx="8" fill="#78909C"/>
+  <rect x="226" y="140" width="18" height="22" rx="8" fill="#78909C"/>
+</g>`,
+    parts:['[Elephants]','have','a','long','trunk'], distractors:['Giraffes','Bears','Dogs','Frogs']
+  },
+  // Level 4
+  {
+    level:3,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#B2EBF2"/>
+<rect x="0" y="118" width="400" height="42" fill="#F4A460" rx="4"/>
+<path d="M0 120 Q50 110 100 120 Q150 130 200 120 Q250 110 300 120 Q350 130 400 120" stroke="#4FC3F7" stroke-width="5" fill="none"/>
+<circle cx="350" cy="35" r="28" fill="#FFD54F" style="animation:spriteShine 2s ease-in-out infinite"/>
+<rect x="196" y="90" width="6" height="45" fill="#8D6E63"/>
+<path d="M 140 92 Q 200 55 260 92" fill="#EF5350"/>
+<path d="M 150 92 Q 200 62 250 92" fill="#FFD54F"/>
+<circle cx="120" cy="103" r="14" fill="#FFCC80"/>
+<rect x="111" y="117" width="18" height="25" rx="5" fill="#FF8A65"/>
+<line x1="111" y1="124" x2="95" y2="140" stroke="#FFCC80" stroke-width="5" stroke-linecap="round"/>
+<line x1="129" y1="124" x2="145" y2="115" stroke="#FFCC80" stroke-width="5" stroke-linecap="round"/>
+<line x1="115" y1="142" x2="110" y2="160" stroke="#FF7043" stroke-width="5" stroke-linecap="round"/>
+<line x1="125" y1="142" x2="130" y2="160" stroke="#FF7043" stroke-width="5" stroke-linecap="round"/>
+<g style="animation:spriteFloat 2s ease-in-out infinite">
+  <rect x="270" y="115" width="22" height="24" rx="4" fill="#4FC3F7"/>
+  <rect x="270" y="113" width="22" height="5" rx="2" fill="#0288D1"/>
+  <line x1="290" y1="118" x2="310" y2="100" stroke="#FF8A65" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="312" cy="98" rx="8" ry="5" fill="#FFB300"/>
+</g>`,
+    parts:['[We]','play','[on]','the','sandy','[beach]'], distractors:['They','in','park','school','pool']
+  },
+  {
+    level:3,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#E8F5E9"/>
+<rect x="0" y="128" width="400" height="32" fill="#A5D6A7" rx="4"/>
+<ellipse cx="200" cy="135" rx="80" ry="18" fill="#4FC3F7" opacity="0.5"/>
+<g style="animation:spriteWalk 3s ease-in-out infinite">
+  <ellipse cx="200" cy="108" rx="42" ry="28" fill="#388E3C"/>
+  <ellipse cx="200" cy="108" rx="38" ry="24" fill="#4CAF50"/>
+  <polygon points="200,88 185,105 200,118 215,105" fill="#2E7D32" opacity="0.6"/>
+  <circle cx="238" cy="103" r="16" fill="#66BB6A"/>
+  <circle cx="244" cy="99" r="5" fill="#37474F"/>
+  <ellipse cx="168" cy="126" rx="14" ry="8" fill="#66BB6A"/>
+  <ellipse cx="192" cy="132" rx="14" ry="7" fill="#66BB6A"/>
+  <ellipse cx="212" cy="132" rx="14" ry="7" fill="#66BB6A"/>
+  <ellipse cx="232" cy="126" rx="14" ry="8" fill="#66BB6A"/>
+</g>`,
+    parts:['The','[turtle]','moves','very','[slowly]','along'], distractors:['rabbit','quickly','fast','jumps','runs']
+  },
+  {
+    level:3,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#E8F5E9"/>
+<rect x="0" y="118" width="400" height="42" fill="#8D6E63" rx="4"/>
+<rect x="10" y="108" width="10" height="30" rx="3" fill="#BCAAA4"/>
+<rect x="60" y="108" width="10" height="30" rx="3" fill="#BCAAA4"/>
+<rect x="110" y="108" width="10" height="30" rx="3" fill="#BCAAA4"/>
+<rect x="160" y="108" width="10" height="30" rx="3" fill="#BCAAA4"/>
+<rect x="220" y="108" width="10" height="30" rx="3" fill="#BCAAA4"/>
+<rect x="270" y="108" width="10" height="30" rx="3" fill="#BCAAA4"/>
+<rect x="320" y="108" width="10" height="30" rx="3" fill="#BCAAA4"/>
+<rect x="370" y="108" width="10" height="30" rx="3" fill="#BCAAA4"/>
+<rect x="5" y="113" width="390" height="7" rx="3" fill="#BCAAA4"/>
+<g style="animation:spriteWave 2s ease-in-out infinite;transform-origin:80px 115px">
+  <rect x="77" y="75" width="6" height="40" rx="3" fill="#388E3C"/>
+  <circle cx="80" cy="72" r="18" fill="#EF5350"/>
+  <circle cx="80" cy="72" r="10" fill="#FFD54F"/>
+</g>
+<g style="animation:spriteWave 2.3s ease-in-out infinite;transform-origin:160px 115px;animation-delay:0.3s">
+  <rect x="157" y="68" width="6" height="48" rx="3" fill="#388E3C"/>
+  <circle cx="160" cy="64" r="20" fill="#CE93D8"/>
+  <circle cx="160" cy="64" r="11" fill="#FFD54F"/>
+</g>
+<g style="animation:spriteWave 1.9s ease-in-out infinite;transform-origin:240px 115px;animation-delay:0.6s">
+  <rect x="237" y="72" width="6" height="44" rx="3" fill="#388E3C"/>
+  <circle cx="240" cy="68" r="19" fill="#FF8A65"/>
+  <circle cx="240" cy="68" r="10" fill="#FFD54F"/>
+</g>
+<g style="animation:spriteWave 2.1s ease-in-out infinite;transform-origin:320px 115px;animation-delay:0.9s">
+  <rect x="317" y="70" width="6" height="46" rx="3" fill="#388E3C"/>
+  <circle cx="320" cy="66" r="20" fill="#4FC3F7"/>
+  <circle cx="320" cy="66" r="11" fill="#FFD54F"/>
+</g>`,
+    parts:['[Pretty]','flowers','[grow]','in','the','[garden]'], distractors:['Ugly','swim','park','forest','field']
+  },
+  {
+    level:3,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#0D0D2B"/>
+<circle cx="30" cy="30" r="3" fill="#FFD54F" style="animation:spriteShine 1.2s ease-in-out infinite"/>
+<circle cx="140" cy="25" r="4" fill="#FFD54F" style="animation:spriteShine 1.4s ease-in-out infinite;animation-delay:0.5s"/>
+<circle cx="260" cy="20" r="3" fill="#FFD54F" style="animation:spriteShine 1.6s ease-in-out infinite;animation-delay:0.7s"/>
+<circle cx="320" cy="50" r="4" fill="#FFD54F" style="animation:spriteShine 1.3s ease-in-out infinite;animation-delay:0.1s"/>
+<circle cx="100" cy="95" r="3" fill="#FFD54F" style="animation:spriteShine 1.5s ease-in-out infinite;animation-delay:0.4s"/>
+<circle cx="240" cy="80" r="4" fill="#FFD54F" style="animation:spriteShine 1.7s ease-in-out infinite;animation-delay:0.2s"/>
+<circle cx="360" cy="90" r="3" fill="#FFD54F" style="animation:spriteShine 1.2s ease-in-out infinite;animation-delay:0.3s"/>
+<rect x="0" y="128" width="400" height="32" fill="#1B5E20" rx="4"/>
+<g style="animation:spriteShine 1.5s ease-in-out infinite">
+  <polygon points="200,45 207,68 232,68 212,82 219,105 200,91 181,105 188,82 168,68 193,68" fill="#FFD54F"/>
+</g>
+<circle cx="80" cy="95" r="15" fill="#FFCC80"/>
+<rect x="71" y="110" width="18" height="28" rx="5" fill="#42A5F5"/>
+<line x1="89" y1="116" x2="130" y2="85" stroke="#FFCC80" stroke-width="5" stroke-linecap="round"/>
+<rect x="128" y="80" width="30" height="10" rx="4" fill="#78909C" transform="rotate(-30,128,80)"/>
+<line x1="71" y1="116" x2="55" y2="132" stroke="#FFCC80" stroke-width="5" stroke-linecap="round"/>`,
+    parts:['[Stars]','shine','[bright]','in','the','sky'], distractors:['Moons','dark','clouds','water','dull']
+  },
+  {
+    level:3,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#E8F5E9"/>
+<rect x="0" y="118" width="400" height="42" fill="#A5D6A7" rx="4"/>
+<g style="animation:spriteWave 2s ease-in-out infinite;transform-origin:100px 118px">
+  <rect x="97" y="85" width="6" height="34" rx="3" fill="#388E3C"/>
+  <circle cx="100" cy="82" r="20" fill="#EF5350"/>
+  <circle cx="100" cy="82" r="11" fill="#FFD54F"/>
+</g>
+<g style="animation:spriteWave 2s ease-in-out infinite;transform-origin:300px 118px;animation-delay:0.5s">
+  <rect x="297" y="80" width="6" height="38" rx="3" fill="#388E3C"/>
+  <circle cx="300" cy="77" r="22" fill="#CE93D8"/>
+  <circle cx="300" cy="77" r="12" fill="#FFD54F"/>
+</g>
+<g style="animation:spriteFloat 2s ease-in-out infinite">
+  <ellipse cx="200" cy="60" rx="8" ry="4" fill="#FF8A65"/>
+  <ellipse cx="182" cy="52" rx="28" ry="20" fill="#FF7043" opacity="0.85" transform="rotate(-15,182,52)"/>
+  <ellipse cx="218" cy="52" rx="28" ry="20" fill="#FF8A65" opacity="0.85" transform="rotate(15,218,52)"/>
+  <ellipse cx="185" cy="68" rx="18" ry="14" fill="#FFB300" opacity="0.85" transform="rotate(15,185,68)"/>
+  <ellipse cx="215" cy="68" rx="18" ry="14" fill="#FFD54F" opacity="0.85" transform="rotate(-15,215,68)"/>
+  <line x1="196" y1="56" x2="188" y2="42" stroke="#37474F" stroke-width="2"/>
+  <circle cx="188" cy="41" r="3" fill="#37474F"/>
+  <line x1="204" y1="56" x2="212" y2="42" stroke="#37474F" stroke-width="2"/>
+  <circle cx="212" cy="41" r="3" fill="#37474F"/>
+  <rect x="197" y="80" width="6" height="38" rx="3" fill="#388E3C"/>
+  <circle cx="200" cy="77" r="18" fill="#FF8A65"/>
+  <circle cx="200" cy="77" r="10" fill="#FFD54F"/>
+</g>`,
+    parts:['A','[butterfly]','[lands]','on','a','[flower]'], distractors:['bee','jumps','leaf','tree','rock']
+  },
+  // Level 5
+  {
+    level:4,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#006064"/>
+<rect x="0" y="100" width="400" height="60" fill="#0097A7"/>
+<path d="M0 105 Q50 95 100 105 Q150 115 200 105 Q250 95 300 105 Q350 115 400 105" stroke="#4DD0E1" stroke-width="4" fill="none"/>
+<circle cx="60" cy="130" r="5" fill="white" opacity="0.4" style="animation:spriteFloat 1.5s ease-in-out infinite"/>
+<circle cx="320" cy="132" r="6" fill="white" opacity="0.35" style="animation:spriteFloat 1.8s ease-in-out infinite;animation-delay:0.2s"/>
+<g style="animation:spriteBounce 1.5s ease-in-out infinite">
+  <path d="M 150 95 Q 200 40 250 95" stroke="#0288D1" stroke-width="28" fill="none" stroke-linecap="round"/>
+  <circle cx="250" cy="95" r="16" fill="#0288D1"/>
+  <circle cx="258" cy="90" r="5" fill="#37474F"/>
+  <polygon points="200,68 210,50 220,68" fill="#01579B"/>
+  <path d="M 148 95 Q 130 108 118 102 Q 130 118 148 98" fill="#0288D1"/>
+</g>
+<g style="animation:spriteWalk 1.5s ease-in-out infinite">
+  <ellipse cx="110" cy="130" rx="40" ry="16" fill="#29B6F6"/>
+  <circle cx="148" cy="124" r="12" fill="#29B6F6"/>
+  <circle cx="153" cy="121" r="4" fill="#37474F"/>
+  <path d="M 70 130 Q 55 140 48 134 Q 55 148 70 136" fill="#29B6F6"/>
+</g>`,
+    parts:['[Dolphins]','[swim]','and','[play]','in','the','ocean'], distractors:['Sharks','jump','sleep','eat','river','lake']
+  },
+  {
+    level:4,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#1B5E20"/>
+<rect x="0" y="120" width="400" height="40" fill="#2E7D32" rx="4"/>
+<g style="animation:spriteWave 3s ease-in-out infinite;transform-origin:80px 120px">
+  <rect x="72" y="120" width="16" height="40" fill="#4E342E"/>
+  <polygon points="80,0 50,85 110,85" fill="#2E7D32"/>
+  <polygon points="80,20 52,95 108,95" fill="#388E3C"/>
+  <polygon points="80,40 54,110 106,110" fill="#43A047"/>
+</g>
+<g style="animation:spriteWave 3s ease-in-out infinite;transform-origin:200px 120px;animation-delay:0.6s">
+  <rect x="192" y="120" width="16" height="40" fill="#4E342E"/>
+  <polygon points="200,5 165,90 235,90" fill="#1B5E20"/>
+  <polygon points="200,25 168,100 232,100" fill="#2E7D32"/>
+  <polygon points="200,45 170,115 230,115" fill="#388E3C"/>
+</g>
+<g style="animation:spriteWave 3s ease-in-out infinite;transform-origin:320px 120px;animation-delay:1.2s">
+  <rect x="312" y="120" width="16" height="40" fill="#4E342E"/>
+  <polygon points="320,0 290,85 350,85" fill="#2E7D32"/>
+  <polygon points="320,20 292,95 348,95" fill="#388E3C"/>
+  <polygon points="320,42 294,112 346,112" fill="#43A047"/>
+</g>
+<line x1="200" y1="0" x2="130" y2="80" stroke="rgba(255,250,150,0.3)" stroke-width="20"/>
+<g style="animation:spriteWalk 2s ease-in-out infinite;animation-delay:0.4s">
+  <ellipse cx="200" cy="118" rx="28" ry="18" fill="#8D6E63"/>
+  <circle cx="222" cy="103" r="14" fill="#8D6E63"/>
+  <line x1="222" y1="92" x2="212" y2="75" stroke="#5D4037" stroke-width="4" stroke-linecap="round"/>
+  <line x1="212" y1="75" x2="205" y2="65" stroke="#5D4037" stroke-width="3" stroke-linecap="round"/>
+  <line x1="222" y1="92" x2="232" y2="75" stroke="#5D4037" stroke-width="4" stroke-linecap="round"/>
+  <line x1="232" y1="75" x2="239" y2="65" stroke="#5D4037" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="228" cy="100" r="4" fill="#37474F"/>
+  <rect x="180" y="128" width="10" height="16" rx="5" fill="#7D5F52"/>
+  <rect x="194" y="128" width="10" height="16" rx="5" fill="#7D5F52"/>
+  <rect x="210" y="128" width="10" height="16" rx="5" fill="#7D5F52"/>
+  <rect x="224" y="128" width="10" height="16" rx="5" fill="#7D5F52"/>
+</g>`,
+    parts:['[Big]','trees','[grow]','tall','in','the','[forest]'], distractors:['Small','fall','park','swim','garden','river']
+  },
+  {
+    level:4,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#FFF9C4"/>
+<rect x="0" y="118" width="400" height="42" fill="#A5D6A7" rx="4"/>
+<rect x="150" y="90" width="100" height="40" rx="8" fill="#EF9A9A"/>
+<rect x="155" y="85" width="90" height="12" rx="4" fill="#F48FB1"/>
+<rect x="168" y="72" width="7" height="18" rx="3" fill="#FFE082"/>
+<rect x="185" y="68" width="7" height="22" rx="3" fill="#80DEEA"/>
+<rect x="202" y="70" width="7" height="20" rx="3" fill="#CE93D8"/>
+<rect x="219" y="72" width="7" height="18" rx="3" fill="#A5D6A7"/>
+<rect x="236" y="68" width="7" height="22" rx="3" fill="#FF8A65"/>
+<g style="animation:spriteShine 0.4s ease-in-out infinite">
+  <ellipse cx="171" cy="71" rx="4" ry="6" fill="#FFD54F"/>
+  <ellipse cx="188" cy="67" rx="4" ry="6" fill="#FFD54F"/>
+  <ellipse cx="205" cy="69" rx="4" ry="6" fill="#FFD54F"/>
+  <ellipse cx="222" cy="71" rx="4" ry="6" fill="#FFD54F"/>
+  <ellipse cx="239" cy="67" rx="4" ry="6" fill="#FFD54F"/>
+</g>
+<text x="60" y="60" font-size="24" style="animation:spriteFloat 1.8s ease-in-out infinite">🎵</text>
+<text x="310" y="55" font-size="20" style="animation:spriteFloat 2.2s ease-in-out infinite;animation-delay:0.4s">🎶</text>
+<circle cx="80" cy="70" r="15" fill="#FFCC80"/>
+<circle cx="80" cy="78" r="7" fill="#C62828"/>
+<rect x="71" y="85" width="18" height="28" rx="5" fill="#EF5350"/>
+<line x1="71" y1="92" x2="55" y2="110" stroke="#FFCC80" stroke-width="5" stroke-linecap="round" style="animation:spriteWave 0.6s ease-in-out infinite;transform-origin:71px 92px"/>
+<line x1="89" y1="92" x2="105" y2="110" stroke="#FFCC80" stroke-width="5" stroke-linecap="round" style="animation:spriteWave 0.6s ease-in-out infinite;animation-direction:alternate;transform-origin:89px 92px"/>
+<circle cx="320" cy="70" r="15" fill="#FFCC80"/>
+<circle cx="320" cy="78" r="7" fill="#C62828"/>
+<rect x="311" y="85" width="18" height="28" rx="5" fill="#42A5F5"/>
+<line x1="311" y1="92" x2="295" y2="110" stroke="#FFCC80" stroke-width="5" stroke-linecap="round" style="animation:spriteWave 0.6s ease-in-out infinite;animation-delay:0.2s;transform-origin:311px 92px"/>
+<line x1="329" y1="92" x2="345" y2="110" stroke="#FFCC80" stroke-width="5" stroke-linecap="round" style="animation:spriteWave 0.6s ease-in-out infinite;animation-direction:alternate;animation-delay:0.2s;transform-origin:329px 92px"/>`,
+    parts:['[We]','sang','a','[happy]','song','at','[my]','birthday'], distractors:['They','sad','your','her','his','our']
+  },
+  {
+    level:4,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#E8EAF6"/>
+<rect x="0" y="118" width="400" height="42" fill="#A5D6A7" rx="4"/>
+<path d="M 30 120 Q 200 10 370 120" stroke="#EF5350" stroke-width="12" fill="none" opacity="0.8"/>
+<path d="M 44 120 Q 200 26 356 120" stroke="#FFD54F" stroke-width="10" fill="none" opacity="0.8"/>
+<path d="M 58 120 Q 200 42 342 120" stroke="#66BB6A" stroke-width="10" fill="none" opacity="0.8"/>
+<path d="M 72 120 Q 200 58 328 120" stroke="#4FC3F7" stroke-width="9" fill="none" opacity="0.8"/>
+<path d="M 86 120 Q 200 72 314 120" stroke="#CE93D8" stroke-width="9" fill="none" opacity="0.8"/>
+<g style="animation:spriteWalk 0.8s ease-in-out infinite">
+  <ellipse cx="200" cy="78" rx="38" ry="22" fill="white"/>
+  <circle cx="234" cy="62" r="18" fill="white"/>
+  <polygon points="242,44 238,62 250,58" fill="#CE93D8" style="animation:spriteShine 1.5s ease-in-out infinite"/>
+  <path d="M 225 50 Q 218 65 222 78" stroke="#F06292" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M 220 52 Q 212 67 216 80" stroke="#FFD54F" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <circle cx="240" cy="60" r="5" fill="#37474F"/>
+  <rect x="170" y="90" width="10" height="20" rx="5" fill="white"/>
+  <rect x="184" y="92" width="10" height="18" rx="5" fill="white"/>
+  <rect x="206" y="92" width="10" height="18" rx="5" fill="white"/>
+  <rect x="220" y="90" width="10" height="20" rx="5" fill="white"/>
+  <path d="M 162 82 Q 140 95 138 88 Q 140 102 162 90" fill="#CE93D8"/>
+  <text x="270" y="60" font-size="18" style="animation:spriteShine 0.8s ease-in-out infinite">✨</text>
+</g>`,
+    parts:['[The]','unicorn','[ran]','over','a','[rainbow]','today'], distractors:['A','jumped','bridge','cloud','river','hill']
+  },
+  {
+    level:4,
+    scene:`<rect x="0" y="0" width="400" height="160" fill="#424242"/>
+<rect x="0" y="0" width="50" height="160" fill="#212121"/>
+<rect x="350" y="0" width="50" height="160" fill="#212121"/>
+<path d="M 50 160 Q 50 60 200 60 Q 350 60 350 160" fill="#212121"/>
+<path d="M 55 160 Q 55 68 200 68 Q 345 68 345 160" fill="#333"/>
+<g style="animation:spriteWalk 0.4s ease-in-out infinite">
+  <rect x="70" y="90" width="200" height="50" rx="8" fill="#EF5350"/>
+  <rect x="230" y="75" width="60" height="65" rx="6" fill="#C62828"/>
+  <rect x="238" y="82" width="20" height="18" rx="4" fill="#B3E5FC"/>
+  <rect x="264" y="82" width="18" height="18" rx="4" fill="#B3E5FC"/>
+  <rect x="65" y="95" width="15" height="40" rx="4" fill="#B71C1C"/>
+  <circle cx="68" cy="105" r="7" fill="#FFD54F" style="animation:spriteShine 0.5s ease-in-out infinite"/>
+  <circle cx="105" cy="142" r="14" fill="#424242" stroke="#757575" stroke-width="4"/>
+  <circle cx="155" cy="142" r="14" fill="#424242" stroke="#757575" stroke-width="4"/>
+  <circle cx="205" cy="142" r="14" fill="#424242" stroke="#757575" stroke-width="4"/>
+  <circle cx="258" cy="142" r="14" fill="#424242" stroke="#757575" stroke-width="4"/>
+  <line x1="105" y1="128" x2="105" y2="156" stroke="#9E9E9E" stroke-width="3"/>
+  <line x1="91" y1="142" x2="119" y2="142" stroke="#9E9E9E" stroke-width="3"/>
+  <line x1="155" y1="128" x2="155" y2="156" stroke="#9E9E9E" stroke-width="3"/>
+  <line x1="141" y1="142" x2="169" y2="142" stroke="#9E9E9E" stroke-width="3"/>
+  <circle cx="80" cy="78" r="14" fill="white" opacity="0.7" style="animation:spriteFloat 0.8s ease-in-out infinite"/>
+  <circle cx="95" cy="65" r="10" fill="white" opacity="0.5" style="animation:spriteFloat 0.8s ease-in-out infinite;animation-delay:0.2s"/>
+  <rect x="0" y="154" width="400" height="6" fill="#5D4037"/>
+</g>`,
+    parts:['[A]','[fast]','train','rides','[through]','the','tunnel'], distractors:['The','slow','car','over','under','beside']
+  },
+];
+
+const S_CHIP_COLORS = [
+  '#FF7043','#4FC3F7','#66BB6A','#CE93D8','#FF8A65','#F06292','#4DB6AC','#7986CB','#FFB300'
+];
+const S_NUDGES = [
+  "That word doesn't go there! 😊",
+  "Oops! Try a different blank! 🙈",
+  "Not quite — keep trying! 💪",
+  "Almost! Another spot? 😄",
+  "Try somewhere else! 🌟",
+];
+
+let sCurrent    = 0;
+let sDragWord   = null;
+let sDragChipEl = null;
+let sNudgeTimer = null;
+let sColorMap   = {};
+let sCountdownTimer = null;
+
+function initSentenceGame() {
+  sCurrent = 0;
+  sLoadSentence(0);
+}
+
+function sLoadSentence(idx) {
+  sWasWrong = false;
+  clearInterval(sCountdownTimer);
+  document.getElementById('confettiLayer').innerHTML = '';
+  document.getElementById('sWinBanner').classList.remove('show');
+  document.getElementById('sNudge').classList.remove('show');
+
+  const data = S_SENTENCES[idx];
+  sDragWord = null; sDragChipEl = null;
+
+  const answers   = data.parts.filter(p => p.startsWith('[')).map(b => b.slice(1,-1));
+  const bankWords = shuffle([...answers, ...data.distractors]);
+  sColorMap = {};
+  bankWords.forEach((w, i) => { sColorMap[w] = S_CHIP_COLORS[i % S_CHIP_COLORS.length]; });
+
+  document.getElementById('sCounter').textContent = `Sentence ${idx+1} of ${S_SENTENCES.length}`;
+
+  const lv = S_LEVELS[data.level];
+  const lb = document.getElementById('sLevelBadge');
+  lb.textContent = lv.name; lb.style.background = lv.color;
+
+  const prevLevel = idx > 0 ? S_SENTENCES[idx-1].level : data.level;
+  if (data.level > prevLevel) {
+    document.getElementById('sWinEmoji').textContent = '🎊';
+    document.getElementById('sWinText').textContent  = 'Level Up!!';
+    document.getElementById('sWinWord').textContent  = lv.name;
+    document.getElementById('sWinBanner').classList.add('show');
+    setTimeout(() => document.getElementById('sWinBanner').classList.remove('show'), 2200);
+  }
+
+  document.getElementById('sSceneSvg').innerHTML = data.scene;
+
+  renderBlanks(data, answers);
+  const bank = document.getElementById('sWordBank');
+  bank.classList.add('hidden-bank');
+  bank.innerHTML = '';
+
+  const overlay = document.getElementById('sCountdown');
+  const numEl   = document.getElementById('sCountdownNum');
+  overlay.classList.remove('hidden');
+  let count = 3;
+  numEl.textContent = count;
+
+  sCountdownTimer = setInterval(() => {
+    count--;
+    if (count > 0) {
+      numEl.textContent = count;
+    } else {
+      clearInterval(sCountdownTimer);
+      numEl.textContent = '🎯';
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        renderWordBank(bankWords);
+        bank.classList.remove('hidden-bank');
+      }, 600);
+    }
+  }, 1000);
+
+  const card = document.getElementById('sCard');
+  card.style.animation = 'none'; void card.offsetWidth;
+  card.style.animation = 'popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+}
+
+function renderBlanks(data, answers) {
+  const row = document.getElementById('sBlanksRow');
+  row.innerHTML = '';
+  let blankIdx = 0;
+  data.parts.forEach(part => {
+    if (part.startsWith('[')) {
+      const slot = document.createElement('div');
+      slot.className      = 's-blank';
+      slot.dataset.idx    = blankIdx;
+      slot.dataset.answer = part.slice(1, -1);
+      slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('drag-over'); });
+      slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+      slot.addEventListener('drop',     e => { e.preventDefault(); slot.classList.remove('drag-over'); sOnDrop(slot); });
+      slot.addEventListener('touchend', e => { e.preventDefault(); sOnTouchDrop(slot); }, { passive: false });
+      row.appendChild(slot);
+      blankIdx++;
+    } else {
+      const w = document.createElement('div');
+      w.className   = 's-static-word';
+      w.textContent = part;
+      row.appendChild(w);
+    }
+  });
+}
+
+function renderWordBank(words) {
+  const bank = document.getElementById('sWordBank');
+  bank.innerHTML = '';
+  words.forEach((word, i) => {
+    const chip = document.createElement('div');
+    chip.className    = 's-word-chip ' + (i % 2 === 0 ? 'from-left' : 'from-right');
+    chip.textContent  = word;
+    chip.dataset.word = word;
+    chip.style.background     = sColorMap[word];
+    chip.style.animationDelay = (i * 0.1) + 's';
+    chip.draggable = true;
+    chip.addEventListener('dragstart', e => {
+      sDragWord = word; sDragChipEl = chip;
+      chip.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+    chip.addEventListener('touchstart', e => {
+      sDragWord = word; sDragChipEl = chip;
+      chip.classList.add('dragging');
+    }, { passive: true });
+    chip.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      document.querySelectorAll('.s-blank').forEach(s => s.classList.remove('drag-over'));
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (el && el.classList.contains('s-blank')) el.classList.add('drag-over');
+    }, { passive: false });
+    chip.addEventListener('touchend', e => {
+      chip.classList.remove('dragging');
+      document.querySelectorAll('.s-blank').forEach(s => s.classList.remove('drag-over'));
+      const touch = e.changedTouches[0];
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (el) {
+        const slot = el.classList.contains('s-blank') ? el : el.closest('.s-blank');
+        if (slot) sOnTouchDrop(slot);
+      }
+    }, { passive: false });
+    chip.addEventListener('click', () => sTapChip(word, chip));
+    bank.appendChild(chip);
+  });
+}
+
+function sTapChip(word, chip) {
+  if (chip.classList.contains('used')) return;
+  const emptySlot = [...document.querySelectorAll('.s-blank')].find(s => !s.classList.contains('filled'));
+  if (!emptySlot) return;
+  sDragWord = word; sDragChipEl = chip;
+  sOnDrop(emptySlot);
+}
+
+function sOnDrop(slot)      { sOnTouchDrop(slot); }
+function sOnTouchDrop(slot) {
+  if (!sDragWord || !sDragChipEl) return;
+  if (slot.classList.contains('filled')) {
+    const ew = slot.dataset.placed;
+    if (ew) sReturnToBank(slot, ew);
+  }
+  const correct = slot.dataset.answer;
+  const word    = sDragWord;
+  const chip    = sDragChipEl;
+  sDragWord = null; sDragChipEl = null;
+
+  if (word !== correct) {
+    slot.classList.add('wrong-slot');
+    slot.addEventListener('animationend', () => slot.classList.remove('wrong-slot'), { once: true });
+    const nudge = document.getElementById('sNudge');
+    nudge.textContent = S_NUDGES[Math.floor(Math.random() * S_NUDGES.length)];
+    nudge.classList.add('show');
+    clearTimeout(sNudgeTimer);
+    sNudgeTimer = setTimeout(() => nudge.classList.remove('show'), 1800);
+    sWasWrong = true;
+    return;
+  }
+
+  chip.classList.add('used');
+  slot.classList.add('filled');
+  slot.dataset.placed = word;
+  const inner = document.createElement('div');
+  inner.className   = 's-chip-in-slot';
+  inner.textContent = word;
+  inner.style.background = sColorMap[word];
+  inner.addEventListener('click', () => sReturnToBank(slot, word));
+  slot.appendChild(inner);
+  sCheckWin();
+}
+
+function sReturnToBank(slot, word) {
+  slot.classList.remove('filled');
+  slot.innerHTML = '';
+  delete slot.dataset.placed;
+  const chip = [...document.querySelectorAll('.s-word-chip')].find(c => c.dataset.word === word);
+  if (chip) chip.classList.remove('used');
+}
+
+let sWasWrong = false;
+function sCheckWin() {
+  const blanks = [...document.querySelectorAll('.s-blank')];
+  if (blanks.some(b => !b.classList.contains('filled'))) return;
+  launchConfetti();
+  document.getElementById('sWinEmoji').textContent = '🥳';
+  document.getElementById('sWinText').textContent  = 'Great sentence!!';
+  document.getElementById('sWinWord').textContent  =
+    S_SENTENCES[sCurrent].parts.map(p => p.startsWith('[') ? p.slice(1,-1) : p).join(' ');
+  document.getElementById('sWinBanner').classList.add('show');
+  dashRecordSent(sCurrent, !sWasWrong, true);
+  setTimeout(sNextSentence, 2800);
+}
+
+function sNextSentence() {
+  if (sCurrent >= S_SENTENCES.length - 1) {
+    document.getElementById('sWinEmoji').textContent = '🏆';
+    document.getElementById('sWinText').textContent  = 'All sentences done!';
+    document.getElementById('sWinWord').textContent  = 'You are a SUPERSTAR! 🌟';
+    document.getElementById('sWinBanner').classList.add('show');
+    return;
+  }
+  sCurrent++;
+  sLoadSentence(sCurrent);
+}
+
+document.getElementById('sNextBtn').addEventListener('click', sNextSentence);
+document.getElementById('sClearBtn').addEventListener('click', () => {
+  [...document.querySelectorAll('.s-blank')].forEach(slot => {
+    if (slot.classList.contains('filled')) sReturnToBank(slot, slot.dataset.placed);
+  });
+});
+
+
+// ══════════════════════════════════════════════════════════════
+//  SUBTRACTION FLASHCARDS — full permutations + stats
+// ══════════════════════════════════════════════════════════════
+
+// ── All 55 unique problems: a - b = c  (a 1-10, b 0 to a-1, c >= 1) ─────────
+const SUB_ALL_PROBLEMS = (function() {
+  const out = [];
+  for (let a = 1; a <= 10; a++) {
+    for (let b = 0; b < a; b++) {
+      out.push({ a, b, ans: a - b });
+    }
+  }
+  return out;  // 55 problems
+})();
+
+// Key for a problem: "a-b"
+function subKey(a, b) { return a + '-' + b; }
+
+// ── Stats persistence ─────────────────────────────────────────
+// Stats shape: { [key]: { shown: n, firstTry: n, wrong: n, mastered: bool } }
+function subLoadStats() {
+  try {
+    const raw = localStorage.getItem('subStats_v2');
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+function subSaveStats(stats) {
+  try { localStorage.setItem('subStats_v2', JSON.stringify(stats)); } catch(e) {}
+}
+function subLoadExcluded() {
+  try {
+    const raw = localStorage.getItem('subExcluded');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+function subSaveExcluded(list) {
+  try { localStorage.setItem('subExcluded', JSON.stringify(list)); } catch(e) {}
+}
+function subLoadPin() {
+  try { return localStorage.getItem('subParentPin') || '1234'; } catch(e) { return '1234'; }
+}
+
+// ── Session state ─────────────────────────────────────────────
+let subCurrent    = 0;
+let subLocked     = false;
+let subNudgeTimer = null;
+let subPipStates  = [];
+let subSessionDeck = [];   // 20 chosen problems for this session
+let subSessionStats = {};  // key → { firstTryCorrect: bool, wrongCount: int } for this session
+
+// ── Build a 20-card deck ──────────────────────────────────────
+function subBuildDeck() {
+  const stats    = subLoadStats();
+  const excluded = subLoadExcluded();
+  const excludeSet = new Set(excluded);
+
+  // Eligible problems (not excluded)
+  let eligible = SUB_ALL_PROBLEMS.filter(p => !excludeSet.has(subKey(p.a, p.b)));
+
+  if (eligible.length === 0) {
+    // All excluded — reset and use everything
+    subSaveExcluded([]);
+    eligible = [...SUB_ALL_PROBLEMS];
+  }
+
+  // Weight: fewer attempts / lower accuracy = higher weight
+  const weighted = eligible.map(p => {
+    const k    = subKey(p.a, p.b);
+    const s    = stats[k] || { shown: 0, firstTry: 0 };
+    const acc  = s.shown > 0 ? s.firstTry / s.shown : 0;
+    // Weight: problems never seen = 3, low acc = 2, high acc = 1
+    const w    = s.shown === 0 ? 3 : acc < 0.6 ? 2 : 1;
+    return { p, w };
+  });
+
+  // Weighted shuffle: repeat by weight, shuffle, take up to 20 unique
+  const pool = [];
+  weighted.forEach(({ p, w }) => {
+    for (let i = 0; i < w; i++) pool.push(p);
+  });
+  // Fisher-Yates on pool
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  // Deduplicate, take 20
+  const seen = new Set();
+  const deck = [];
+  for (const p of pool) {
+    const k = subKey(p.a, p.b);
+    if (!seen.has(k)) { seen.add(k); deck.push(p); }
+    if (deck.length >= 20) break;
+  }
+  // If still under 20, fill from remaining eligible
+  if (deck.length < 20) {
+    for (const p of eligible) {
+      const k = subKey(p.a, p.b);
+      if (!seen.has(k)) { seen.add(k); deck.push(p); }
+      if (deck.length >= 20) break;
+    }
+  }
+  return deck;
+}
+
+// ── Init ──────────────────────────────────────────────────────
+function initSubGame() {
+  subSessionDeck  = subBuildDeck();
+  subSessionStats = {};
+  subCurrent      = 0;
+  subPipStates    = subSessionDeck.map(() => 'pending');
+  subPipStates[0] = 'current';
+  renderSubPips();
+  subLoadCard(0);
+}
+
+// ── Load card ─────────────────────────────────────────────────
+function subLoadCard(idx) {
+  subLocked = false;
+  document.getElementById('subWinBanner').classList.remove('show');
+  document.getElementById('subNudge').classList.remove('show');
+  document.getElementById('subNextBtn').style.display = 'none';
+
+  const { a, b, ans } = subSessionDeck[idx];
+  const total = subSessionDeck.length;
+
+  document.getElementById('subCounter').textContent = 'Card ' + (idx+1) + ' of ' + total;
+  document.getElementById('subBadge').textContent   = '⭐ Subtraction Practice';
+  document.getElementById('subBadge').style.background = '#FF7043';
+
+  // Animate numbers
+  const topEl = document.getElementById('subNumTop');
+  const botEl = document.getElementById('subNumBot');
+  topEl.style.animation = 'none'; void topEl.offsetWidth;
+  botEl.style.animation = 'none'; void botEl.offsetWidth;
+  topEl.textContent = a;
+  botEl.textContent = b;
+  topEl.style.animation = '';
+  botEl.style.animation = '';
+
+  // 3 choices
+  renderSubChoices(subMakeChoices(ans), ans);
+
+  // Init session tracking for this card
+  const k = subKey(a, b);
+  if (!subSessionStats[k]) subSessionStats[k] = { wrongCount: 0, firstTryCorrect: null };
+
+  subPipStates[idx] = 'current';
+  renderSubPips();
+
+  const card = document.getElementById('subCard');
+  card.style.animation = 'none'; void card.offsetWidth;
+  card.style.animation = 'popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+}
+
+// ── Choice helpers ────────────────────────────────────────────
+const SUB_CHOICE_COLORS = ['#FF7043','#4FC3F7','#CE93D8'];
+const SUB_NUDGES = [
+  "Not quite — try another! 😊",
+  "Oops! Keep going! 💪",
+  "Almost! One more! 🌟",
+  "Try again! You've got this! 🎉",
+];
+
+function subMakeChoices(correct) {
+  const pool = [];
+  for (let n = 0; n <= 10; n++) { if (n !== correct) pool.push(n); }
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return shuffle([correct, pool[0], pool[1]]);
+}
+
+function renderSubChoices(choices, correct) {
+  const wrap = document.getElementById('subChoices');
+  wrap.innerHTML = '';
+  choices.forEach((n, i) => {
+    const btn = document.createElement('button');
+    btn.className   = 'sub-choice';
+    btn.textContent = n;
+    btn.style.background     = SUB_CHOICE_COLORS[i % SUB_CHOICE_COLORS.length];
+    btn.style.animationDelay = (i * 0.08) + 's';
+    btn.addEventListener('click', () => subOnChoice(btn, n, correct));
+    wrap.appendChild(btn);
+  });
+}
+
+// ── Answer handler ────────────────────────────────────────────
+function subOnChoice(btn, chosen, correct) {
+  if (subLocked) return;
+  const { a, b } = subSessionDeck[subCurrent];
+  const k = subKey(a, b);
+
+  if (chosen !== correct) {
+    btn.classList.add('wrong');
+    subSessionStats[k].wrongCount++;
+    if (subPipStates[subCurrent] !== 'done') subPipStates[subCurrent] = 'wrong';
+    renderSubPips();
+
+    clearTimeout(subNudgeTimer);
+    const nudge = document.getElementById('subNudge');
+    nudge.textContent = SUB_NUDGES[Math.floor(Math.random() * SUB_NUDGES.length)];
+    nudge.classList.add('show');
+    subNudgeTimer = setTimeout(() => nudge.classList.remove('show'), 1800);
+
+    btn.addEventListener('animationend', () => {
+      btn.classList.remove('wrong');
+      btn.classList.add('dismissed');
+    }, { once: true });
+    return;
+  }
+
+  // Correct!
+  subLocked = true;
+  btn.classList.add('correct');
+
+  // Record first-try
+  if (subSessionStats[k].firstTryCorrect === null) {
+    subSessionStats[k].firstTryCorrect = (subSessionStats[k].wrongCount === 0);
+  }
+
+  // Persist to stats
+  const stats = subLoadStats();
+  if (!stats[k]) stats[k] = { shown: 0, firstTry: 0, wrong: 0 };
+  stats[k].shown++;
+  if (subSessionStats[k].firstTryCorrect) stats[k].firstTry++;
+  stats[k].wrong += subSessionStats[k].wrongCount;
+  subSaveStats(stats);
+
+  if (subPipStates[subCurrent] !== 'wrong') subPipStates[subCurrent] = 'done';
+  else subPipStates[subCurrent] = 'done';
+  renderSubPips();
+
+  launchConfetti();
+  document.getElementById('subWinEmoji').textContent = '🥳';
+  document.getElementById('subWinText').textContent  = "That's right!!";
+  document.getElementById('subWinWord').textContent  = a + ' − ' + b + ' = ' + correct + ' 🌟';
+  document.getElementById('subWinBanner').classList.add('show');
+  document.getElementById('subNudge').classList.remove('show');
+
+  setTimeout(() => { document.getElementById('subNextBtn').style.display = 'block'; }, 700);
+}
+
+// ── Next card ─────────────────────────────────────────────────
+function subNext() {
+  if (subCurrent >= subSessionDeck.length - 1) {
+    document.getElementById('subWinEmoji').textContent = '🏆';
+    document.getElementById('subWinText').textContent  = 'All done!!';
+    document.getElementById('subWinWord').textContent  = 'Great work! 🌟';
+    document.getElementById('subWinBanner').classList.add('show');
+    document.getElementById('subNextBtn').style.display = 'none';
+    return;
+  }
+  subCurrent++;
+  subPipStates[subCurrent] = 'current';
+  subLoadCard(subCurrent);
+}
+
+// ── Progress pips ─────────────────────────────────────────────
+function renderSubPips() {
+  const wrap = document.getElementById('subProgress');
+  wrap.innerHTML = '';
+  subPipStates.forEach(state => {
+    const pip = document.createElement('div');
+    pip.className = 'sub-pip'
+      + (state === 'done'    ? ' done'    : '')
+      + (state === 'current' ? ' current' : '')
+      + (state === 'wrong'   ? ' wrong'   : '');
+    wrap.appendChild(pip);
+  });
+}
+
+document.getElementById('subNextBtn').addEventListener('click', subNext);
+
+// ══ PARENT STATS MODAL ═══════════════════════════════════════
+
+function subOpenStats() {
+  document.getElementById('subStatsOverlay').classList.add('open');
+  document.getElementById('subPinSection').style.display = 'flex';
+  document.getElementById('subStatsSection').classList.remove('visible');
+  const inp = document.getElementById('subPinInput');
+  inp.value = '';
+  inp.classList.remove('wrong');
+  setTimeout(() => inp.focus(), 200);
+}
+function subCloseStats() {
+  document.getElementById('subStatsOverlay').classList.remove('open');
+}
+
+function subCheckPin() {
+  const entered = document.getElementById('subPinInput').value;
+  const correct = subLoadPin();
+  if (entered === correct) {
+    document.getElementById('subPinSection').style.display = 'none';
+    document.getElementById('subStatsSection').classList.add('visible');
+    subRenderStatsTable();
+  } else {
+    const inp = document.getElementById('subPinInput');
+    inp.classList.add('wrong');
+    inp.value = '';
+    setTimeout(() => inp.classList.remove('wrong'), 700);
+  }
+}
+document.getElementById('subPinInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') subCheckPin();
+});
+
+function subRenderStatsTable() {
+  const stats    = subLoadStats();
+  const excluded = subLoadExcluded();
+  const excludeSet = new Set(excluded);
+
+  // Summary pills
+  const total    = SUB_ALL_PROBLEMS.length;
+  const practiced = Object.keys(stats).filter(k => stats[k].shown > 0).length;
+  const mastered  = SUB_ALL_PROBLEMS.filter(p => {
+    const k = subKey(p.a, p.b);
+    const s = stats[k];
+    return s && s.shown >= 3 && (s.firstTry / s.shown) >= 0.8;
+  }).length;
+  const excCount  = excludeSet.size;
+
+  const summary = document.getElementById('subStatsSummary');
+  summary.innerHTML = [
+    ['#4FC3F7', total + ' total problems'],
+    ['#66BB6A', practiced + ' practiced'],
+    ['#FFD54F', mastered + ' mastered'],
+    ['#90A4AE', excCount + ' removed'],
+  ].map(([c,t]) =>
+    '<div class="sub-stat-pill" style="background:' + c + '">' + t + '</div>'
+  ).join('');
+
+  // Table rows — sort by problem key (a asc, b asc)
+  const sorted = [...SUB_ALL_PROBLEMS].sort((x, y) => x.a - y.a || x.b - y.b);
+  const tbody = document.getElementById('subStatsBody');
+  tbody.innerHTML = '';
+
+  sorted.forEach(({ a, b, ans }) => {
+    const k  = subKey(a, b);
+    const s  = stats[k] || { shown: 0, firstTry: 0, wrong: 0 };
+    const acc = s.shown > 0 ? Math.round((s.firstTry / s.shown) * 100) : null;
+    const isMastered = s.shown >= 3 && acc !== null && acc >= 80;
+    const isExcluded = excludeSet.has(k);
+
+    const barClass = acc === null ? '' : acc >= 80 ? 'acc-great' : acc >= 50 ? 'acc-ok' : 'acc-hard';
+    const statusText = isExcluded ? '🚫 Removed'
+                     : isMastered ? '✅ Mastered'
+                     : s.shown === 0 ? '—'
+                     : '📚 Practicing';
+
+    const tr = document.createElement('tr');
+    if (isExcluded) tr.classList.add('mastered-row');
+    tr.innerHTML =
+      '<td style="font-family:Fredoka One,cursive;font-size:16px;">' + a + ' − ' + b + ' = ' + ans + '</td>' +
+      '<td>' + (s.shown || '—') + '</td>' +
+      '<td>' + (s.shown > 0 ? s.firstTry + '/' + s.shown : '—') + '</td>' +
+      '<td class="acc-bar-cell">' + (acc !== null ?
+        '<div class="acc-bar-bg"><div class="acc-bar-fill ' + barClass + '" style="width:' + acc + '%"></div></div>' +
+        '<div style="font-size:11px;text-align:center;margin-top:2px;">' + acc + '%</div>'
+        : '<span style="color:#B0BEC5">No data</span>'
+      ) + '</td>' +
+      '<td>' + statusText + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  // Mastered note
+  const masteredList = sorted
+    .filter(({ a, b }) => {
+      const k = subKey(a, b); const s = stats[k];
+      return s && s.shown >= 3 && (s.firstTry / s.shown) >= 0.8 && !excludeSet.has(k);
+    })
+    .map(({ a, b, ans }) => a + '−' + b + '=' + ans);
+
+  document.getElementById('subMasteredNote').textContent = masteredList.length > 0
+    ? 'Ready to remove: ' + masteredList.join(', ')
+    : 'No problems mastered yet (need ≥3 attempts, ≥80% first-try accuracy).';
+}
+
+function subSaveMastered() {
+  const stats    = subLoadStats();
+  const excluded = subLoadExcluded();
+  const excludeSet = new Set(excluded);
+
+  SUB_ALL_PROBLEMS.forEach(({ a, b }) => {
+    const k = subKey(a, b);
+    const s = stats[k];
+    if (s && s.shown >= 3 && (s.firstTry / s.shown) >= 0.8) {
+      excludeSet.add(k);
+    }
+  });
+  subSaveExcluded([...excludeSet]);
+  subRenderStatsTable();
+
+  // Brief confirmation
+  const note = document.getElementById('subMasteredNote');
+  note.style.color = '#66BB6A';
+  note.textContent = '✅ Mastered problems removed from future decks!';
+  setTimeout(() => { note.style.color = ''; subRenderStatsTable(); }, 2500);
+}
+
+function subResetStats() {
+  if (!confirm('Reset ALL subtraction stats? This cannot be undone.')) return;
+  try {
+    localStorage.removeItem('subStats_v2');
+    localStorage.removeItem('subExcluded');
+  } catch(e) {}
+  subRenderStatsTable();
+}
+
+function subChangePin() {
+  const val = document.getElementById('subNewPin').value.trim();
+  if (val.length < 4) { alert('PIN must be 4 digits.'); return; }
+  try { localStorage.setItem('subParentPin', val); } catch(e) {}
+  document.getElementById('subNewPin').value = '';
+  alert('PIN updated!');
+}
+
+// Close modal on overlay click
+document.getElementById('subStatsOverlay').addEventListener('click', function(e) {
+  if (e.target === this) subCloseStats();
+});
+
+
+// ══════════════════════════════════════════════════════════════
+//  ADDITION FLASHCARDS — full permutations + stats
+// ══════════════════════════════════════════════════════════════
+
+// ── All addition problems: a + b = c (a 0-9, b 1-10, a+b <= 10, ans >= 1) ──
+const ADD_ALL_PROBLEMS = (function() {
+  const out = [];
+  for (let a = 0; a <= 9; a++) {
+    for (let b = 1; b <= 10; b++) {
+      const ans = a + b;
+      if (ans >= 1 && ans <= 10) {
+        out.push({ a, b, ans });
+      }
+    }
+  }
+  return out;  // 55 problems
+})();
+
+// Key for a problem: "a-b"
+function addKey(a, b) { return a + '+' + b; }
+
+// ── Stats persistence ─────────────────────────────────────────
+// Stats shape: { [key]: { shown: n, firstTry: n, wrong: n, mastered: bool } }
+function addLoadStats() {
+  try {
+    const raw = localStorage.getItem('addStats_v2');
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+function addSaveStats(stats) {
+  try { localStorage.setItem('addStats_v2', JSON.stringify(stats)); } catch(e) {}
+}
+function addLoadExcluded() {
+  try {
+    const raw = localStorage.getItem('addExcluded');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+function addSaveExcluded(list) {
+  try { localStorage.setItem('addExcluded', JSON.stringify(list)); } catch(e) {}
+}
+function addLoadPin() {
+  try { return localStorage.getItem('addParentPin') || '1234'; } catch(e) { return '1234'; }
+}
+
+// ── Session state ─────────────────────────────────────────────
+let addCurrent    = 0;
+let addLocked     = false;
+let addNudgeTimer = null;
+let addPipStates  = [];
+let addSessionDeck = [];   // 20 chosen problems for this session
+let addSessionStats = {};  // key → { firstTryCorrect: bool, wrongCount: int } for this session
+
+// ── Build a 20-card deck ──────────────────────────────────────
+function addBuildDeck() {
+  const stats    = addLoadStats();
+  const excluded = addLoadExcluded();
+  const excludeSet = new Set(excluded);
+
+  // Eligible problems (not excluded)
+  let eligible = ADD_ALL_PROBLEMS.filter(p => !excludeSet.has(addKey(p.a, p.b)));
+
+  if (eligible.length === 0) {
+    // All excluded — reset and use everything
+    addSaveExcluded([]);
+    eligible = [...ADD_ALL_PROBLEMS];
+  }
+
+  // Weight: fewer attempts / lower accuracy = higher weight
+  const weighted = eligible.map(p => {
+    const k    = addKey(p.a, p.b);
+    const s    = stats[k] || { shown: 0, firstTry: 0 };
+    const acc  = s.shown > 0 ? s.firstTry / s.shown : 0;
+    // Weight: problems never seen = 3, low acc = 2, high acc = 1
+    const w    = s.shown === 0 ? 3 : acc < 0.6 ? 2 : 1;
+    return { p, w };
+  });
+
+  // Weighted shuffle: repeat by weight, shuffle, take up to 20 unique
+  const pool = [];
+  weighted.forEach(({ p, w }) => {
+    for (let i = 0; i < w; i++) pool.push(p);
+  });
+  // Fisher-Yates on pool
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  // Deduplicate, take 20
+  const seen = new Set();
+  const deck = [];
+  for (const p of pool) {
+    const k = addKey(p.a, p.b);
+    if (!seen.has(k)) { seen.add(k); deck.push(p); }
+    if (deck.length >= 20) break;
+  }
+  // If still under 20, fill from remaining eligible
+  if (deck.length < 20) {
+    for (const p of eligible) {
+      const k = addKey(p.a, p.b);
+      if (!seen.has(k)) { seen.add(k); deck.push(p); }
+      if (deck.length >= 20) break;
+    }
+  }
+  return deck;
+}
+
+// ── Init ──────────────────────────────────────────────────────
+function initAddGame() {
+  addSessionDeck  = addBuildDeck();
+  addSessionStats = {};
+  addCurrent      = 0;
+  addPipStates    = addSessionDeck.map(() => 'pending');
+  addPipStates[0] = 'current';
+  renderAddPips();
+  addLoadCard(0);
+}
+
+// ── Load card ─────────────────────────────────────────────────
+function addLoadCard(idx) {
+  addLocked = false;
+  document.getElementById('addWinBanner').classList.remove('show');
+  document.getElementById('addNudge').classList.remove('show');
+  document.getElementById('addNextBtn').style.display = 'none';
+
+  const { a, b, ans } = addSessionDeck[idx];
+  const total = addSessionDeck.length;
+
+  document.getElementById('addCounter').textContent = 'Card ' + (idx+1) + ' of ' + total;
+  document.getElementById('addBadge').textContent   = '⭐ Addition Practice';
+  document.getElementById('addBadge').style.background = '#66BB6A';
+
+  // Animate numbers
+  const topEl = document.getElementById('addNumTop');
+  const botEl = document.getElementById('addNumBot');
+  topEl.style.animation = 'none'; void topEl.offsetWidth;
+  botEl.style.animation = 'none'; void botEl.offsetWidth;
+  topEl.textContent = a;
+  botEl.textContent = b;
+  topEl.style.animation = '';
+  botEl.style.animation = '';
+  // Show + operator
+  const opEl = document.getElementById('addOperator');
+  if (opEl) opEl.textContent = '+';
+
+  // 3 choices
+  renderAddChoices(addMakeChoices(ans), ans);
+
+  // Init session tracking for this card
+  const k = addKey(a, b);
+  if (!addSessionStats[k]) addSessionStats[k] = { wrongCount: 0, firstTryCorrect: null };
+
+  addPipStates[idx] = 'current';
+  renderAddPips();
+
+  const card = document.getElementById('addCard');
+  card.style.animation = 'none'; void card.offsetWidth;
+  card.style.animation = 'popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+}
+
+// ── Choice helpers ────────────────────────────────────────────
+const ADD_CHOICE_COLORS = ['#FF7043','#4FC3F7','#CE93D8'];
+const ADD_NUDGES = [
+  "Not quite — try another! 😊",
+  "Oops! Keep going! 💪",
+  "Almost! One more! 🌟",
+  "Try again! You've got this! 🎉",
+];
+
+function addMakeChoices(correct) {
+  // Addition answers are 1-10; distractors within ±3 to be plausible
+  const pool = [];
+  for (let n = 1; n <= 10; n++) { if (n !== correct) pool.push(n); }
+  // Sort by proximity to correct answer for more realistic distractors
+  pool.sort((a, b) => Math.abs(a - correct) - Math.abs(b - correct));
+  const wrongs = pool.slice(0, 4); // take 4 closest, then shuffle
+  for (let i = wrongs.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [wrongs[i], wrongs[j]] = [wrongs[j], wrongs[i]];
+  }
+  return shuffle([correct, wrongs[0], wrongs[1]]);
+}
+
+function renderAddChoices(choices, correct) {
+  const wrap = document.getElementById('addChoices');
+  wrap.innerHTML = '';
+  choices.forEach((n, i) => {
+    const btn = document.createElement('button');
+    btn.className   = 'sub-choice';
+    btn.textContent = n;
+    btn.style.background     = ADD_CHOICE_COLORS[i % ADD_CHOICE_COLORS.length];
+    btn.style.animationDelay = (i * 0.08) + 's';
+    btn.addEventListener('click', () => addOnChoice(btn, n, correct));
+    wrap.appendChild(btn);
+  });
+}
+
+// ── Answer handler ────────────────────────────────────────────
+function addOnChoice(btn, chosen, correct) {
+  if (addLocked) return;
+  const { a, b } = addSessionDeck[addCurrent];
+  const k = addKey(a, b);
+
+  if (chosen !== correct) {
+    btn.classList.add('wrong');
+    addSessionStats[k].wrongCount++;
+    if (addPipStates[addCurrent] !== 'done') addPipStates[addCurrent] = 'wrong';
+    renderAddPips();
+
+    clearTimeout(addNudgeTimer);
+    const nudge = document.getElementById('addNudge');
+    nudge.textContent = ADD_NUDGES[Math.floor(Math.random() * ADD_NUDGES.length)];
+    nudge.classList.add('show');
+    addNudgeTimer = setTimeout(() => nudge.classList.remove('show'), 1800);
+
+    btn.addEventListener('animationend', () => {
+      btn.classList.remove('wrong');
+      btn.classList.add('dismissed');
+    }, { once: true });
+    return;
+  }
+
+  // Correct!
+  addLocked = true;
+  btn.classList.add('correct');
+
+  // Record first-try
+  if (addSessionStats[k].firstTryCorrect === null) {
+    addSessionStats[k].firstTryCorrect = (addSessionStats[k].wrongCount === 0);
+  }
+
+  // Persist to stats
+  const stats = addLoadStats();
+  if (!stats[k]) stats[k] = { shown: 0, firstTry: 0, wrong: 0 };
+  stats[k].shown++;
+  if (addSessionStats[k].firstTryCorrect) stats[k].firstTry++;
+  stats[k].wrong += addSessionStats[k].wrongCount;
+  addSaveStats(stats);
+
+  if (addPipStates[addCurrent] !== 'wrong') addPipStates[addCurrent] = 'done';
+  else addPipStates[addCurrent] = 'done';
+  renderAddPips();
+
+  launchConfetti();
+  document.getElementById('addWinEmoji').textContent = '🥳';
+  document.getElementById('addWinText').textContent  = "That's right!!";
+  document.getElementById('addWinWord').textContent  = a + ' + ' + b + ' = ' + correct + ' 🌟';
+  document.getElementById('addWinBanner').classList.add('show');
+  document.getElementById('addNudge').classList.remove('show');
+
+  setTimeout(() => { document.getElementById('addNextBtn').style.display = 'block'; }, 700);
+}
+
+// ── Next card ─────────────────────────────────────────────────
+function addNext() {
+  if (addCurrent >= addSessionDeck.length - 1) {
+    document.getElementById('addWinEmoji').textContent = '🏆';
+    document.getElementById('addWinText').textContent  = 'All done!!';
+    document.getElementById('addWinWord').textContent  = 'You\'re an addition star! 🌟';
+    document.getElementById('addWinBanner').classList.add('show');
+    document.getElementById('addNextBtn').style.display = 'none';
+    return;
+  }
+  addCurrent++;
+  addPipStates[addCurrent] = 'current';
+  addLoadCard(addCurrent);
+}
+
+// ── Progress pips ─────────────────────────────────────────────
+function renderAddPips() {
+  const wrap = document.getElementById('addProgress');
+  wrap.innerHTML = '';
+  addPipStates.forEach(state => {
+    const pip = document.createElement('div');
+    pip.className = 'sub-pip'
+      + (state === 'done'    ? ' done'    : '')
+      + (state === 'current' ? ' current' : '')
+      + (state === 'wrong'   ? ' wrong'   : '');
+    wrap.appendChild(pip);
+  });
+}
+
+document.getElementById('addNextBtn').addEventListener('click', addNext);
+
+// ══ PARENT STATS MODAL ═══════════════════════════════════════
+
+function addOpenStats() {
+  document.getElementById('addStatsOverlay').classList.add('open');
+  document.getElementById('addPinSection').style.display = 'flex';
+  document.getElementById('addStatsSection').classList.remove('visible');
+  const inp = document.getElementById('addPinInput');
+  inp.value = '';
+  inp.classList.remove('wrong');
+  setTimeout(() => inp.focus(), 200);
+}
+function addCloseStats() {
+  document.getElementById('addStatsOverlay').classList.remove('open');
+}
+
+function addCheckPin() {
+  const entered = document.getElementById('addPinInput').value;
+  const correct = addLoadPin();
+  if (entered === correct) {
+    document.getElementById('addPinSection').style.display = 'none';
+    document.getElementById('addStatsSection').classList.add('visible');
+    addRenderStatsTable();
+  } else {
+    const inp = document.getElementById('addPinInput');
+    inp.classList.add('wrong');
+    inp.value = '';
+    setTimeout(() => inp.classList.remove('wrong'), 700);
+  }
+}
+document.getElementById('addPinInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addCheckPin();
+});
+
+function addRenderStatsTable() {
+  const stats    = addLoadStats();
+  const excluded = addLoadExcluded();
+  const excludeSet = new Set(excluded);
+
+  // Summary pills
+  const total    = ADD_ALL_PROBLEMS.length;
+  const practiced = Object.keys(stats).filter(k => stats[k].shown > 0).length;
+  const mastered  = ADD_ALL_PROBLEMS.filter(p => {
+    const k = addKey(p.a, p.b);
+    const s = stats[k];
+    return s && s.shown >= 3 && (s.firstTry / s.shown) >= 0.8;
+  }).length;
+  const excCount  = excludeSet.size;
+
+  const summary = document.getElementById('addStatsSummary');
+  summary.innerHTML = [
+    ['#4FC3F7', total + ' total problems'],
+    ['#66BB6A', practiced + ' practiced'],
+    ['#FFD54F', mastered + ' mastered'],
+    ['#90A4AE', excCount + ' removed'],
+  ].map(([c,t]) =>
+    '<div class="sub-stat-pill" style="background:' + c + '">' + t + '</div>'
+  ).join('');
+
+  // Table rows — sort by problem key (a asc, b asc)
+  const sorted = [...ADD_ALL_PROBLEMS].sort((x, y) => x.a - y.a || x.b - y.b);
+  const tbody = document.getElementById('addStatsBody');
+  tbody.innerHTML = '';
+
+  sorted.forEach(({ a, b, ans }) => {
+    const k  = addKey(a, b);
+    const s  = stats[k] || { shown: 0, firstTry: 0, wrong: 0 };
+    const acc = s.shown > 0 ? Math.round((s.firstTry / s.shown) * 100) : null;
+    const isMastered = s.shown >= 3 && acc !== null && acc >= 80;
+    const isExcluded = excludeSet.has(k);
+
+    const barClass = acc === null ? '' : acc >= 80 ? 'acc-great' : acc >= 50 ? 'acc-ok' : 'acc-hard';
+    const statusText = isExcluded ? '🚫 Removed'
+                     : isMastered ? '✅ Mastered'
+                     : s.shown === 0 ? '—'
+                     : '📚 Practicing';
+
+    const tr = document.createElement('tr');
+    if (isExcluded) tr.classList.add('mastered-row');
+    tr.innerHTML =
+      '<td style="font-family:Fredoka One,cursive;font-size:16px;">' + a + ' − ' + b + ' = ' + ans + '</td>' +
+      '<td>' + (s.shown || '—') + '</td>' +
+      '<td>' + (s.shown > 0 ? s.firstTry + '/' + s.shown : '—') + '</td>' +
+      '<td class="acc-bar-cell">' + (acc !== null ?
+        '<div class="acc-bar-bg"><div class="acc-bar-fill ' + barClass + '" style="width:' + acc + '%"></div></div>' +
+        '<div style="font-size:11px;text-align:center;margin-top:2px;">' + acc + '%</div>'
+        : '<span style="color:#B0BEC5">No data</span>'
+      ) + '</td>' +
+      '<td>' + statusText + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  // Mastered note
+  const masteredList = sorted
+    .filter(({ a, b }) => {
+      const k = addKey(a, b); const s = stats[k];
+      return s && s.shown >= 3 && (s.firstTry / s.shown) >= 0.8 && !excludeSet.has(k);
+    })
+    .map(({ a, b, ans }) => a + '−' + b + '=' + ans);
+
+  document.getElementById('addMasteredNote').textContent = masteredList.length > 0
+    ? 'Ready to remove: ' + masteredList.join(', ')
+    : 'No problems mastered yet (need ≥3 attempts, ≥80% first-try accuracy).';
+}
+
+function addSaveMastered() {
+  const stats    = addLoadStats();
+  const excluded = addLoadExcluded();
+  const excludeSet = new Set(excluded);
+
+  ADD_ALL_PROBLEMS.forEach(({ a, b }) => {
+    const k = addKey(a, b);
+    const s = stats[k];
+    if (s && s.shown >= 3 && (s.firstTry / s.shown) >= 0.8) {
+      excludeSet.add(k);
+    }
+  });
+  addSaveExcluded([...excludeSet]);
+  addRenderStatsTable();
+
+  // Brief confirmation
+  const note = document.getElementById('addMasteredNote');
+  note.style.color = '#66BB6A';
+  note.textContent = '✅ Mastered problems removed from future decks!';
+  setTimeout(() => { note.style.color = ''; addRenderStatsTable(); }, 2500);
+}
+
+function addResetStats() {
+  if (!confirm('Reset ALL addition stats? This cannot be undone.')) return;
+  try {
+    localStorage.removeItem('addStats_v2');
+    localStorage.removeItem('addExcluded');
+  } catch(e) {}
+  addRenderStatsTable();
+}
+
+function addChangePin() {
+  const val = document.getElementById('addNewPin').value.trim();
+  if (val.length < 4) { alert('PIN must be 4 digits.'); return; }
+  try { localStorage.setItem('addParentPin', val); } catch(e) {}
+  document.getElementById('addNewPin').value = '';
+  alert('PIN updated!');
+}
+
+// Close modal on overlay click
+document.getElementById('addStatsOverlay').addEventListener('click', function(e) {
+  if (e.target === this) addCloseStats();
+});
+
+
+// ══════════════════════════════════════════════════════════════
+//  PARENT DASHBOARD  (unified across all 5 games)
+// ══════════════════════════════════════════════════════════════
+
+// ── Single PIN for all games ──────────────────────────────────
+function dashLoadPin()     { try { return localStorage.getItem('parentPin') || '1234'; } catch(e) { return '1234'; } }
+function dashSavePin(p)    { try { localStorage.setItem('parentPin', p); } catch(e) {} }
+
+// Route per-game pin loads to unified key
+
+
+// ── Stats accessors (reuse game-specific loaders) ─────────────
+function dashGetSubStats() {
+  try { const r = localStorage.getItem('subStats_v2'); return r ? JSON.parse(r) : {}; } catch(e) { return {}; }
+}
+function dashGetAddStats() {
+  try { const r = localStorage.getItem('addStats_v2'); return r ? JSON.parse(r) : {}; } catch(e) { return {}; }
+}
+function dashGetWordStats() {
+  try { const r = localStorage.getItem('wordStats_v1'); return r ? JSON.parse(r) : {}; } catch(e) { return {}; }
+}
+function dashGetMathStats() {
+  try { const r = localStorage.getItem('mathStats_v1'); return r ? JSON.parse(r) : {}; } catch(e) { return {}; }
+}
+function dashGetSentStats() {
+  try { const r = localStorage.getItem('sentStats_v1'); return r ? JSON.parse(r) : {}; } catch(e) { return {}; }
+}
+
+// ── Open / close ──────────────────────────────────────────────
+function dashOpen() {
+  document.getElementById('dashOverlay').classList.add('open');
+  document.getElementById('dashPinWrap').style.display = 'flex';
+  document.getElementById('dashBody').classList.remove('visible');
+  const inp = document.getElementById('dashPinInput');
+  inp.value = ''; inp.classList.remove('wrong');
+  setTimeout(() => inp.focus(), 200);
+}
+function dashClose() {
+  document.getElementById('dashOverlay').classList.remove('open');
+}
+
+function dashCheckPin() {
+  const entered = document.getElementById('dashPinInput').value;
+  if (entered === dashLoadPin()) {
+    document.getElementById('dashPinWrap').style.display = 'none';
+    document.getElementById('dashBody').classList.add('visible');
+    dashShowOverview();
+  } else {
+    const inp = document.getElementById('dashPinInput');
+    inp.classList.add('wrong'); inp.value = '';
+    setTimeout(() => inp.classList.remove('wrong'), 700);
+  }
+}
+document.getElementById('dashPinInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') dashCheckPin();
+});
+document.getElementById('dashOverlay').addEventListener('click', function(e) {
+  if (e.target === this) dashClose();
+});
+
+function dashChangePin() {
+  const v = document.getElementById('dashNewPin').value.trim();
+  if (v.length < 4) { alert('PIN must be 4 digits.'); return; }
+  dashSavePin(v);
+  document.getElementById('dashNewPin').value = '';
+  alert('PIN updated!');
+}
+
+function dashResetAll() {
+  if (!confirm('Reset ALL stats for ALL games? This cannot be undone.')) return;
+  ['subStats_v2','subExcluded','addStats_v2','addExcluded',
+   'wordStats_v1','mathStats_v1','sentStats_v1'].forEach(k => {
+    try { localStorage.removeItem(k); } catch(e) {}
+  });
+  dashShowOverview();
+}
+
+// ── Overview: one card per game ───────────────────────────────
+function dashShowOverview() {
+  document.getElementById('dashOverview').style.display = 'block';
+  document.getElementById('dashDetail').classList.remove('visible');
+
+  const games = dashBuildGameSummaries();
+  const wrap  = document.getElementById('dashGameCards');
+  wrap.innerHTML = '';
+  games.forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'dash-game-card';
+    card.style.borderColor = g.color;
+    card.innerHTML =
+      '<div class="dash-game-icon">' + g.icon + '</div>' +
+      '<div class="dash-game-info">' +
+        '<div class="dash-game-name">' + g.name + '</div>' +
+        '<div class="dash-game-meta">' + g.meta + '</div>' +
+        '<div class="dash-game-mini-bar">' +
+          '<div class="dash-game-mini-fill" style="width:' + g.pct + '%;background:' + g.color + '"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="dash-chevron">›</div>';
+    card.addEventListener('click', () => dashShowDetail(g.key));
+    wrap.appendChild(card);
+  });
+}
+
+function dashBuildGameSummaries() {
+  const summaries = [];
+
+  // ── Word Shapes ──────────────────────────────────────────────
+  const wStats = dashGetWordStats();
+  const wTotal = W_WORDS ? W_WORDS.length : 100;
+  const wDone  = Object.values(wStats).filter(s => s.solved).length;
+  const wAcc   = Object.values(wStats).filter(s => s.shown > 0);
+  const wAvgAcc = wAcc.length ? Math.round(wAcc.reduce((a,s) => a + (s.firstTry/s.shown)*100, 0) / wAcc.length) : 0;
+  summaries.push({
+    key: 'word', icon: '🔤', name: 'Word Shapes', color: '#4FC3F7',
+    meta: wDone + ' of ' + wTotal + ' words solved · ' + (wAcc.length ? wAvgAcc + '% avg accuracy' : 'No data yet'),
+    pct: Math.round((wDone / wTotal) * 100),
+  });
+
+  // ── Number Fun ───────────────────────────────────────────────
+  const mStats = dashGetMathStats();
+  const mKeys  = Object.keys(mStats);
+  const mDone  = mKeys.filter(k => mStats[k].shown > 0).length;
+  const mAvgAcc = mDone ? Math.round(mKeys.filter(k=>mStats[k].shown>0).reduce((a,k) => a + (mStats[k].firstTry/mStats[k].shown)*100, 0) / mDone) : 0;
+  summaries.push({
+    key: 'math', icon: '🔢', name: 'Number Fun', color: '#66BB6A',
+    meta: mDone + ' questions answered · ' + (mDone ? mAvgAcc + '% first-try accuracy' : 'No data yet'),
+    pct: mDone > 0 ? Math.min(100, Math.round((mDone / 50) * 100)) : 0,
+  });
+
+  // ── Sentence Builder ─────────────────────────────────────────
+  const sStats = dashGetSentStats();
+  const sTotal = S_SENTENCES ? S_SENTENCES.length : 25;
+  const sDone  = Object.values(sStats).filter(s => s.solved).length;
+  summaries.push({
+    key: 'sent', icon: '📝', name: 'Sentence Builder', color: '#CE93D8',
+    meta: sDone + ' of ' + sTotal + ' sentences completed',
+    pct: Math.round((sDone / sTotal) * 100),
+  });
+
+  // ── Subtraction ──────────────────────────────────────────────
+  const subStats = dashGetSubStats();
+  const subAll   = SUB_ALL_PROBLEMS ? SUB_ALL_PROBLEMS.length : 55;
+  const subDone  = Object.values(subStats).filter(s => s.shown > 0).length;
+  const subMast  = Object.keys(subStats).filter(k => subStats[k].shown >= 3 && (subStats[k].firstTry/subStats[k].shown) >= 0.8).length;
+  const subAvgAcc = subDone ? Math.round(Object.values(subStats).filter(s=>s.shown>0).reduce((a,s)=>a+(s.firstTry/s.shown)*100,0)/subDone) : 0;
+  summaries.push({
+    key: 'sub', icon: '➖', name: 'Take Away! (Subtraction)', color: '#FF7043',
+    meta: subDone + '/' + subAll + ' practiced · ' + subMast + ' mastered · ' + (subDone ? subAvgAcc + '% accuracy' : 'No data'),
+    pct: Math.round((subDone / subAll) * 100),
+  });
+
+  // ── Addition ─────────────────────────────────────────────────
+  const addStats = dashGetAddStats();
+  const addAll   = ADD_ALL_PROBLEMS ? ADD_ALL_PROBLEMS.length : 55;
+  const addDone  = Object.values(addStats).filter(s => s.shown > 0).length;
+  const addMast  = Object.keys(addStats).filter(k => addStats[k].shown >= 3 && (addStats[k].firstTry/addStats[k].shown) >= 0.8).length;
+  const addAvgAcc = addDone ? Math.round(Object.values(addStats).filter(s=>s.shown>0).reduce((a,s)=>a+(s.firstTry/s.shown)*100,0)/addDone) : 0;
+  summaries.push({
+    key: 'add', icon: '➕', name: 'Add It Up! (Addition)', color: '#66BB6A',
+    meta: addDone + '/' + addAll + ' practiced · ' + addMast + ' mastered · ' + (addDone ? addAvgAcc + '% accuracy' : 'No data'),
+    pct: Math.round((addDone / addAll) * 100),
+  });
+
+  return summaries;
+}
+
+// ── Detail view ───────────────────────────────────────────────
+function dashShowDetail(key) {
+  document.getElementById('dashOverview').style.display = 'none';
+  document.getElementById('dashDetail').classList.add('visible');
+
+  const renderers = {
+    word: dashDetailWord,
+    math: dashDetailMath,
+    sent: dashDetailSent,
+    sub:  dashDetailSub,
+    add:  dashDetailAdd,
+  };
+  if (renderers[key]) renderers[key]();
+}
+
+
+// Shared table helpers
+function dashSetHead(cols) {
+  const row = document.getElementById('dashDetailHead');
+  row.innerHTML = cols.map(t => '<th>' + t + '</th>').join('');
+}
+function dashAccCell(acc) {
+  if (acc === null) return '<span style="color:#B0BEC5">—</span>';
+  const cls = acc >= 80 ? 'bar-great' : acc >= 50 ? 'bar-ok' : 'bar-hard';
+  return '<div class="dash-bar-bg"><div class="dash-bar-fill ' + cls + '" style="width:' + acc + '%"></div></div>' +
+         '<div style="font-size:11px;text-align:center;margin-top:2px;">' + acc + '%</div>';
+}
+function dashSetPills(pills) {
+  document.getElementById('dashDetailPills').innerHTML =
+    pills.map(([c,t]) => '<div class="dash-pill" style="background:' + c + '">' + t + '</div>').join('');
+}
+function dashSetActions(html) {
+  document.getElementById('dashDetailActions').innerHTML = html;
+}
+
+// ── WORD SHAPES detail ─────────────────────────────────────────
+function dashDetailWord() {
+  document.getElementById('dashDetailTitle').textContent = '🔤 Word Shapes';
+  document.getElementById('dashDetailLabel').textContent = 'All 100 words';
+  const stats = dashGetWordStats();
+
+  const total   = W_WORDS.length;
+  const solved  = W_WORDS.filter(w => stats[w.word] && stats[w.word].solved).length;
+  const tried   = W_WORDS.filter(w => stats[w.word] && stats[w.word].shown > 0).length;
+  const avgAcc  = tried ? Math.round(W_WORDS.filter(w=>stats[w.word]&&stats[w.word].shown>0)
+    .reduce((a,w) => a + (stats[w.word].firstTry/stats[w.word].shown)*100, 0) / tried) : null;
+
+  dashSetPills([
+    ['#4FC3F7', total + ' total words'],
+    ['#66BB6A', solved + ' solved'],
+    ['#FF7043', tried + ' attempted'],
+    [avgAcc !== null ? '#FFD54F' : '#90A4AE', avgAcc !== null ? avgAcc + '% avg accuracy' : 'No data'],
+  ]);
+
+  dashSetHead(['Word', 'Level', 'Attempts', '1st Try ✓', 'Accuracy', 'Status']);
+  const tbody = document.getElementById('dashDetailBody');
+  tbody.innerHTML = '';
+  W_WORDS.forEach(({ word, emoji, level }) => {
+    const s   = stats[word] || { shown: 0, firstTry: 0 };
+    const acc = s.shown > 0 ? Math.round((s.firstTry / s.shown) * 100) : null;
+    const status = s.solved ? '✅' : s.shown > 0 ? '📚' : '—';
+    const tr = document.createElement('tr');
+    if (s.solved) tr.classList.add('mastered-row');
+    tr.innerHTML =
+      '<td style="font-family:Fredoka One,cursive">' + (emoji||'') + ' ' + word + '</td>' +
+      '<td>' + (level||'—') + '</td>' +
+      '<td>' + (s.shown||'—') + '</td>' +
+      '<td>' + (s.shown > 0 ? s.firstTry + '/' + s.shown : '—') + '</td>' +
+      '<td class="dash-acc">' + dashAccCell(acc) + '</td>' +
+      '<td>' + status + '</td>';
+    tbody.appendChild(tr);
+  });
+  dashSetActions('<button class="dash-action-btn dash-btn-reset" data-rk="wordStats_v1" onclick="dashResetGame(this.dataset.rk)">🗑 Reset Word Stats</button>');
+}
+
+// ── NUMBER FUN detail ──────────────────────────────────────────
+function dashDetailMath() {
+  document.getElementById('dashDetailTitle').textContent = '🔢 Number Fun';
+  document.getElementById('dashDetailLabel').textContent = 'Question history';
+  const stats = dashGetMathStats();
+  const keys  = Object.keys(stats).filter(k => stats[k].shown > 0);
+
+  const avgAcc = keys.length ? Math.round(keys.reduce((a,k) => a + (stats[k].firstTry/stats[k].shown)*100, 0) / keys.length) : null;
+  const best   = keys.length ? keys.reduce((b,k) => (stats[k].firstTry/stats[k].shown) > (stats[b].firstTry/stats[b].shown) ? k : b, keys[0]) : null;
+
+  dashSetPills([
+    ['#66BB6A', keys.length + ' questions answered'],
+    [avgAcc !== null ? '#4FC3F7' : '#90A4AE', avgAcc !== null ? avgAcc + '% avg accuracy' : 'No data'],
+    ['#FFD54F', best ? 'Best: ' + best : ''],
+  ].filter(([,t]) => t));
+
+  dashSetHead(['Question', 'Type', 'Attempts', '1st Try ✓', 'Accuracy']);
+  const tbody = document.getElementById('dashDetailBody');
+  tbody.innerHTML = '';
+
+  const sortedKeys = keys.sort((a,b) => {
+    const parseQ = k => { const p = k.split('|'); return { type: p[0], val: parseInt(p[1]||0) }; };
+    const pa = parseQ(a), pb = parseQ(b);
+    return pa.type.localeCompare(pb.type) || pa.val - pb.val;
+  });
+
+  sortedKeys.forEach(k => {
+    const s   = stats[k];
+    const acc = Math.round((s.firstTry / s.shown) * 100);
+    const parts = k.split('|');
+    const type  = parts[0];
+    const label = parts.slice(1).join(' ');
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="font-family:Fredoka One,cursive;font-size:15px;">' + label + '</td>' +
+      '<td style="text-transform:capitalize">' + type + '</td>' +
+      '<td>' + s.shown + '</td>' +
+      '<td>' + s.firstTry + '/' + s.shown + '</td>' +
+      '<td class="dash-acc">' + dashAccCell(acc) + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  if (!keys.length) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td colspan="5" style="text-align:center;color:#90A4AE;padding:20px;">No questions answered yet</td>';
+    tbody.appendChild(tr);
+  }
+  dashSetActions('<button class="dash-action-btn dash-btn-reset" data-rk="mathStats_v1" onclick="dashResetGame(this.dataset.rk)">🗑 Reset Math Stats</button>');
+}
+
+// ── SENTENCE BUILDER detail ────────────────────────────────────
+function dashDetailSent() {
+  document.getElementById('dashDetailTitle').textContent = '📝 Sentence Builder';
+  document.getElementById('dashDetailLabel').textContent = 'All 25 sentences';
+  const stats = dashGetSentStats();
+
+  const total  = S_SENTENCES.length;
+  const solved = S_SENTENCES.filter((s,i) => stats[i] && stats[i].solved).length;
+  const tried  = S_SENTENCES.filter((s,i) => stats[i] && stats[i].shown > 0).length;
+
+  dashSetPills([
+    ['#CE93D8', total + ' total sentences'],
+    ['#66BB6A', solved + ' completed'],
+    ['#FF7043', tried + ' attempted'],
+  ]);
+
+  dashSetHead(['#', 'Sentence', 'Level', 'Attempts', 'Completed']);
+  const tbody = document.getElementById('dashDetailBody');
+  tbody.innerHTML = '';
+  S_SENTENCES.forEach((sent, i) => {
+    const s      = stats[i] || { shown: 0 };
+    const text   = sent.parts.map(p => p.startsWith('[') ? '_' + p.slice(1,-1) + '_' : p).join(' ');
+    const status = s.solved ? '✅' : s.shown > 0 ? '📚' : '—';
+    const lv     = ['L1','L2','L3','L4','L5'][sent.level] || '—';
+    const tr = document.createElement('tr');
+    if (s.solved) tr.classList.add('mastered-row');
+    tr.innerHTML =
+      '<td style="color:#90A4AE;font-weight:800">' + (i+1) + '</td>' +
+      '<td style="font-size:12px;max-width:180px;white-space:normal">' + text + '</td>' +
+      '<td>' + lv + '</td>' +
+      '<td>' + (s.shown || '—') + '</td>' +
+      '<td>' + status + '</td>';
+    tbody.appendChild(tr);
+  });
+  dashSetActions('<button class="dash-action-btn dash-btn-reset" data-rk="sentStats_v1" onclick="dashResetGame(this.dataset.rk)">🗑 Reset Sentence Stats</button>');
+}
+
+// ── SUBTRACTION detail ────────────────────────────────────────
+function dashDetailSub() {
+  document.getElementById('dashDetailTitle').textContent = '➖ Take Away! (Subtraction)';
+  document.getElementById('dashDetailLabel').textContent = 'All 55 problems';
+  const stats    = dashGetSubStats();
+  const excluded = (function(){ try { const r=localStorage.getItem('subExcluded'); return r?new Set(JSON.parse(r)):new Set(); } catch(e){return new Set();} })();
+
+  const all    = SUB_ALL_PROBLEMS;
+  const done   = all.filter(p => stats[p.a+'-'+p.b] && stats[p.a+'-'+p.b].shown > 0).length;
+  const mast   = all.filter(p => { const s=stats[p.a+'-'+p.b]; return s&&s.shown>=3&&(s.firstTry/s.shown)>=0.8; }).length;
+  const avgAcc = done ? Math.round(all.filter(p=>stats[p.a+'-'+p.b]&&stats[p.a+'-'+p.b].shown>0)
+    .reduce((a,p) => a + (stats[p.a+'-'+p.b].firstTry/stats[p.a+'-'+p.b].shown)*100, 0) / done) : null;
+
+  dashSetPills([
+    ['#FF7043', all.length + ' total problems'],
+    ['#66BB6A', done + ' practiced'],
+    ['#FFD54F', mast + ' mastered'],
+    ['#90A4AE', excluded.size + ' removed'],
+  ]);
+
+  dashSetHead(['Problem', 'Attempts', '1st Try ✓', 'Accuracy', 'Status']);
+  const tbody = document.getElementById('dashDetailBody');
+  tbody.innerHTML = '';
+  [...all].sort((x,y)=>x.a-y.a||x.b-y.b).forEach(({a,b,ans}) => {
+    const k  = a+'-'+b;
+    const s  = stats[k] || { shown:0, firstTry:0 };
+    const acc = s.shown > 0 ? Math.round((s.firstTry/s.shown)*100) : null;
+    const isM = s.shown >= 3 && acc !== null && acc >= 80;
+    const isX = excluded.has(k);
+    const status = isX ? '🚫' : isM ? '✅' : s.shown > 0 ? '📚' : '—';
+    const tr = document.createElement('tr');
+    if (isX) tr.classList.add('mastered-row');
+    tr.innerHTML =
+      '<td style="font-family:Fredoka One,cursive;font-size:16px;">' + a + ' − ' + b + ' = ' + ans + '</td>' +
+      '<td>' + (s.shown||'—') + '</td>' +
+      '<td>' + (s.shown>0 ? s.firstTry+'/'+s.shown : '—') + '</td>' +
+      '<td class="dash-acc">' + dashAccCell(acc) + '</td>' +
+      '<td>' + status + '</td>';
+    tbody.appendChild(tr);
+  });
+  dashSetActions(
+    '<button class="dash-action-btn dash-btn-save" onclick="dashSaveMasteredSub()">💾 Remove Mastered</button>' +
+    '<button class="dash-action-btn dash-btn-reset" data-rk="subStats_v2" onclick="dashResetGame(this.dataset.rk)">🗑 Reset Sub Stats</button>'
+  );
+}
+
+// ── ADDITION detail ───────────────────────────────────────────
+function dashDetailAdd() {
+  document.getElementById('dashDetailTitle').textContent = '➕ Add It Up! (Addition)';
+  document.getElementById('dashDetailLabel').textContent = 'All 55 problems';
+  const stats    = dashGetAddStats();
+  const excluded = (function(){ try { const r=localStorage.getItem('addExcluded'); return r?new Set(JSON.parse(r)):new Set(); } catch(e){return new Set();} })();
+
+  const all    = ADD_ALL_PROBLEMS;
+  const done   = all.filter(p => stats[p.a+'+'+p.b] && stats[p.a+'+'+p.b].shown > 0).length;
+  const mast   = all.filter(p => { const s=stats[p.a+'+'+p.b]; return s&&s.shown>=3&&(s.firstTry/s.shown)>=0.8; }).length;
+  const avgAcc = done ? Math.round(all.filter(p=>stats[p.a+'+'+p.b]&&stats[p.a+'+'+p.b].shown>0)
+    .reduce((a,p) => a + (stats[p.a+'+'+p.b].firstTry/stats[p.a+'+'+p.b].shown)*100, 0) / done) : null;
+
+  dashSetPills([
+    ['#66BB6A', all.length + ' total problems'],
+    ['#4FC3F7', done + ' practiced'],
+    ['#FFD54F', mast + ' mastered'],
+    ['#90A4AE', excluded.size + ' removed'],
+  ]);
+
+  dashSetHead(['Problem', 'Attempts', '1st Try ✓', 'Accuracy', 'Status']);
+  const tbody = document.getElementById('dashDetailBody');
+  tbody.innerHTML = '';
+  [...all].sort((x,y)=>x.a-y.a||x.b-y.b).forEach(({a,b,ans}) => {
+    const k  = a+'+'+b;
+    const s  = stats[k] || { shown:0, firstTry:0 };
+    const acc = s.shown > 0 ? Math.round((s.firstTry/s.shown)*100) : null;
+    const isM = s.shown >= 3 && acc !== null && acc >= 80;
+    const isX = excluded.has(k);
+    const status = isX ? '🚫' : isM ? '✅' : s.shown > 0 ? '📚' : '—';
+    const tr = document.createElement('tr');
+    if (isX) tr.classList.add('mastered-row');
+    tr.innerHTML =
+      '<td style="font-family:Fredoka One,cursive;font-size:16px;">' + a + ' + ' + b + ' = ' + ans + '</td>' +
+      '<td>' + (s.shown||'—') + '</td>' +
+      '<td>' + (s.shown>0 ? s.firstTry+'/'+s.shown : '—') + '</td>' +
+      '<td class="dash-acc">' + dashAccCell(acc) + '</td>' +
+      '<td>' + status + '</td>';
+    tbody.appendChild(tr);
+  });
+  dashSetActions(
+    '<button class="dash-action-btn dash-btn-save" onclick="dashSaveMasteredAdd()">💾 Remove Mastered</button>' +
+    '<button class="dash-action-btn dash-btn-reset" data-rk="addStats_v2" onclick="dashResetGame(this.dataset.rk)">🗑 Reset Add Stats</button>'
+  );
+}
+
+// ── Actions ───────────────────────────────────────────────────
+function dashResetGame(key) {
+  if (!confirm('Reset stats for this game?')) return;
+  try { localStorage.removeItem(key); } catch(e) {}
+  dashShowOverview();
+}
+function dashSaveMasteredSub() {
+  const stats = dashGetSubStats();
+  const excl  = (function(){ try{const r=localStorage.getItem('subExcluded');return r?JSON.parse(r):[];}catch(e){return[];} })();
+  const set   = new Set(excl);
+  SUB_ALL_PROBLEMS.forEach(({a,b}) => {
+    const k=a+'-'+b; const s=stats[k];
+    if(s&&s.shown>=3&&(s.firstTry/s.shown)>=0.8) set.add(k);
+  });
+  try{localStorage.setItem('subExcluded',JSON.stringify([...set]));}catch(e){}
+  dashDetailSub();
+}
+function dashSaveMasteredAdd() {
+  const stats = dashGetAddStats();
+  const excl  = (function(){ try{const r=localStorage.getItem('addExcluded');return r?JSON.parse(r):[];}catch(e){return[];} })();
+  const set   = new Set(excl);
+  ADD_ALL_PROBLEMS.forEach(({a,b}) => {
+    const k=a+'+'+b; const s=stats[k];
+    if(s&&s.shown>=3&&(s.firstTry/s.shown)>=0.8) set.add(k);
+  });
+  try{localStorage.setItem('addExcluded',JSON.stringify([...set]));}catch(e){}
+  dashDetailAdd();
+}
+
+// ── Stat recording helpers for Word, Math, Sentence games ─────
+// Called by the respective games on each answer/completion.
+
+// Word game: call dashRecordWord(word, firstTry, solved)
+function dashRecordWord(word, firstTry, solved) {
+  try {
+    const raw   = localStorage.getItem('wordStats_v1');
+    const stats = raw ? JSON.parse(raw) : {};
+    if (!stats[word]) stats[word] = { shown:0, firstTry:0, solved:false };
+    stats[word].shown++;
+    if (firstTry) stats[word].firstTry++;
+    if (solved)   stats[word].solved = true;
+    localStorage.setItem('wordStats_v1', JSON.stringify(stats));
+  } catch(e) {}
+}
+
+// Math game: call dashRecordMath(label, type, firstTry)
+// label e.g. "count|5", "add|3+2", "sub|7-4"
+function dashRecordMath(label, type, firstTry) {
+  try {
+    const raw   = localStorage.getItem('mathStats_v1');
+    const stats = raw ? JSON.parse(raw) : {};
+    const key   = type + '|' + label;
+    if (!stats[key]) stats[key] = { shown:0, firstTry:0 };
+    stats[key].shown++;
+    if (firstTry) stats[key].firstTry++;
+    localStorage.setItem('mathStats_v1', JSON.stringify(stats));
+  } catch(e) {}
+}
+
+// Sentence game: call dashRecordSent(idx, firstTry, solved)
+function dashRecordSent(idx, firstTry, solved) {
+  try {
+    const raw   = localStorage.getItem('sentStats_v1');
+    const stats = raw ? JSON.parse(raw) : {};
+    if (!stats[idx]) stats[idx] = { shown:0, firstTry:0, solved:false };
+    stats[idx].shown++;
+    if (firstTry) stats[idx].firstTry++;
+    if (solved)   stats[idx].solved = true;
+    localStorage.setItem('sentStats_v1', JSON.stringify(stats));
+  } catch(e) {}
+}
+
+// Pre-load word game state so it's ready when navigated to
+initWordGame();
+</script>
+
+</body>
+</html>
