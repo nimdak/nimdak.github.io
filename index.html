@@ -4,665 +4,815 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chronicles of Nimdak — A Solo Dev Story</title>
-<meta name="description" content="One dev. Many worlds. Games built from scratch by Nimdak — sci-fi, strategy, and everything in between.">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
 
-:root {
-  --space:   #04060f;
-  --deep:    #080c1a;
-  --panel:   #0d1428;
-  --border:  #1a2a4a;
-  --gold:    #c9a84c;
-  --gold-dim:#7a5c1e;
-  --cyan:    #00ccff;
-  --green:   #00ff88;
-  --red:     #ff3333;
-  --text:    #8ab0d0;
-  --muted:   #3a5070;
-}
+  :root {
+    --ink: #07090f;
+    --deep: #0b0e18;
+    --slate: #131828;
+    --slate-mid: #1e2640;
+    --slate-light: #2e3a5a;
+    --gold: #c8a84b;
+    --gold-dim: #7a6230;
+    --ember: #c0421a;
+    --parchment: #ede7cd;
+    --mist: #7a88aa;
+    --white: #eef1ff;
+    --success: #4caf6e;
+    --radius: 6px;
+  }
 
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; }
 
-body {
-  background: var(--space);
-  color: var(--text);
-  font-family: 'Share Tech Mono', monospace;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--ink);
+    color: var(--white);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
 
-/* ── STARFIELD ── */
-#starfield {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
+  /* ── STARFIELD ───────────────────────────── */
+  #starfield {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
 
-/* ── LAYOUT ── */
-.page { position: relative; z-index: 1; }
+  /* ── CONTENT LAYER ───────────────────────── */
+  .layer { position: relative; z-index: 1; }
 
-/* ── HERO ── */
-#hero {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 60px 24px 80px;
-  position: relative;
-}
+  /* ── NAV ─────────────────────────────────── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(7,9,15,0.88);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--slate-mid);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    height: 52px;
+  }
+  .nav-brand {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.06em;
+    text-decoration: none;
+  }
+  .nav-links { display: flex; gap: 24px; align-items: center; }
+  .nav-links a {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--mist);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .nav-links a:hover { color: var(--gold); }
+  .nav-vault {
+    background: var(--gold);
+    color: var(--ink) !important;
+    padding: 5px 14px;
+    border-radius: var(--radius);
+    font-weight: 600 !important;
+  }
+  .nav-vault:hover { background: var(--parchment) !important; color: var(--ink) !important; }
 
-.hero-eyebrow {
-  font-size: 9px;
-  letter-spacing: 5px;
-  color: var(--muted);
-  text-transform: uppercase;
-  margin-bottom: 20px;
-  animation: fadeUp 0.8s ease both;
-}
+  /* ── HERO ────────────────────────────────── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 24px 60px;
+    position: relative;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 200px;
+    background: linear-gradient(to bottom, transparent, var(--ink));
+    pointer-events: none;
+  }
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.2s ease forwards;
+  }
+  .hero h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(36px, 7vw, 80px);
+    font-weight: 900;
+    line-height: 1.05;
+    color: var(--parchment);
+    letter-spacing: 0.03em;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.4s ease forwards;
+  }
+  .hero h1 .accent { color: var(--gold); }
+  .hero-sub {
+    margin-top: 14px;
+    font-size: clamp(14px, 2vw, 17px);
+    color: var(--mist);
+    font-weight: 300;
+    max-width: 560px;
+    line-height: 1.7;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.6s ease forwards;
+  }
+  .hero-actions {
+    margin-top: 40px;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+    opacity: 0;
+    animation: fadeUp 0.6s 0.8s ease forwards;
+  }
+  .btn-primary {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 13px 28px;
+    background: var(--gold);
+    color: var(--ink);
+    border: none;
+    border-radius: var(--radius);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-primary:hover { background: var(--parchment); transform: translateY(-1px); }
+  .btn-ghost {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 13px 28px;
+    background: transparent;
+    color: var(--mist);
+    border: 1px solid var(--slate-light);
+    border-radius: var(--radius);
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.15s, color 0.15s, transform 0.1s;
+  }
+  .btn-ghost:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-1px); }
 
-.hero-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(28px, 6vw, 72px);
-  font-weight: 900;
-  color: var(--gold);
-  line-height: 1.05;
-  letter-spacing: 2px;
-  text-shadow: 0 0 40px rgba(201,168,76,0.4), 0 0 80px rgba(201,168,76,0.15);
-  animation: fadeUp 0.8s 0.1s ease both;
-}
+  .hero-stats {
+    margin-top: 60px;
+    display: flex;
+    gap: 48px;
+    justify-content: center;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeUp 0.6s 1s ease forwards;
+  }
+  .hstat { text-align: center; }
+  .hstat-num {
+    font-family: 'Cinzel', serif;
+    font-size: 32px;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .hstat-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--mist);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
 
-.hero-sub {
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(10px, 1.5vw, 14px);
-  color: var(--cyan);
-  letter-spacing: 6px;
-  text-transform: uppercase;
-  margin-top: 10px;
-  text-shadow: 0 0 12px rgba(0,200,255,0.4);
-  animation: fadeUp 0.8s 0.2s ease both;
-}
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 
-.hero-divider {
-  width: 120px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  margin: 32px auto;
-  animation: fadeUp 0.8s 0.3s ease both;
-}
+  /* ── SECTION WRAPPER ─────────────────────── */
+  .section {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 72px 24px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 36px;
+  }
+  .section-header h2 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(20px, 3vw, 28px);
+    color: var(--parchment);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .section-header h2 span { color: var(--gold); }
+  .section-rule { flex: 1; height: 1px; background: var(--slate-mid); }
+  .section-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
 
-/* TRANSMISSION LOG — the signature element */
-.transmission {
-  max-width: 560px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--cyan);
-  padding: 20px 24px;
-  text-align: left;
-  animation: fadeUp 0.8s 0.4s ease both;
-}
+  /* ── TRANSMISSION LOG (about) ────────────── */
+  .log-wrap {
+    background: var(--slate);
+    border: 1px solid var(--slate-mid);
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .log-header {
+    background: var(--slate-mid);
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--mist);
+    letter-spacing: 0.1em;
+  }
+  .log-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .log-body { padding: 22px 24px; }
+  .log-line {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--mist);
+    margin-bottom: 4px;
+  }
+  .log-line .prompt { color: var(--gold); margin-right: 8px; }
+  .log-line .val { color: var(--white); }
+  .log-line .comment { color: #4a5878; }
 
-.transmission-header {
-  font-size: 8px;
-  letter-spacing: 4px;
-  color: var(--cyan);
-  text-transform: uppercase;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+  /* ── PERSONAL BESTS ──────────────────────── */
+  .pb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .pb-card {
+    background: var(--slate);
+    border: 1px solid var(--slate-mid);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    transition: border-color 0.15s;
+  }
+  .pb-card:hover { border-color: var(--gold-dim); }
+  .pb-game {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    color: var(--mist);
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+  .pb-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    color: var(--gold);
+    font-weight: 600;
+  }
+  .pb-score.empty { color: var(--slate-light); font-size: 14px; }
+  .pb-grade {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    color: var(--mist);
+    margin-top: 4px;
+  }
 
-.transmission-header::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--cyan);
-  box-shadow: 0 0 6px var(--cyan);
-  animation: pulse 1.5s infinite;
-}
+  /* ── GAME GRID ───────────────────────────── */
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+    align-items: center;
+  }
+  .ftag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    padding: 5px 13px;
+    border-radius: 3px;
+    border: 1px solid var(--slate-light);
+    background: var(--slate);
+    color: var(--mist);
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.12s;
+  }
+  .ftag:hover { border-color: var(--gold); color: var(--gold); }
+  .ftag.on { background: var(--gold); color: var(--ink); border-color: var(--gold); font-weight: 600; }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.3; }
-}
+  .game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+  }
 
-.transmission p {
-  font-size: 11px;
-  line-height: 1.8;
-  color: var(--text);
-}
+  .game-card {
+    background: var(--slate);
+    border: 1px solid var(--slate-mid);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.18s, transform 0.15s;
+  }
+  .game-card:hover { border-color: var(--gold-dim); transform: translateY(-3px); }
+  .game-card.soon { opacity: 0.55; cursor: default; pointer-events: none; }
 
-.transmission p + p { margin-top: 10px; }
+  .game-banner {
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    position: relative;
+    overflow: hidden;
+  }
+  .game-banner span { position: relative; z-index: 1; }
+  .game-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 30%, var(--slate));
+  }
 
-.transmission .sign {
-  margin-top: 14px;
-  font-size: 10px;
-  color: var(--gold);
-  letter-spacing: 2px;
-}
+  .game-body { padding: 14px 16px 16px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
 
-.hero-scroll {
-  position: absolute;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 8px;
-  letter-spacing: 4px;
-  color: var(--muted);
-  text-transform: uppercase;
-  animation: bounce 2s infinite;
-  text-decoration: none;
-}
+  .game-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .game-title {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--parchment);
+    line-height: 1.2;
+  }
 
-@keyframes bounce {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50%       { transform: translateX(-50%) translateY(6px); }
-}
+  .gtag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    padding: 3px 7px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .gtag-arcade   { background: rgba(192,66,26,.25); color:#e07060; border:1px solid rgba(192,66,26,.4); }
+  .gtag-strategy { background: rgba(76,175,110,.2); color:#6ecf8a; border:1px solid rgba(76,175,110,.4); }
+  .gtag-sim      { background: rgba(100,130,220,.2); color:#8aaaf0; border:1px solid rgba(100,130,220,.4); }
+  .gtag-puzzle   { background: rgba(200,168,75,.2); color:var(--gold); border:1px solid rgba(200,168,75,.4); }
+  .gtag-horror   { background: rgba(80,0,80,.4); color:#c87ee8; border:1px solid rgba(150,50,180,.5); }
+  .gtag-edu      { background: rgba(0,160,160,.2); color:#6ee0e0; border:1px solid rgba(0,160,160,.4); }
+  .gtag-card     { background: rgba(180,120,40,.2); color:#e0a060; border:1px solid rgba(180,120,40,.4); }
+  .gtag-music    { background: rgba(120,80,160,.2); color:#c0a0e0; border:1px solid rgba(120,80,160,.4); }
 
-/* ── GAMES SECTION ── */
-#games {
-  padding: 80px 24px;
-  max-width: 1100px;
-  margin: 0 auto;
-}
+  .game-desc {
+    font-size: 12px;
+    color: var(--mist);
+    line-height: 1.55;
+    flex: 1;
+  }
 
-.section-label {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
-  letter-spacing: 5px;
-  color: var(--muted);
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
+  .game-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .game-pb {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--gold);
+  }
+  .game-pb.none { color: var(--slate-light); }
+  .play-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    background: var(--ember);
+    color: var(--white);
+    border-radius: 3px;
+    transition: background 0.12s;
+  }
+  .game-card:hover .play-pill { background: #d4502a; }
+  .soon-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    background: var(--slate-mid);
+    color: var(--mist);
+    border-radius: 3px;
+  }
 
-.section-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(18px, 3vw, 28px);
-  font-weight: 700;
-  color: var(--gold);
-  margin-bottom: 40px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-}
+  /* ── VAULT CTA ───────────────────────────── */
+  .vault-cta {
+    background: var(--slate);
+    border: 1px solid var(--gold-dim);
+    border-radius: 10px;
+    padding: 40px 32px;
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+  .vault-cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 120% at 50% 0%, rgba(200,168,75,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .vault-cta h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 22px;
+    color: var(--parchment);
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .vault-cta p {
+    font-size: 14px;
+    color: var(--mist);
+    line-height: 1.7;
+    margin-bottom: 24px;
+    position: relative;
+  }
 
-.games-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
+  /* ── BMC ─────────────────────────────────── */
+  .bmc-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+  }
+  .bmc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #FFDD00;
+    color: #000;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 22px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .bmc-btn:hover { background: #ffe633; transform: translateY(-1px); }
 
-.game-card {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 28px 24px 22px;
-  text-decoration: none;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  position: relative;
-  overflow: hidden;
-  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
-  cursor: pointer;
-}
+  /* ── FOOTER ──────────────────────────────── */
+  footer {
+    border-top: 1px solid var(--slate-mid);
+    padding: 36px 24px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+  }
+  .footer-brand {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    color: var(--gold);
+    letter-spacing: 0.06em;
+  }
+  .footer-links { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+  .footer-links a {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--mist);
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 0.15s;
+  }
+  .footer-links a:hover { color: var(--gold); }
+  .footer-copy {
+    font-size: 11px;
+    color: var(--slate-light);
+    font-family: 'JetBrains Mono', monospace;
+  }
 
-.game-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 3px;
-  background: var(--card-accent, var(--gold));
-  opacity: 0.6;
-  transition: opacity 0.2s;
-}
-
-.game-card:hover {
-  border-color: var(--card-accent, var(--gold));
-  transform: translateY(-3px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-}
-
-.game-card:hover::before { opacity: 1; }
-
-/* Placeholder card (coming soon) */
-.game-card.coming-soon {
-  opacity: 0.5;
-  cursor: default;
-  pointer-events: none;
-}
-
-.card-icon {
-  font-size: 32px;
-  line-height: 1;
-}
-
-.card-genre {
-  font-size: 8px;
-  letter-spacing: 3px;
-  color: var(--card-accent, var(--gold));
-  text-transform: uppercase;
-  opacity: 0.8;
-}
-
-.card-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(14px, 2vw, 18px);
-  font-weight: 700;
-  color: #d0e4f0;
-  line-height: 1.2;
-}
-
-.card-desc {
-  font-size: 10px;
-  color: var(--text);
-  line-height: 1.7;
-  flex: 1;
-}
-
-.card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-}
-
-.card-best {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.card-best-label {
-  font-size: 7px;
-  letter-spacing: 2px;
-  color: var(--muted);
-  text-transform: uppercase;
-}
-
-.card-best-score {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--green);
-  text-shadow: 0 0 8px rgba(0,255,136,0.4);
-}
-
-.card-best-score.no-score {
-  color: var(--muted);
-  font-size: 10px;
-  text-shadow: none;
-}
-
-.card-play {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 8px;
-  letter-spacing: 2px;
-  color: var(--card-accent, var(--gold));
-  border: 1px solid var(--card-accent, var(--gold));
-  padding: 6px 12px;
-  border-radius: 2px;
-  text-decoration: none;
-  transition: background 0.15s, color 0.15s;
-  white-space: nowrap;
-}
-
-.game-card:hover .card-play {
-  background: var(--card-accent, var(--gold));
-  color: var(--space);
-}
-
-.coming-badge {
-  font-size: 7px;
-  letter-spacing: 2px;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  padding: 6px 12px;
-  border-radius: 2px;
-}
-
-/* ── PERSONAL BESTS ── */
-#bests {
-  padding: 0 24px 80px;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-.bests-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-}
-
-.best-card {
-  background: rgba(13,20,40,0.6);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 16px 18px;
-}
-
-.best-game {
-  font-size: 8px;
-  letter-spacing: 2px;
-  color: var(--muted);
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-
-.best-score-big {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--gold);
-}
-
-.best-grade {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
-  color: var(--text);
-  margin-top: 2px;
-}
-
-/* ── FOOTER ── */
-footer {
-  border-top: 1px solid var(--border);
-  padding: 40px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 20px;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-.footer-brand {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
-  color: var(--gold);
-  letter-spacing: 2px;
-}
-
-.footer-links {
-  display: flex;
-  gap: 24px;
-  align-items: center;
-}
-
-.footer-link {
-  font-size: 9px;
-  letter-spacing: 2px;
-  color: var(--muted);
-  text-decoration: none;
-  text-transform: uppercase;
-  transition: color 0.2s;
-}
-
-.footer-link:hover { color: var(--text); }
-
-.bmc-footer {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: var(--panel);
-  color: var(--gold);
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  padding: 9px 14px;
-  border-radius: 4px;
-  border: 1px solid rgba(201,168,76,0.4);
-  text-decoration: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.bmc-footer:hover {
-  border-color: var(--gold);
-  box-shadow: 0 0 16px rgba(201,168,76,0.25);
-}
-
-/* ── ANIMATIONS ── */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.reveal {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* ── RESPONSIVE ── */
-@media (max-width: 600px) {
-  .games-grid { grid-template-columns: 1fr; }
-  footer { flex-direction: column; align-items: flex-start; }
-}
+  /* ── RESPONSIVE ──────────────────────────── */
+  @media (max-width: 600px) {
+    nav { padding: 0 16px; }
+    .nav-links a:not(.nav-vault):not(:last-child) { display: none; }
+    .hero { padding: 60px 16px 40px; }
+    .section { padding: 48px 16px; }
+    .game-grid { grid-template-columns: 1fr; }
+    .hero-stats { gap: 28px; }
+    .hstat-num { font-size: 24px; }
+  }
 </style>
 </head>
 <body>
 
 <canvas id="starfield"></canvas>
 
-<div class="page">
+<!-- NAV -->
+<nav class="layer">
+  <a class="nav-brand" href="#">Nimdak</a>
+  <div class="nav-links">
+    <a href="#games">Games</a>
+    <a href="#about">Logs</a>
+    <a href="game-vault.html" class="nav-vault">★ Vote</a>
+  </div>
+</nav>
 
-  <!-- HERO -->
-  <section id="hero">
-    <div class="hero-eyebrow">Transmission incoming · nimdak.github.io</div>
-    <h1 class="hero-title">Chronicles<br>of Nimdak</h1>
-    <div class="hero-sub">A Solo Dev Story</div>
-    <div class="hero-divider"></div>
+<!-- HERO -->
+<section class="hero layer">
+  <div class="hero-eyebrow">Solo Dev · Browser Games · Est. 2024</div>
+  <h1>Chronicles of <span class="accent">Nimdak</span><br>A Solo Dev Story</h1>
+  <p class="hero-sub">One developer. No team. No publisher. Just late nights, strange ideas, and a growing library of browser-playable games built for the love of building them.</p>
+  <div class="hero-actions">
+    <a href="#games" class="btn-primary">▶ Browse Games</a>
+    <a href="game-vault.html" class="btn-ghost">★ Vote on What Gets Made</a>
+  </div>
+  <div class="hero-stats">
+    <div class="hstat"><div class="hstat-num">22</div><div class="hstat-label">Games Built</div></div>
+    <div class="hstat"><div class="hstat-num">1</div><div class="hstat-label">Developer</div></div>
+    <div class="hstat"><div class="hstat-num">0</div><div class="hstat-label">Publishers</div></div>
+    <div class="hstat"><div class="hstat-num" id="pb-count">0</div><div class="hstat-label">Your High Scores</div></div>
+  </div>
+</section>
 
-    <div class="transmission">
-      <div class="transmission-header">Incoming Transmission · Personal Log</div>
-      <p>Solo developer. Night-shift coder. Builder of worlds that probably have at least one bug involving elevators.</p>
-      <p>These games are built from scratch — one person, one screen, too much coffee, and a deep love of sci-fi, survival mechanics, and systems that reward curiosity. No studio. No team. Just commits at 2am and the quiet satisfaction of something working.</p>
-      <p>Play something. Break something. Leave a score.</p>
-      <div class="sign">— Nimdak, adrift somewhere in the verse</div>
+<!-- PERSONAL BESTS -->
+<section class="section layer" id="scores" style="padding-top:20px">
+  <div class="section-header">
+    <h2>Your <span>Personal Bests</span></h2>
+    <div class="section-rule"></div>
+  </div>
+  <div class="pb-grid" id="pb-grid"></div>
+</section>
+
+<!-- GAMES -->
+<section class="section layer" id="games">
+  <div class="section-header">
+    <h2>The <span>Game Library</span></h2>
+    <div class="section-rule"></div>
+  </div>
+
+  <div class="filter-row" id="filter-row">
+    <button class="ftag on" data-f="all">All</button>
+    <button class="ftag" data-f="arcade">Arcade</button>
+    <button class="ftag" data-f="strategy">Strategy</button>
+    <button class="ftag" data-f="sim">Sim</button>
+    <button class="ftag" data-f="puzzle">Puzzle</button>
+    <button class="ftag" data-f="horror">Horror</button>
+    <button class="ftag" data-f="edu">Edu</button>
+    <button class="ftag" data-f="card">Card</button>
+    <button class="ftag" data-f="music">Music</button>
+  </div>
+
+  <div class="game-grid" id="game-grid"></div>
+</section>
+
+<!-- VAULT CTA -->
+<section class="section layer" style="padding-top:0">
+  <div class="vault-cta">
+    <h3>Which Game Becomes Real?</h3>
+    <p>These are all browser prototypes. One of them gets a full Godot remake. Play them, rate them, and nominate your favorite — the community decides what gets built next.</p>
+    <a href="game-vault.html" class="btn-primary">Open the Game Vault →</a>
+    <div class="bmc-wrap" style="margin-top:20px">
+      <a href="https://buymeacoffee.com/Nimdak" target="_blank" class="bmc-btn">☕ Buy Nimdak a Coffee</a>
     </div>
+  </div>
+</section>
 
-    <a class="hero-scroll" href="#games">▼ &nbsp; enter the verse</a>
-  </section>
-
-  <!-- GAMES -->
-  <section id="games">
-    <div class="section-label">// Active Deployments</div>
-    <h2 class="section-title">The Games</h2>
-
-    <div class="games-grid">
-
-      <!-- Star DEVizen -->
-      <div class="game-card reveal" style="--card-accent: #00ccff;">
-        <div class="card-icon">🪲</div>
-        <div class="card-genre">Parody · Action</div>
-        <h3 class="card-title">Star DEVizen: Bug Smasher</h3>
-        <p class="card-desc">You are a developer. The server just came back up. Bugs are crawling out of every game loop and the Lead Dev is watching. Smash them before they ship to live — or the shard goes down.</p>
-        <div class="card-footer">
-          <div class="card-best">
-            <div class="card-best-label">Your Best Score</div>
-            <div class="card-best-score" id="score-devizen">—</div>
-          </div>
-          <a class="card-play" href="./star-devizen/index.html">[ PLAY ]</a>
-        </div>
-      </div>
-
-      <!-- Last Stand: First Contact -->
-      <div class="game-card reveal" style="--card-accent: #ff6633;">
-        <div class="card-icon">🛸</div>
-        <div class="card-genre">Strategy · Sci-Fi</div>
-        <h3 class="card-title">Last Stand:<br>First Contact</h3>
-        <p class="card-desc">Humanity's final defence against an unknown signal. Build your fleet, manage your resources, and hold the line. The contact window closes whether you're ready or not.</p>
-        <div class="card-footer">
-          <div class="card-best">
-            <div class="card-best-label">Your Best Score</div>
-            <div class="card-best-score" id="score-laststand">—</div>
-          </div>
-          <a class="card-play" href="./last-stand/index.html">[ PLAY ]</a>
-        </div>
-      </div>
-
-      <!-- Coming Soon placeholder 1 -->
-      <div class="game-card coming-soon reveal" style="--card-accent: #c9a84c;">
-        <div class="card-icon">🌑</div>
-        <div class="card-genre">Unknown · Classified</div>
-        <h3 class="card-title">Transmission Pending</h3>
-        <p class="card-desc">Signal detected. Origin unknown. Content classified. Estimated arrival: when it's ready.</p>
-        <div class="card-footer">
-          <div class="card-best"></div>
-          <div class="coming-badge">INCOMING</div>
-        </div>
-      </div>
-
+<!-- TRANSMISSION LOG -->
+<section class="section layer" id="about">
+  <div class="section-header">
+    <h2>Transmission <span>Log</span></h2>
+    <div class="section-rule"></div>
+  </div>
+  <div class="log-wrap">
+    <div class="log-header">
+      <div class="log-dot" style="background:#e05555"></div>
+      <div class="log-dot" style="background:#e0a033"></div>
+      <div class="log-dot" style="background:#4caf6e"></div>
+      <span style="margin-left:6px">nimdak_dev.log — OPEN CHANNEL</span>
     </div>
-  </section>
-
-  <!-- PERSONAL BESTS -->
-  <section id="bests">
-    <div class="section-label reveal">// Your Mission Record</div>
-    <h2 class="section-title reveal">Personal Bests</h2>
-    <p style="font-size:10px;color:var(--muted);margin-bottom:24px;line-height:1.7;" class="reveal">
-      Scores are saved to your browser on this device. No account needed. No data leaves your machine.
-    </p>
-    <div class="bests-grid" id="bestsGrid">
-      <!-- filled by JS -->
+    <div class="log-body">
+      <div class="log-line"><span class="prompt">></span><span class="val">HANDLE:</span> <span style="color:var(--gold)">Nimdak</span></div>
+      <div class="log-line"><span class="prompt">></span><span class="val">ROLE:</span> Solo indie game developer</div>
+      <div class="log-line"><span class="prompt">></span><span class="val">ENGINES:</span> HTML5 · Godot 4 · Unreal Engine 5</div>
+      <div class="log-line"><span class="prompt">></span><span class="val">STATUS:</span> <span style="color:var(--success)">● ACTIVE</span></div>
+      <div class="log-line">&nbsp;</div>
+      <div class="log-line"><span class="prompt">></span><span class="comment">// Building games because I want them to exist.</span></div>
+      <div class="log-line"><span class="prompt">></span><span class="comment">// Every prototype here is a real playable game.</span></div>
+      <div class="log-line"><span class="prompt">></span><span class="comment">// One day one of these becomes something bigger.</span></div>
+      <div class="log-line">&nbsp;</div>
+      <div class="log-line"><span class="prompt">></span><span class="val">NEXT:</span> Godot remake of top-voted game</div>
+      <div class="log-line"><span class="prompt">></span><span class="val">UE5:</span> Mindscape — Nov 2026 demo</div>
+      <div class="log-line"><span class="prompt">></span><span class="val">CONTACT:</span> <a href="https://github.com/nimdak" target="_blank" style="color:var(--gold)">github.com/nimdak</a></div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- FOOTER -->
-  <footer>
-    <div class="footer-brand">Chronicles of Nimdak</div>
-    <div class="footer-links">
-      <a class="footer-link" href="https://github.com/nimdak" target="_blank" rel="noopener">GitHub</a>
-      <a class="footer-link" href="#games">Games</a>
-      <a class="footer-link" href="#bests">Scores</a>
-    </div>
-    <a class="bmc-footer" href="https://buymeacoffee.com/Nimdak" target="_blank" rel="noopener">
-      ☕ &nbsp;Buy Me a Coffee
-    </a>
-  </footer>
-
-</div>
+<!-- FOOTER -->
+<footer class="layer">
+  <div class="footer-brand">Chronicles of Nimdak</div>
+  <div class="footer-links">
+    <a href="#games">Games</a>
+    <a href="game-vault.html">Vote</a>
+    <a href="https://github.com/nimdak" target="_blank">GitHub</a>
+    <a href="https://buymeacoffee.com/Nimdak" target="_blank">Buy Me a Coffee</a>
+  </div>
+  <div class="footer-copy">© Nimdak · All games built solo · No AI did the game design</div>
+</footer>
 
 <script>
-// ── STARFIELD ──
-const canvas = document.getElementById('starfield');
-const ctx = canvas.getContext('2d');
-let stars = [];
-
-function initStars() {
-  canvas.width  = window.innerWidth;
-  canvas.height = window.innerHeight;
-  stars = Array.from({ length: 260 }, () => ({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    r: Math.random() * 1.4 + 0.2,
-    a: Math.random(),
-    speed: Math.random() * 0.015 + 0.005,
-  }));
-}
-
-function drawStars() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (const s of stars) {
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(180,210,255,${s.a})`;
-    ctx.fill();
-    s.a += (Math.random() - 0.5) * s.speed;
-    s.a = Math.max(0.05, Math.min(1, s.a));
-  }
-  requestAnimationFrame(drawStars);
-}
-
-initStars();
-drawStars();
-window.addEventListener('resize', initStars);
-
-// ── SCROLL REVEAL ──
-const observer = new IntersectionObserver(
-  entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
-  { threshold: 0.1 }
-);
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-// ── PERSONAL BESTS ──
-const SCORE_KEYS = [
-  { key: 'scores_devizen',   game: 'Star DEVizen: Bug Smasher',     id: 'score-devizen'   },
-  { key: 'scores_laststand', game: 'Last Stand: First Contact',     id: 'score-laststand' },
+// ── GAME DATA ──────────────────────────────
+const GAMES = [
+  { id:"star-devizen", title:"Star DEVizen: Bug Smasher", emoji:"🚀", tag:"arcade", color:"#0d2040", desc:"A Star Citizen parody. Smash bugs before they ship. Server health is your life.", url:"star-devizen/", lsKey:"scores_devizen", lsType:"score" },
+  { id:"last-stand",   title:"Last Stand: First Contact", emoji:"🛸", tag:"strategy", color:"#050f1a", desc:"Space strategy survival. Humanity's last fleet faces the unknown.", url:"last-stand/", lsKey:"scores_laststand", lsType:"score" },
+  { id:"scatter-torn", title:"Scatter Torn", emoji:"📜", tag:"puzzle", color:"#1a1008", desc:"Scripture word puzzle with drag mechanics and a satisfying paper-shredder animation.", url:"scatter-torn/", lsKey:"scores_scatter", lsType:"score" },
+  { id:"block-blast",  title:"Block Blast", emoji:"🟦", tag:"puzzle", color:"#0a1a2a", desc:"A polished Block Blast clone. Drop, fit, clear — pure grid satisfaction.", url:"block-blast/", lsKey:"scores_blockblast", lsType:"score" },
+  { id:"stand-deliver",title:"Stand & Deliver", emoji:"🍿", tag:"sim", color:"#1a0800", desc:"Concession stand simulator. Run the booth, manage the rush.", url:"stand-deliver/", lsKey:null },
+  { id:"tank-fog",     title:"Tactical Tank", emoji:"🪖", tag:"strategy", color:"#0a150a", desc:"Pass-the-device tactical tank combat with fog of war. Couch competition.", url:"tactical-tank/", lsKey:"scores_tank", lsType:"score" },
+  { id:"split-ship",   title:"Split Ship", emoji:"📱", tag:"arcade", color:"#0d0820", desc:"Split-screen phone dueling with AI opponents and power-ups.", url:"split-ship/", lsKey:"scores_splitship", lsType:"score" },
+  { id:"horse-race",   title:"Horse Race Obstacle", emoji:"🐎", tag:"arcade", color:"#1a1000", desc:"Split-screen horse racing. Dodge, jump, outpace your rival.", url:"horse-race/", lsKey:null },
+  { id:"leaky-pipe",   title:"Leaky Pipe", emoji:"🔧", tag:"sim", color:"#001a1a", desc:"Pipe repair management — dispatch crews, seal breaks, prevent disaster.", url:"leaky-pipe/", lsKey:"scores_leakypipe", lsType:"score" },
+  { id:"hurdy-gurdy",  title:"Hurdy-Gurdy Simulator", emoji:"🎵", tag:"music", color:"#1a0a1a", desc:"A browser hurdy-gurdy with a fully modeled bowed-string audio engine.", url:"hurdy-gurdy/", lsKey:null },
+  { id:"asl-quiz",     title:"ASL Fingerspelling Quiz", emoji:"🤟", tag:"edu", color:"#001020", desc:"Learn, practice, and master ASL fingerspelling one letter at a time.", url:"asl-quiz/", lsKey:"scores_asl", lsType:"score" },
+  { id:"wandering-chef",title:"The Wandering Chef", emoji:"🍳", tag:"puzzle", color:"#1a0a00", desc:"Six kitchens, six measuring puzzles. A culinary odyssey of liquid logic.", url:"wandering-chef/", lsKey:null },
+  { id:"hollow",       title:"HOLLOW", emoji:"💀", tag:"horror", color:"#0d0010", desc:"Horror tower defense rebuilt with WebGL. Survive the night.", url:"hollow/", lsKey:"scores_hollow", lsType:"score" },
+  { id:"folded-space", title:"Folded Space", emoji:"🌌", tag:"strategy", color:"#020818", desc:"Space survival on the edge of a folded universe. Resources scarce, choices permanent.", url:"folded-space/", lsKey:"scores_foldedspace", lsType:"score" },
+  { id:"isla-obscura", title:"Isla Obscura", emoji:"🏝️", tag:"sim", color:"#001810", desc:"Private island nation simulator — governance, economy, diplomacy.", url:"isla-obscura/", lsKey:null },
+  { id:"dungeon-lord", title:"Dungeon Lord", emoji:"🦹", tag:"strategy", color:"#100018", desc:"Reverse dungeon crawler. You're the villain. Place traps, repel the heroes.", url:"dungeon-lord/", lsKey:"scores_dungeonlord", lsType:"score" },
+  { id:"dungeon-deal", title:"Dungeon Deal", emoji:"🎴", tag:"card", color:"#18080a", desc:"Texas Hold'em meets D&D — digital playtesting for a physical card game.", url:"dungeon-deal/", lsKey:null },
+  { id:"learning-hub", title:"Learning Hub", emoji:"⭐", tag:"edu", color:"#001020", desc:"Accessibility-first learning games for kids with Down syndrome. Five games + parent dashboard.", url:"learning-hub/", lsKey:null },
+  { id:"foundry-bridge",title:"Foundry VTT Bridge", emoji:"🎲", tag:"sim", color:"#18100a", desc:"Foundry VTT–to–Discord bridge with live canvas streaming.", url:"foundry-bridge/", lsKey:null },
+  { id:"voxelworld",   title:"VoxelWorld", emoji:"🧱", tag:"sim", color:"#0a1800", desc:"Minecraft-style voxel browser game with chunk rendering and a character creator.", url:"voxelworld/", lsKey:null },
+  { id:"dice-danger",  title:"Dice & Danger", emoji:"🎰", tag:"card", color:"#180800", desc:"Multiplayer game collection: Loaded Dice, House Rules Rummy, shared lobby.", url:"dice-danger/", lsKey:null },
+  { id:"mindscape",    title:"Mindscape Demo", emoji:"⛵", tag:"strategy", color:"#001018", desc:"Boat-building survival on a supernatural ring-river. Shepherd/Steward moral alignment.", url:"mindscape/", lsKey:null },
 ];
 
-function getGrade(score) {
-  if (score >= 3000) return { letter: 'S', color: '#00ccff' };
-  if (score >= 2000) return { letter: 'A', color: '#00ff88' };
-  if (score >= 1200) return { letter: 'B', color: '#c9a84c' };
-  if (score >= 600)  return { letter: 'C', color: '#ffaa00' };
-  if (score >= 200)  return { letter: 'D', color: '#ff6633' };
-  return               { letter: 'F', color: '#ff3333' };
+// ── STARFIELD ──────────────────────────────
+(function() {
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  const N = 220;
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function init() {
+    resize();
+    stars = Array.from({length: N}, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.4 + 0.2,
+      a: Math.random(),
+      da: (Math.random() * 0.003 + 0.001) * (Math.random() > 0.5 ? 1 : -1),
+      speed: Math.random() * 0.15 + 0.02,
+    }));
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(s => {
+      s.y += s.speed;
+      s.a += s.da;
+      if (s.a < 0) { s.a = 0; s.da *= -1; }
+      if (s.a > 1) { s.a = 1; s.da *= -1; }
+      if (s.y > canvas.height) { s.y = 0; s.x = Math.random() * canvas.width; }
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(200,210,255,${s.a * 0.7})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  init();
+  draw();
+})();
+
+// ── PERSONAL BESTS ─────────────────────────
+function getLS(key) {
+  if (!key) return null;
+  try { return localStorage.getItem(key); } catch { return null; }
 }
 
-function loadBests() {
-  const grid = document.getElementById('bestsGrid');
+function renderPB() {
+  const grid = document.getElementById('pb-grid');
+  const scored = GAMES.filter(g => g.lsKey);
+  let count = 0;
   grid.innerHTML = '';
-  let anyScore = false;
-
-  SCORE_KEYS.forEach(({ key, game, id }) => {
-    const raw = localStorage.getItem(key);
-    const score = raw ? parseInt(raw, 10) : null;
-
-    // Update card score display
-    const el = document.getElementById(id);
-    if (el) {
-      if (score !== null) {
-        el.textContent = score.toLocaleString();
-        el.classList.remove('no-score');
-      } else {
-        el.textContent = 'No run yet';
-        el.classList.add('no-score');
-      }
-    }
-
-    // Build bests card
+  scored.forEach(g => {
+    const val = getLS(g.lsKey);
     const card = document.createElement('div');
-    card.className = 'best-card reveal';
-    if (score !== null) {
-      anyScore = true;
-      const g = getGrade(score);
-      card.innerHTML = `
-        <div class="best-game">${game}</div>
-        <div class="best-score-big">${score.toLocaleString()}</div>
-        <div class="best-grade" style="color:${g.color}">Grade: ${g.letter}</div>
-      `;
-    } else {
-      card.innerHTML = `
-        <div class="best-game">${game}</div>
-        <div class="best-score-big" style="color:var(--muted);font-size:14px;">No run yet</div>
-        <div class="best-grade" style="color:var(--muted)">Play to set a score</div>
-      `;
-    }
+    card.className = 'pb-card';
+    if (val) count++;
+    card.innerHTML = `
+      <div class="pb-game">${g.title}</div>
+      ${val
+        ? `<div class="pb-score">${Number(val).toLocaleString()}</div>`
+        : `<div class="pb-score empty">No score yet</div>`}
+    `;
     grid.appendChild(card);
-    observer.observe(card);
+  });
+  document.getElementById('pb-count').textContent = count;
+}
+
+// ── GAME GRID ──────────────────────────────
+let activeFilter = 'all';
+
+function renderGrid() {
+  const grid = document.getElementById('game-grid');
+  grid.innerHTML = '';
+  const list = activeFilter === 'all' ? GAMES : GAMES.filter(g => g.tag === activeFilter);
+  const tagLabels = {arcade:'Arcade',strategy:'Strategy',sim:'Sim',puzzle:'Puzzle',horror:'Horror',edu:'Edu',card:'Card',music:'Music'};
+
+  list.forEach(g => {
+    const pb = getLS(g.lsKey);
+    const card = document.createElement(g.url ? 'a' : 'div');
+    if (g.url) { card.href = g.url; }
+    card.className = 'game-card';
+
+    card.innerHTML = `
+      <div class="game-banner" style="background:linear-gradient(135deg,${g.color} 0%,#1e2640 100%)">
+        <span>${g.emoji}</span>
+      </div>
+      <div class="game-body">
+        <div class="game-title-row">
+          <div class="game-title">${g.title}</div>
+          <span class="gtag gtag-${g.tag}">${tagLabels[g.tag]||g.tag}</span>
+        </div>
+        <div class="game-desc">${g.desc}</div>
+        <div class="game-footer">
+          ${pb
+            ? `<div class="game-pb">🏆 ${Number(pb).toLocaleString()}</div>`
+            : `<div class="game-pb none">No score yet</div>`}
+          ${g.url
+            ? `<span class="play-pill">▶ Play</span>`
+            : `<span class="soon-pill">Coming Soon</span>`}
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
   });
 }
 
-loadBests();
-// Refresh if returning from a game tab
-window.addEventListener('focus', loadBests);
-window.addEventListener('storage', loadBests);
+document.getElementById('filter-row').addEventListener('click', e => {
+  const btn = e.target.closest('.ftag');
+  if (!btn) return;
+  document.querySelectorAll('.ftag').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  activeFilter = btn.dataset.f;
+  renderGrid();
+});
+
+// ── INIT ───────────────────────────────────
+renderPB();
+renderGrid();
+
+// Refresh PB when user comes back from a game tab
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { renderPB(); renderGrid(); }
+});
 </script>
 </body>
 </html>
