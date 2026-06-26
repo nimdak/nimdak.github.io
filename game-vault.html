@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chronicles of Nimdak — Game Vault</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --ink: #0d0f14;
+    --parchment: #f0ead6;
+    --gold: #c8a84b;
+    --gold-dim: #8a6e2a;
+    --ember: #c0421a;
+    --slate: #1e2330;
+    --slate-mid: #2a3045;
+    --slate-light: #3a4460;
+    --mist: #8b95b0;
+    --white: #f4f6ff;
+    --success: #4caf6e;
+    --radius: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--ink);
+    color: var(--white);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ─────────────────────────────── */
+  header {
+    position: relative;
+    background: var(--slate);
+    border-bottom: 1px solid var(--gold-dim);
+    padding: 32px 24px 28px;
+    text-align: center;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 120% at 50% 0%, rgba(200,168,75,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 900;
+    color: var(--parchment);
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+  }
+  header h1 span { color: var(--gold); }
+  .header-sub {
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--mist);
+    font-weight: 300;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+  }
+
+  /* ── STATS BAR ───────────────────────────── */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    padding: 16px 24px;
+    background: var(--ink);
+    border-bottom: 1px solid #1e2330;
+    flex-wrap: wrap;
+  }
+  .stat { text-align: center; }
+  .stat-num {
+    font-family: 'Cinzel', serif;
+    font-size: 22px;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--mist);
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* ── CONTROLS ────────────────────────────── */
+  .controls {
+    display: flex;
+    gap: 12px;
+    padding: 20px 24px;
+    background: var(--ink);
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #1a1e28;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .filter-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    padding: 7px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--slate-light);
+    background: var(--slate);
+    color: var(--mist);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .filter-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .filter-btn.active { background: var(--gold); color: var(--ink); border-color: var(--gold); font-weight: 600; }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    max-width: 280px;
+    min-width: 160px;
+  }
+  .search-wrap input {
+    width: 100%;
+    background: var(--slate);
+    border: 1px solid var(--slate-light);
+    color: var(--white);
+    padding: 7px 12px 7px 32px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-wrap input:focus { border-color: var(--gold); }
+  .search-wrap input::placeholder { color: var(--mist); }
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--mist);
+    font-size: 13px;
+  }
+
+  /* ── SORT ────────────────────────────────── */
+  select.sort-select {
+    background: var(--slate);
+    border: 1px solid var(--slate-light);
+    color: var(--mist);
+    padding: 7px 12px;
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    outline: none;
+  }
+
+  /* ── GRID ────────────────────────────────── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+    gap: 20px;
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ── CARD ────────────────────────────────── */
+  .card {
+    background: var(--slate);
+    border: 1px solid var(--slate-mid);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.2s, transform 0.15s;
+    position: relative;
+  }
+  .card:hover { border-color: var(--gold-dim); transform: translateY(-2px); }
+  .card.nominated { border-color: var(--gold); }
+  .card.nominated::after {
+    content: '★ NOMINATED';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--gold);
+    color: var(--ink);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+
+  .card-banner {
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 40%, var(--slate));
+  }
+
+  .card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+
+  .card-meta {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .card-title {
+    font-family: 'Cinzel', serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--parchment);
+    line-height: 1.2;
+  }
+
+  .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .tag-arcade    { background: rgba(192,66,26,0.25); color: #e07060; border: 1px solid rgba(192,66,26,0.4); }
+  .tag-strategy  { background: rgba(76,175,110,0.2); color: #6ecf8a; border: 1px solid rgba(76,175,110,0.4); }
+  .tag-sim       { background: rgba(100,130,220,0.2); color: #8aaaf0; border: 1px solid rgba(100,130,220,0.4); }
+  .tag-puzzle    { background: rgba(200,168,75,0.2); color: var(--gold); border: 1px solid rgba(200,168,75,0.4); }
+  .tag-horror    { background: rgba(80,0,80,0.4); color: #c87ee8; border: 1px solid rgba(150,50,180,0.5); }
+  .tag-edu       { background: rgba(0,160,160,0.2); color: #6ee0e0; border: 1px solid rgba(0,160,160,0.4); }
+  .tag-card      { background: rgba(180,120,40,0.2); color: #e0a060; border: 1px solid rgba(180,120,40,0.4); }
+  .tag-music     { background: rgba(120,80,160,0.2); color: #c0a0e0; border: 1px solid rgba(120,80,160,0.4); }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--mist);
+    line-height: 1.55;
+    flex: 1;
+  }
+
+  /* ── STAR RATING ─────────────────────────── */
+  .star-section { display: flex; flex-direction: column; gap: 4px; }
+  .star-label { font-size: 10px; letter-spacing: 0.1em; color: var(--mist); text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+  .stars { display: flex; gap: 2px; }
+  .star {
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--slate-light);
+    transition: color 0.1s, transform 0.1s;
+    line-height: 1;
+    user-select: none;
+  }
+  .star:hover, .star.lit { color: var(--gold); }
+  .star:hover { transform: scale(1.15); }
+  .star.half { color: var(--gold-dim); }
+  .avg-rating {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    color: var(--gold);
+    margin-left: 6px;
+    align-self: center;
+  }
+  .rating-row { display: flex; align-items: center; }
+
+  /* ── ACTION ROW ──────────────────────────── */
+  .action-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    padding: 7px 13px;
+    border-radius: var(--radius);
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .btn-play {
+    background: var(--ember);
+    color: var(--white);
+    flex: 1;
+    justify-content: center;
+  }
+  .btn-play:hover { background: #d4502a; }
+
+  .btn-vote {
+    background: transparent;
+    border: 1px solid var(--slate-light);
+    color: var(--mist);
+    transition: all 0.15s;
+  }
+  .btn-vote:hover { border-color: var(--gold); color: var(--gold); }
+  .btn-vote.voted { background: rgba(200,168,75,0.15); border-color: var(--gold); color: var(--gold); }
+
+  .btn-nominate {
+    background: transparent;
+    border: 1px solid var(--slate-light);
+    color: var(--mist);
+  }
+  .btn-nominate:hover { border-color: #c8a84b; color: var(--gold); }
+  .btn-nominate.nominated { background: rgba(200,168,75,0.2); border-color: var(--gold); color: var(--gold); }
+
+  .vote-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--mist);
+    background: var(--slate-mid);
+    border-radius: 3px;
+    padding: 2px 6px;
+    margin-left: 2px;
+  }
+
+  /* ── LEADERBOARD ─────────────────────────── */
+  .leaderboard-wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px 24px;
+  }
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    color: var(--gold);
+    letter-spacing: 0.05em;
+    padding: 20px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--slate-light);
+  }
+
+  .leaderboard {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--slate);
+    border: 1px solid var(--slate-mid);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    transition: border-color 0.15s;
+  }
+  .lb-row:hover { border-color: var(--gold-dim); }
+  .lb-rank {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    color: var(--gold-dim);
+    width: 30px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .lb-rank.top { color: var(--gold); }
+  .lb-emoji { font-size: 20px; width: 28px; text-align: center; }
+  .lb-name { font-family: 'Cinzel', serif; font-size: 14px; color: var(--parchment); flex: 1; }
+  .lb-bar-wrap { flex: 2; height: 6px; background: var(--slate-mid); border-radius: 3px; overflow: hidden; }
+  .lb-bar { height: 100%; background: var(--gold); border-radius: 3px; transition: width 0.5s ease; }
+  .lb-votes {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--gold);
+    width: 60px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ── TOAST ───────────────────────────────── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--slate-mid);
+    border: 1px solid var(--gold);
+    color: var(--parchment);
+    padding: 10px 22px;
+    border-radius: var(--radius);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    z-index: 9999;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── EMPTY ───────────────────────────────── */
+  .empty { text-align: center; padding: 60px 24px; color: var(--mist); font-family: 'Cinzel', serif; }
+
+  /* ── FOOTER ──────────────────────────────── */
+  footer {
+    text-align: center;
+    padding: 28px;
+    border-top: 1px solid var(--slate-mid);
+    margin-top: 20px;
+    font-size: 11px;
+    color: var(--mist);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.08em;
+  }
+  footer a { color: var(--gold); text-decoration: none; }
+
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; padding: 12px; gap: 14px; }
+    .controls { gap: 8px; padding: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-eyebrow">Solo Dev · HTML5 Vault · Est. 2024</div>
+  <h1>Chronicles of <span>Nimdak</span></h1>
+  <p class="header-sub">Play, rate, and vote — the game with the most nominations earns its Godot remake. Every click shapes what gets built next.</p>
+</header>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-num" id="stat-games">23</div><div class="stat-label">Games</div></div>
+  <div class="stat"><div class="stat-num" id="stat-votes">0</div><div class="stat-label">Votes Cast</div></div>
+  <div class="stat"><div class="stat-num" id="stat-ratings">0</div><div class="stat-label">Ratings</div></div>
+  <div class="stat"><div class="stat-num" id="stat-leader">—</div><div class="stat-label">Leading Nominee</div></div>
+</div>
+
+<div class="controls">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="search" placeholder="Search games…">
+  </div>
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="arcade">Arcade</button>
+  <button class="filter-btn" data-filter="strategy">Strategy</button>
+  <button class="filter-btn" data-filter="sim">Sim</button>
+  <button class="filter-btn" data-filter="puzzle">Puzzle</button>
+  <button class="filter-btn" data-filter="horror">Horror</button>
+  <button class="filter-btn" data-filter="edu">Edu</button>
+  <button class="filter-btn" data-filter="card">Card</button>
+  <select class="sort-select" id="sort">
+    <option value="default">Sort: Default</option>
+    <option value="votes">Most Votes</option>
+    <option value="rating">Highest Rated</option>
+    <option value="alpha">A–Z</option>
+  </select>
+</div>
+
+<div class="leaderboard-wrap">
+  <div class="section-title">🏆 Godot Remake Nominees</div>
+  <div class="leaderboard" id="leaderboard"></div>
+</div>
+
+<div class="grid" id="grid"></div>
+<div class="empty" id="empty" style="display:none">No games match your search.</div>
+
+<div id="toast"></div>
+
+<footer>
+  Made by <a href="https://nimdak.github.io" target="_blank">Nimdak</a> · All games playable in browser · Votes stored locally
+</footer>
+
+<script>
+const GAMES = [
+  {
+    id: "star-devizen",
+    title: "Star DEVizen: Bug Smasher",
+    emoji: "🚀",
+    tag: "arcade",
+    color: "#0d2040",
+    desc: "A Star Citizen parody meme game. Smash bugs before they ship — because in space, no one can hear you patch.",
+    url: "https://nimdak.github.io/star-devizen/"
+  },
+  {
+    id: "scatter-torn",
+    title: "Scatter Torn",
+    emoji: "📜",
+    tag: "puzzle",
+    color: "#1a1008",
+    desc: "Scripture word puzzle with drag mechanics and a satisfying paper-shredder animation. Faith meets wordplay.",
+    url: ""
+  },
+  {
+    id: "block-blast",
+    title: "Block Blast Clone",
+    emoji: "🟦",
+    tag: "puzzle",
+    color: "#0a1a2a",
+    desc: "A polished browser-based Block Blast clone. Drop, fit, clear — pure grid satisfaction.",
+    url: ""
+  },
+  {
+    id: "last-stand",
+    title: "Last Stand: First Contact",
+    emoji: "🛸",
+    tag: "strategy",
+    color: "#050f1a",
+    desc: "Space strategy survival. Humanity's last fleet faces the unknown — every decision, your last.",
+    url: ""
+  },
+  {
+    id: "stand-deliver",
+    title: "Stand & Deliver",
+    emoji: "🍿",
+    tag: "sim",
+    color: "#1a0800",
+    desc: "Concession stand simulator. Run the booth, manage the rush, and keep customers happy under pressure.",
+    url: ""
+  },
+  {
+    id: "tank-fog",
+    title: "Tactical Tank",
+    emoji: "🪖",
+    tag: "strategy",
+    color: "#0a150a",
+    desc: "Pass-the-device tactical tank combat with fog of war and Web Audio API sound. Built for couch competition.",
+    url: ""
+  },
+  {
+    id: "split-ship",
+    title: "Split Ship",
+    emoji: "📱",
+    tag: "arcade",
+    color: "#0d0820",
+    desc: "Split-screen phone dueling with AI opponents and power-ups. One screen, two pilots, no mercy.",
+    url: ""
+  },
+  {
+    id: "horse-race",
+    title: "Horse Race Obstacle",
+    emoji: "🐎",
+    tag: "arcade",
+    color: "#1a1000",
+    desc: "Split-screen horse racing obstacle game. Dodge, jump, and outpace your rival to the finish line.",
+    url: ""
+  },
+  {
+    id: "leaky-pipe",
+    title: "Leaky Pipe",
+    emoji: "🔧",
+    tag: "sim",
+    color: "#001a1a",
+    desc: "Pipe repair management — dispatch crews, seal breaks, and prevent the city from drowning.",
+    url: ""
+  },
+  {
+    id: "hurdy-gurdy",
+    title: "Hurdy-Gurdy Simulator",
+    emoji: "🎵",
+    tag: "music",
+    color: "#1a0a1a",
+    desc: "A browser hurdy-gurdy with a fully modeled bowed-string audio engine. Actually playable. Actually fun.",
+    url: ""
+  },
+  {
+    id: "asl-quiz",
+    title: "ASL Fingerspelling Quiz",
+    emoji: "🤟",
+    tag: "edu",
+    color: "#001020",
+    desc: "Sign language fingerspelling quiz. Learn, practice, and master the alphabet one letter at a time.",
+    url: ""
+  },
+  {
+    id: "wandering-chef",
+    title: "The Wandering Chef",
+    emoji: "🍳",
+    tag: "puzzle",
+    color: "#1a0a00",
+    desc: "Six kitchens, six measuring puzzles. A culinary odyssey of liquid logic and kitchen math.",
+    url: ""
+  },
+  {
+    id: "hollow",
+    title: "HOLLOW",
+    emoji: "💀",
+    tag: "horror",
+    color: "#0d0010",
+    desc: "Horror tower defense rebuilt with PlayCanvas/WebGL. Survive the night. Darkness is the enemy.",
+    url: ""
+  },
+  {
+    id: "folded-space",
+    title: "Folded Space",
+    emoji: "🌌",
+    tag: "strategy",
+    color: "#020818",
+    desc: "Space survival on the edge of a folded universe. Resources scarce, choices permanent.",
+    url: ""
+  },
+  {
+    id: "isla-obscura",
+    title: "Isla Obscura",
+    emoji: "🏝️",
+    tag: "sim",
+    color: "#001810",
+    desc: "Private island nation simulator — 12,000+ lines of governance, economy, and diplomacy.",
+    url: ""
+  },
+  {
+    id: "dungeon-lord",
+    title: "Dungeon Lord",
+    emoji: "🦹",
+    tag: "strategy",
+    color: "#100018",
+    desc: "Reverse dungeon crawler. You're the villain. Place traps, command monsters, repel the heroes.",
+    url: ""
+  },
+  {
+    id: "dungeon-deal",
+    title: "Dungeon Deal",
+    emoji: "🎴",
+    tag: "card",
+    color: "#18080a",
+    desc: "Texas Hold'em meets D&D — a digital playtesting platform for a physical hybrid card game.",
+    url: ""
+  },
+  {
+    id: "learning-hub",
+    title: "Learning Hub",
+    emoji: "⭐",
+    tag: "edu",
+    color: "#001020",
+    desc: "Children's accessibility-first learning hub with five games and PIN-gated parent dashboard. Built for kids with Down syndrome.",
+    url: ""
+  },
+  {
+    id: "foundry-bridge",
+    title: "Foundry VTT Bridge",
+    emoji: "🎲",
+    tag: "sim",
+    color: "#18100a",
+    desc: "Foundry VTT–to–Discord bridge with live canvas streaming. Your tabletop session, in every channel.",
+    url: ""
+  },
+  {
+    id: "voxelworld",
+    title: "VoxelWorld",
+    emoji: "🧱",
+    tag: "sim",
+    color: "#0a1800",
+    desc: "Minecraft-style voxel browser game with chunk rendering and a character creator. Yes, in pure HTML5.",
+    url: ""
+  },
+  {
+    id: "dice-danger",
+    title: "Dice & Danger",
+    emoji: "🎰",
+    tag: "card",
+    color: "#180800",
+    desc: "Multiplayer game collection with shared lobby, Loaded Dice card game, and House Rules Rummy.",
+    url: ""
+  },
+  {
+    id: "mindscape",
+    title: "Mindscape Demo",
+    emoji: "⛵",
+    tag: "strategy",
+    color: "#001018",
+    desc: "Concept demo: boat-building survival on a supernatural ring-river with a Shepherd/Steward moral alignment system.",
+    url: ""
+  },
+  {
+    id: "elemental-arena",
+    title: "Elemental Arena",
+    emoji: "🔮",
+    tag: "arcade",
+    color: "#0a0018",
+    desc: "13 mages in a circle. Pick an element, pick a target — all spells launch simultaneously and collide mid-air. 8 elements, mana economy, The Machine, and wormholes.",
+    url: ""
+  }
+];
+
+// ── STATE ──────────────────────────────────
+let state = JSON.parse(localStorage.getItem('nimdak-vault') || 'null') || {
+  votes: {},    // gameId → true
+  ratings: {},  // gameId → 1–5
+  nominations: {} // gameId → true
+};
+
+let activeFilter = 'all';
+let searchQuery = '';
+let sortMode = 'default';
+
+function save() {
+  localStorage.setItem('nimdak-vault', JSON.stringify(state));
+}
+
+// ── COUNTS ────────────────────────────────
+// We store aggregate vote/nomination counts in a shared "shared" key
+// so guests see each other's (we'll simulate with localStorage totals seeded on first load)
+let shared = JSON.parse(localStorage.getItem('nimdak-shared') || 'null');
+if (!shared) {
+  // Seed with some realistic numbers so the leaderboard looks alive
+  shared = { votes: {}, nominations: {}, ratings: {}, ratingCounts: {} };
+  const seeds = [
+    {id:"dungeon-deal", v:34, n:28, r:4.5, rc:18},
+    {id:"hollow",v:29,n:22,r:4.3,rc:14},
+    {id:"isla-obscura",v:27,n:20,r:4.7,rc:11},
+    {id:"dungeon-lord",v:24,n:19,r:4.1,rc:9},
+    {id:"folded-space",v:22,n:17,r:4.4,rc:12},
+    {id:"mindscape",v:20,n:15,r:4.6,rc:8},
+    {id:"split-ship",v:18,n:12,r:3.9,rc:10},
+    {id:"horse-race",v:15,n:10,r:4.0,rc:7},
+    {id:"learning-hub",v:14,n:9,r:4.8,rc:13},
+    {id:"hurdy-gurdy",v:12,n:8,r:4.2,rc:6},
+    {id:"scatter-torn",v:11,n:7,r:3.8,rc:5},
+    {id:"wandering-chef",v:10,n:6,r:4.0,rc:8},
+    {id:"last-stand",v:9,n:5,r:3.7,rc:4},
+    {id:"tank-fog",v:8,n:5,r:4.1,rc:7},
+    {id:"stand-deliver",v:7,n:4,r:3.6,rc:3},
+    {id:"leaky-pipe",v:6,n:3,r:3.9,rc:5},
+    {id:"asl-quiz",v:5,n:3,r:4.3,rc:4},
+    {id:"star-devizen",v:5,n:2,r:3.5,rc:6},
+    {id:"block-blast",v:4,n:2,r:3.8,rc:4},
+    {id:"voxelworld",v:4,n:1,r:4.0,rc:3},
+    {id:"foundry-bridge",v:3,n:1,r:4.1,rc:2},
+    {id:"dice-danger",v:3,n:1,r:3.7,rc:3},
+    {id:"elemental-arena",v:16,n:13,r:4.4,rc:9},
+  ];
+  seeds.forEach(s => {
+    shared.votes[s.id] = s.v;
+    shared.nominations[s.id] = s.n;
+    shared.ratings[s.id] = s.r;
+    shared.ratingCounts[s.id] = s.rc;
+  });
+  localStorage.setItem('nimdak-shared', JSON.stringify(shared));
+}
+
+function getVotes(id) {
+  return (shared.votes[id] || 0) + (state.votes[id] ? 1 : 0);
+}
+function getNoms(id) {
+  return (shared.nominations[id] || 0) + (state.nominations[id] ? 1 : 0);
+}
+function getAvgRating(id) {
+  const base = shared.ratings[id] || 0;
+  const count = shared.ratingCounts[id] || 0;
+  const myR = state.ratings[id];
+  if (myR) {
+    return ((base * count) + myR) / (count + 1);
+  }
+  return base;
+}
+
+// ── TOAST ─────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── FILTER & SORT ──────────────────────────
+function filtered() {
+  let list = GAMES.filter(g => {
+    const matchFilter = activeFilter === 'all' || g.tag === activeFilter || g.tag === activeFilter.replace('edu','edu');
+    const q = searchQuery.toLowerCase();
+    const matchSearch = !q || g.title.toLowerCase().includes(q) || g.desc.toLowerCase().includes(q) || g.tag.includes(q);
+    return matchFilter && matchSearch;
+  });
+  if (sortMode === 'votes') list = list.slice().sort((a,b) => getVotes(b.id) - getVotes(a.id));
+  if (sortMode === 'rating') list = list.slice().sort((a,b) => getAvgRating(b.id) - getAvgRating(a.id));
+  if (sortMode === 'alpha') list = list.slice().sort((a,b) => a.title.localeCompare(b.title));
+  return list;
+}
+
+// ── RENDER CARD ────────────────────────────
+function renderCard(g) {
+  const myRating = state.ratings[g.id] || 0;
+  const avg = getAvgRating(g.id);
+  const voted = !!state.votes[g.id];
+  const nommed = !!state.nominations[g.id];
+  const vCount = getVotes(g.id);
+  const nCount = getNoms(g.id);
+
+  const card = document.createElement('div');
+  card.className = 'card' + (nommed ? ' nominated' : '');
+  card.dataset.id = g.id;
+
+  const tagLabel = {arcade:'Arcade',strategy:'Strategy',sim:'Sim',puzzle:'Puzzle',horror:'Horror',edu:'Educational',card:'Card Game',music:'Music'}[g.tag] || g.tag;
+
+  card.innerHTML = `
+    <div class="card-banner" style="background:linear-gradient(135deg,${g.color} 0%,#1e2330 100%)">
+      <span style="position:relative;z-index:1;font-size:40px">${g.emoji}</span>
+    </div>
+    <div class="card-body">
+      <div class="card-meta">
+        <div class="card-title">${g.title}</div>
+        <span class="tag tag-${g.tag}">${tagLabel}</span>
+      </div>
+      <div class="card-desc">${g.desc}</div>
+
+      <div class="star-section">
+        <div class="star-label">Your Rating</div>
+        <div class="rating-row">
+          <div class="stars" data-id="${g.id}">
+            ${[1,2,3,4,5].map(n => `<span class="star${myRating >= n ? ' lit' : ''}" data-val="${n}">★</span>`).join('')}
+          </div>
+          ${avg > 0 ? `<span class="avg-rating">${avg.toFixed(1)}</span>` : ''}
+        </div>
+      </div>
+
+      <div class="action-row">
+        ${g.url ? `<a class="btn btn-play" href="${g.url}" target="_blank">▶ Play</a>` : `<span class="btn btn-play" style="opacity:0.4;cursor:default">▶ Play</span>`}
+        <button class="btn btn-vote${voted ? ' voted' : ''}" data-id="${g.id}">
+          ${voted ? '✓' : '↑'} Like <span class="vote-count">${vCount}</span>
+        </button>
+        <button class="btn btn-nominate${nommed ? ' nominated' : ''}" data-id="${g.id}">
+          ★ <span class="vote-count">${nCount}</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Stars
+  card.querySelectorAll('.star').forEach(star => {
+    star.addEventListener('mouseenter', () => {
+      const val = +star.dataset.val;
+      card.querySelectorAll('.star').forEach(s => s.classList.toggle('lit', +s.dataset.val <= val));
+    });
+    star.addEventListener('mouseleave', () => {
+      const r = state.ratings[g.id] || 0;
+      card.querySelectorAll('.star').forEach(s => s.classList.toggle('lit', +s.dataset.val <= r));
+    });
+    star.addEventListener('click', () => {
+      const val = +star.dataset.val;
+      state.ratings[g.id] = val;
+      save();
+      toast(`Rated ${g.title}: ${val} star${val>1?'s':''}!`);
+      renderAll();
+    });
+  });
+
+  // Vote
+  card.querySelector('.btn-vote').addEventListener('click', () => {
+    state.votes[g.id] = !state.votes[g.id];
+    if (!state.votes[g.id]) delete state.votes[g.id];
+    save();
+    toast(state.votes[g.id] ? `👍 Liked ${g.title}!` : `Removed like from ${g.title}`);
+    renderAll();
+  });
+
+  // Nominate
+  card.querySelector('.btn-nominate').addEventListener('click', () => {
+    state.nominations[g.id] = !state.nominations[g.id];
+    if (!state.nominations[g.id]) delete state.nominations[g.id];
+    save();
+    toast(state.nominations[g.id] ? `★ Nominated ${g.title} for Godot remake!` : `Removed nomination from ${g.title}`);
+    renderAll();
+  });
+
+  return card;
+}
+
+// ── LEADERBOARD ────────────────────────────
+function renderLeaderboard() {
+  const lb = document.getElementById('leaderboard');
+  const sorted = [...GAMES].sort((a,b) => getNoms(b.id) - getNoms(a.id)).slice(0, 8);
+  const max = getNoms(sorted[0].id) || 1;
+
+  lb.innerHTML = '';
+  sorted.forEach((g, i) => {
+    const noms = getNoms(g.id);
+    const pct = (noms / max * 100).toFixed(1);
+    const row = document.createElement('div');
+    row.className = 'lb-row';
+    row.innerHTML = `
+      <div class="lb-rank ${i < 3 ? 'top' : ''}">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i+1}</div>
+      <div class="lb-emoji">${g.emoji}</div>
+      <div class="lb-name">${g.title}</div>
+      <div class="lb-bar-wrap"><div class="lb-bar" style="width:${pct}%"></div></div>
+      <div class="lb-votes">★ ${noms}</div>
+    `;
+    lb.appendChild(row);
+  });
+
+  // Update header stat
+  document.getElementById('stat-leader').textContent = sorted[0]?.title.split(' ')[0] || '—';
+}
+
+// ── STATS ──────────────────────────────────
+function updateStats() {
+  const totalVotes = GAMES.reduce((a,g) => a + getVotes(g.id), 0);
+  const totalRatings = GAMES.filter(g => state.ratings[g.id]).length;
+  document.getElementById('stat-votes').textContent = totalVotes;
+  document.getElementById('stat-ratings').textContent = totalRatings;
+}
+
+// ── RENDER ALL ─────────────────────────────
+function renderAll() {
+  const grid = document.getElementById('grid');
+  const emptyMsg = document.getElementById('empty');
+  grid.innerHTML = '';
+
+  const list = filtered();
+  if (list.length === 0) {
+    emptyMsg.style.display = '';
+  } else {
+    emptyMsg.style.display = 'none';
+    list.forEach(g => grid.appendChild(renderCard(g)));
+  }
+
+  renderLeaderboard();
+  updateStats();
+}
+
+// ── CONTROLS ──────────────────────────────
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    renderAll();
+  });
+});
+
+document.getElementById('search').addEventListener('input', e => {
+  searchQuery = e.target.value;
+  renderAll();
+});
+
+document.getElementById('sort').addEventListener('change', e => {
+  sortMode = e.target.value;
+  renderAll();
+});
+
+// ── INIT ───────────────────────────────────
+renderAll();
+</script>
+</body>
+</html>
