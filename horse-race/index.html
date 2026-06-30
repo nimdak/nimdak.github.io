@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carrot Chase — Horse Obby</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a0e;
+    overflow: hidden;
+    font-family: 'Georgia', serif;
+    user-select: none;
+    touch-action: none;
+  }
+  #gameWrapper {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 100;
+    background: #1a1a0e;
+  }
+  .screen.hidden { display: none; }
+
+  #startScreen {
+    background: #1a1a0e;
+    flex-direction: column;
+    padding: 0;
+    justify-content: stretch;
+    align-items: stretch;
+  }
+
+  .start-half {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.2rem 2rem;
+    gap: 2.5rem;
+    position: relative;
+  }
+  .start-half.p2-half {
+    background: radial-gradient(ellipse at center, #1e3a2a 0%, #0e1a05 100%);
+    border-bottom: none;
+    transform: rotate(180deg); /* flip for P2 reading from top */
+  }
+  .start-half.p1-half {
+    background: radial-gradient(ellipse at center, #2a1e3a 0%, #0e050e 100%);
+    border-top: none;
+  }
+
+  .start-divider {
+    height: 28px;
+    background: #5c3a1a;
+    border-top: 3px solid #8B6914;
+    border-bottom: 3px solid #8B6914;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    gap: 1rem;
+    position: relative;
+    z-index: 2;
+  }
+  .start-divider .game-title-small {
+    font-size: 0.95rem;
+    color: #FF6B1A;
+    font-family: 'Georgia', serif;
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 12px #FF6B1A88;
+    white-space: nowrap;
+  }
+
+  .player-panel {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2rem;
+    max-width: 780px;
+    width: 100%;
+  }
+
+  .player-id {
+    flex-shrink: 0;
+    text-align: center;
+  }
+  .player-id .horse-icon { font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1; }
+  .player-id .player-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #c8b87a;
+    margin-top: 0.3rem;
+  }
+
+  .player-rules {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1.2rem;
+  }
+
+  .rule-block {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,107,26,0.2);
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+  }
+  .rule-block .rule-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #FF6B1A;
+    margin-bottom: 0.25rem;
+  }
+  .rule-block .rule-val {
+    font-size: 0.78rem;
+    color: #e8ddb0;
+    line-height: 1.5;
+  }
+  .rule-block .rule-val b { color: #fff; }
+  .rule-block.full-width { grid-column: 1 / -1; }
+
+  .start-btn-wrap {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .timer-label {
+    font-size: 0.7rem;
+    color: #c8b87a;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .start-btn {
+    background: #FF6B1A;
+    color: #fff;
+    border: none;
+    padding: 0.3rem 1.1rem;
+    font-size: 0.82rem;
+    font-family: 'Georgia', serif;
+    border-radius: 5px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 10px #FF6B1A66;
+    transition: transform 0.1s, box-shadow 0.1s;
+    white-space: nowrap;
+  }
+  .start-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px #FF6B1A88; }
+  .start-btn:active { transform: translateY(0); }
+
+  #endScreen { background: radial-gradient(ellipse at center, #2d4a10 0%, #0e1a05 70%); }
+  #restartBtn {
+    padding: 0.9rem 2.5rem !important;
+    font-size: 1.1rem !important;
+    border-radius: 8px !important;
+  }
+  #endTitle {
+    font-size: clamp(1.8rem, 5vw, 3.5rem);
+    color: #FF6B1A;
+    text-shadow: 2px 2px 0 #5c2a00;
+    margin-bottom: 0.3em;
+    text-align: center;
+  }
+  .end-scores {
+    display: flex;
+    gap: 3rem;
+    margin: 1.5rem 0 2.5rem;
+    align-items: flex-end;
+  }
+  .score-card {
+    text-align: center;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,107,26,0.3);
+    border-radius: 12px;
+    padding: 1.2rem 2rem;
+    transition: transform 0.3s;
+  }
+  .score-card.winner {
+    border-color: #FFD700;
+    background: rgba(255,215,0,0.08);
+    transform: scale(1.08);
+  }
+  .score-card .player-name {
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #c8b87a;
+    margin-bottom: 0.4rem;
+  }
+  .score-card .final-score {
+    font-size: 3rem;
+    color: #FF6B1A;
+  }
+  .score-card .carrot-label { font-size: 0.75rem; color: #c8b87a; }
+  .crown { font-size: 2rem; margin-bottom: 0.3rem; }
+
+  /* ── GAME CANVAS AREA ── */
+  #topHalf, #bottomHalf {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  canvas {
+    position: absolute;
+    top: 0; left: 0;
+  }
+  canvas.course-layer { z-index: 1; }
+  canvas.horse-layer  { z-index: 2; background: transparent; }
+
+  /* ── CENTER DIVIDER ── */
+  #divider {
+    height: 28px;
+    background: #5c3a1a;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    border-top: 3px solid #8B6914;
+    border-bottom: 3px solid #8B6914;
+    overflow: hidden;
+  }
+  .fence-post {
+    width: 14px; height: 100%;
+    background: #7a4a20;
+    border-left: 2px solid #a06030;
+    border-right: 2px solid #4a2a10;
+    flex-shrink: 0;
+  }
+  #timerDisplay {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1rem;
+    font-weight: bold;
+    color: #fff;
+    letter-spacing: 0.1em;
+    text-shadow: 0 1px 4px #000;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* ── HUD overlays ── */
+  .hud {
+    position: absolute;
+    z-index: 5;
+    pointer-events: none;
+    padding: 6px 12px;
+    background: rgba(0,0,0,0.45);
+    border-radius: 0 0 8px 0;
+    color: #fff;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+  }
+  #hudP2 { top: 6px; left: 6px; }
+  #hudP1 { bottom: 6px; left: 6px; }
+  .hud .carrot-count { color: #FF6B1A; font-size: 1.1em; font-weight: bold; }
+
+  /* interference flash */
+  .flash {
+    position: absolute; inset: 0;
+    background: rgba(255,80,0,0.18);
+    pointer-events: none;
+    z-index: 4;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .flash.show { opacity: 1; }
+
+  /* slow-down overlay tint */
+  .slow-tint {
+    position: absolute; inset: 0;
+    background: rgba(0,80,180,0.13);
+    pointer-events: none;
+    z-index: 3;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .slow-tint.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="gameWrapper">
+
+  <!-- START SCREEN -->
+  <div id="startScreen" class="screen">
+
+    <!-- P2 panel — rotated so it reads from the top -->
+    <div class="start-half p2-half">
+      <div class="player-panel">
+        <div class="player-id">
+          <div class="horse-icon">🐴</div>
+          <div class="player-label">Player 2</div>
+        </div>
+        <div class="player-rules">
+          <div class="rule-block">
+            <div class="rule-label">🕹 Controls</div>
+            <div class="rule-val"><b>← →</b> change lane<br><b>↑ / Enter</b> jump</div>
+          </div>
+          <div class="rule-block">
+            <div class="rule-label">🥕 Scoring</div>
+            <div class="rule-val">Collect carrots<br>Miss jump <b>−1 🥕</b><br>Hit wall <b>−5 🥕</b></div>
+          </div>
+          <div class="rule-block full-width">
+            <div class="rule-label">⚡ Strategy</div>
+            <div class="rule-val">Jumping a fence sends an <b>unjumpable wall</b> to your opponent · Missing slows your course · Most carrots after <b>90 sec</b> wins</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center divider with title + button -->
+    <div class="start-divider">
+      <span class="game-title-small">🥕 CARROT CHASE — Horse Obby 🐎</span>
+      <button class="start-btn" id="startBtn">START RACE 🏁</button>
+    </div>
+
+    <!-- P1 panel — normal orientation -->
+    <div class="start-half p1-half">
+      <div class="player-panel">
+        <div class="player-id">
+          <div class="horse-icon">🐎</div>
+          <div class="player-label">Player 1</div>
+        </div>
+        <div class="player-rules">
+          <div class="rule-block">
+            <div class="rule-label">🕹 Controls</div>
+            <div class="rule-val"><b>A D</b> change lane<br><b>W / Space</b> jump</div>
+          </div>
+          <div class="rule-block">
+            <div class="rule-label">🥕 Scoring</div>
+            <div class="rule-val">Collect carrots<br>Miss jump <b>−1 🥕</b><br>Hit wall <b>−5 🥕</b></div>
+          </div>
+          <div class="rule-block full-width">
+            <div class="rule-label">⚡ Strategy</div>
+            <div class="rule-val">Jumping a fence sends an <b>unjumpable wall</b> to your opponent · Missing slows your course · Most carrots after <b>90 sec</b> wins</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- END SCREEN -->
+  <div id="endScreen" class="screen hidden">
+    <div id="endTitle">Race Over!</div>
+    <div class="end-scores">
+      <div class="score-card" id="p2Card">
+        <div class="crown" id="p2Crown"></div>
+        <div class="player-name">P2 🐴</div>
+        <div class="final-score" id="p2Final">0</div>
+        <div class="carrot-label">🥕 carrots</div>
+      </div>
+      <div class="score-card" id="p1Card">
+        <div class="crown" id="p1Crown"></div>
+        <div class="player-name">P1 🐎</div>
+        <div class="final-score" id="p1Final">0</div>
+        <div class="carrot-label">🥕 carrots</div>
+      </div>
+    </div>
+    <button class="start-btn" id="restartBtn">RACE AGAIN 🔄</button>
+  </div>
+
+  <!-- P2 half (top) -->
+  <div id="topHalf">
+    <canvas id="courseP2"></canvas>
+    <canvas id="canvasP2"></canvas>
+    <div class="flash" id="flashP2"></div>
+    <div class="slow-tint" id="slowP2"></div>
+    <div class="hud" id="hudP2">P2 🐴 <span class="carrot-count" id="scoreP2">0</span> 🥕</div>
+  </div>
+
+  <!-- Center divider -->
+  <div id="divider">
+    <div id="timerDisplay">1:30</div>
+  </div>
+
+  <!-- P1 half (bottom) -->
+  <div id="bottomHalf">
+    <canvas id="courseP1"></canvas>
+    <canvas id="canvasP1"></canvas>
+    <div class="flash" id="flashP1"></div>
+    <div class="slow-tint" id="slowP1"></div>
+    <div class="hud" id="hudP1">P1 🐎 <span class="carrot-count" id="scoreP1">0</span> 🥕</div>
+  </div>
+
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────────────
+//  CARROT CHASE — Two-Player Horse Obby
+// ──────────────────────────────────────────────────────────────
+
+const GAME_DURATION = 90;
+const LANE_COUNT    = 7;
+const TRACK_SPEED   = 160; // px/sec base
+const OBSTACLE_SPAWN_RATE = 1.8; // seconds between spawns per player
+const CARROT_SPAWN_RATE   = 2.2;
+const HORSE_W = 36, HORSE_H = 44;
+const COLORS = {
+  track:   '#5a8a2a',
+  trackL:  '#4e7a22',
+  dirt:    '#8B6914',
+  tree1:   '#2d5016',
+  tree2:   '#3d6b1e',
+  shadow:  'rgba(0,0,0,0.25)',
+};
+
+// Key state
+const keys = {};
+window.addEventListener('keydown', e => { keys[e.code] = true; e.preventDefault(); });
+window.addEventListener('keyup',   e => { keys[e.code] = false; });
+
+// Touch state for mobile
+let touchData = { p1: null, p2: null };
+
+// ── Canvas setup ──────────────────────────────────────────────
+const canvasP1   = document.getElementById('canvasP1');
+const canvasP2   = document.getElementById('canvasP2');
+const courseP1   = document.getElementById('courseP1');
+const courseP2   = document.getElementById('courseP2');
+const ctxP1      = canvasP1.getContext('2d');
+const ctxP2      = canvasP2.getContext('2d');
+const ctxCourseP1 = courseP1.getContext('2d');
+const ctxCourseP2 = courseP2.getContext('2d');
+
+// Mark layers
+canvasP1.classList.add('horse-layer');
+canvasP2.classList.add('horse-layer');
+courseP1.classList.add('course-layer');
+courseP2.classList.add('course-layer');
+
+function resize() {
+  const w = window.innerWidth;
+  const h = (window.innerHeight - 28) / 2;
+  [canvasP1, canvasP2, courseP1, courseP2].forEach(c => { c.width = w; c.height = h; });
+}
+resize();
+window.addEventListener('resize', () => { resize(); initGame(); });
+
+// ── Game State ────────────────────────────────────────────────
+let gameState = 'start'; // 'start' | 'playing' | 'end'
+let timeLeft, lastTime, animFrame;
+
+function makeLanes(canvasWidth) {
+  const margin = 60;
+  const usable = canvasWidth - margin * 2;
+  const laneW  = usable / LANE_COUNT;
+  return {
+    centers: Array.from({ length: LANE_COUNT }, (_, i) => margin + laneW * i + laneW / 2),
+    laneW,
+  };
+}
+
+function makePlayer(lane, canvasWidth, canvasHeight, isP1) {
+  const { centers, laneW } = makeLanes(canvasWidth);
+  const midLane = Math.floor(LANE_COUNT / 2);
+  return {
+    x: centers[midLane],
+    y: isP1 ? canvasHeight - 80 : 80,
+    lanes: centers,
+    laneW,
+    laneIdx: midLane,
+    jumpZ: 0,
+    jumpVZ: 0,
+    isJumping: false,
+    score: 0,
+    scrollOffset: 0,
+    obstacles: [],
+    carrots: [],
+    trees: generateTrees(canvasWidth, canvasHeight),
+    moveCD: 0,
+    jumpCD: 0,
+    interferencePending: 0,
+    isP1,
+    speed: TRACK_SPEED,
+    slowTimer: 0,
+  };
+}
+
+let p1, p2;
+let obstacleTimerP1 = 0, obstacleTimerP2 = 0;
+let carrotTimerP1  = 0, carrotTimerP2  = 0;
+
+function generateTrees(w, h) {
+  const trees = [];
+  const margin = 55;
+  for (let i = 0; i < 60; i++) {
+    const side = Math.random() < 0.5 ? 'left' : 'right';
+    trees.push({
+      x: side === 'left'
+        ? Math.random() * margin
+        : w - Math.random() * margin,
+      y: Math.random() * h * 6 - h * 2,
+      r: 14 + Math.random() * 12,
+      variant: Math.random() < 0.5 ? 0 : 1,
+    });
+  }
+  return trees;
+}
+
+function initGame() {
+  const w = canvasP1.width, h = canvasP1.height;
+  p1 = makePlayer(3, w, h, true);
+  p2 = makePlayer(3, w, h, false);
+  timeLeft = GAME_DURATION;
+  obstacleTimerP1 = obstacleTimerP2 = 1.0;
+  carrotTimerP1  = carrotTimerP2  = 0.8;
+  document.getElementById('scoreP1').textContent = '0';
+  document.getElementById('scoreP2').textContent = '0';
+}
+
+// ── Obstacle / Carrot spawning ─────────────────────────────────
+const OBS_TYPES = ['log', 'rock', 'puddle'];
+
+function spawnObstacle(p, canvasHeight, isP1) {
+  const laneIdx = Math.floor(Math.random() * LANE_COUNT);
+  const x = p.lanes[laneIdx];
+  const type = OBS_TYPES[Math.floor(Math.random() * OBS_TYPES.length)];
+  const y = isP1 ? -40 : canvasHeight + 40;
+  const hw = Math.floor(p.laneW / 2) - 4; // fit inside lane with 4px margin each side
+  p.obstacles.push({ x, y, laneIdx, type, cleared: false, jumpedOver: false, hw });
+}
+
+function spawnCarrot(p, canvasHeight, isP1) {
+  const laneIdx = Math.floor(Math.random() * LANE_COUNT);
+  const x = p.lanes[laneIdx];
+  const y = isP1 ? -30 : canvasHeight + 30;
+  p.carrots.push({ x, y, laneIdx, collected: false });
+}
+
+function spawnInterference(p, canvasHeight, isP1) {
+  const laneIdx = Math.floor(Math.random() * LANE_COUNT);
+  const x = p.lanes[laneIdx];
+  const y = isP1 ? -40 : canvasHeight + 40; // same edge as regular obstacles
+  const type = OBS_TYPES[Math.floor(Math.random() * 2)];
+  const hw = Math.floor(p.laneW / 2) - 4;
+  p.obstacles.push({ x, y, laneIdx, type, cleared: false, jumpedOver: false, hw, interference: true });
+  const flashEl = document.getElementById(isP1 ? 'flashP1' : 'flashP2');
+  flashEl.classList.add('show');
+  setTimeout(() => flashEl.classList.remove('show'), 200);
+}
+
+// ── Input handling ────────────────────────────────────────────
+function handleInput(p, dt, isP1) {
+  p.moveCD -= dt;
+  p.jumpCD  -= dt;
+
+  const leftKey  = isP1 ? (keys['KeyA'] || keys['ArrowLeft'] && false)  : keys['ArrowLeft'];
+  const rightKey = isP1 ? (keys['KeyD'] || keys['ArrowRight'] && false) : keys['ArrowRight'];
+  const jumpKey  = isP1 ? (keys['KeyW'] || keys['Space'])                : (keys['ArrowUp'] || keys['Enter']);
+
+  // P1 uses A/D; P2 uses arrow left/right
+  const l = isP1 ? keys['KeyA'] : keys['ArrowLeft'];
+  const r = isP1 ? keys['KeyD'] : keys['ArrowRight'];
+  const j = isP1 ? (keys['KeyW'] || keys['Space']) : (keys['ArrowUp'] || keys['Enter']);
+
+  if (l && p.moveCD <= 0 && p.laneIdx > 0) {
+    p.laneIdx--;
+    p.moveCD = 0.18;
+  }
+  if (r && p.moveCD <= 0 && p.laneIdx < LANE_COUNT - 1) {
+    p.laneIdx++;
+    p.moveCD = 0.18;
+  }
+
+  const targetX = p.lanes[p.laneIdx];
+  p.x += (targetX - p.x) * Math.min(1, dt * 12);
+
+  if (j && !p.isJumping && p.jumpCD <= 0) {
+    p.isJumping = true;
+    p.jumpZ = 0;
+    p.jumpVZ = 500;
+    p.jumpCD = 0.9;
+  }
+}
+
+function updateJump(p, dt) {
+  if (!p.isJumping) return;
+  p.jumpVZ -= 500 * dt;
+  p.jumpZ  += p.jumpVZ * dt;
+  if (p.jumpZ <= 0) {
+    p.jumpZ = 0;
+    p.isJumping = false;
+  }
+}
+
+// ── Collision ─────────────────────────────────────────────────
+function checkCollisions(p, canvasHeight, isP1, opponent) {
+  const py = p.y;
+  const px = p.x;
+
+  for (const obs of p.obstacles) {
+    if (obs.cleared) continue;
+
+    const dx = Math.abs(px - obs.x);
+    const dy = obs.y - py; // signed: positive = obstacle is below horse (P1 perspective)
+
+    // Is the obstacle in the same lane?
+    const inLane = dx < p.laneW * 0.6;
+
+    // Has it fully scrolled past the horse?
+    // P1: obstacles move downward, horse is at bottom — passed when obs.y > py + 50
+    // P2: obstacles move upward, horse is at top — passed when obs.y < py - 50
+    const passed = isP1 ? (obs.y > py + 50) : (obs.y < py - 50);
+
+    // Far off screen with no resolution — just discard silently
+    const offscreen = isP1 ? (obs.y > canvasHeight + 100) : (obs.y < -100);
+
+    if (offscreen) {
+      obs.cleared = true;
+      continue;
+    }
+
+    if (passed) {
+      obs.cleared = true;
+      if (inLane) {
+        if (obs.jumpedOver) {
+          p.interferencePending++;
+        } else {
+          // Missed — lose 1 carrot for regular, 5 for unjumpable interference fence
+          const penalty = obs.interference ? 5 : 1;
+          p.score = Math.max(0, p.score - penalty);
+          p.slowTimer = 2.5;
+          document.getElementById(isP1 ? 'scoreP1' : 'scoreP2').textContent = p.score;
+          const tint = document.getElementById(isP1 ? 'slowP1' : 'slowP2');
+          if (tint) { tint.classList.add('show'); setTimeout(() => tint.classList.remove('show'), 2500); }
+        }
+      }
+      continue;
+    }
+
+    // At the horse — check if jumping over it
+    const atHorse = Math.abs(obs.y - py) < 50;
+    if (atHorse && inLane && p.jumpZ > 30) {
+      obs.jumpedOver = true;
+    }
+  }
+
+  // Carrots
+  for (const c of p.carrots) {
+    if (c.collected) continue;
+    const dx = Math.abs(px - c.x);
+    const dy = Math.abs(py - c.y);
+    if (dx < 22 && dy < 22) {
+      c.collected = true;
+      p.score++;
+      document.getElementById(isP1 ? 'scoreP1' : 'scoreP2').textContent = p.score;
+    }
+  }
+}
+
+// ── Update ────────────────────────────────────────────────────
+function updatePlayer(p, dt, isP1) {
+  const h = canvasP1.height;
+
+  const baseSpeed = TRACK_SPEED + (GAME_DURATION - timeLeft) * 0.6;
+  if (p.slowTimer > 0) {
+    p.slowTimer -= dt;
+    p.speed = baseSpeed * 0.35;
+  } else {
+    p.speed = baseSpeed;
+  }
+  const speed = p.speed;
+
+  p.scrollOffset = (p.scrollOffset + speed * dt) % (h * 2);
+
+  const dir = isP1 ? 1 : -1;
+  for (const obs of p.obstacles) obs.y += speed * dt * dir;
+  for (const c   of p.carrots)   c.y   += speed * dt * dir;
+
+  // Only remove obstacles already marked cleared; off-screen carrots
+  p.obstacles = p.obstacles.filter(o => !o.cleared);
+  if (isP1) {
+    p.carrots = p.carrots.filter(c => c.y < h + 60);
+  } else {
+    p.carrots = p.carrots.filter(c => c.y > -60);
+  }
+
+  // Scroll trees
+  for (const t of p.trees) {
+    t.y += speed * dt * 0.8 * dir;
+    if (isP1 && t.y > h + 60) t.y -= h * 4;
+    if (!isP1 && t.y < -60)   t.y += h * 4;
+  }
+}
+
+function update(dt) {
+  timeLeft -= dt;
+  if (timeLeft <= 0) { timeLeft = 0; endGame(); return; }
+
+  const secs = Math.ceil(timeLeft);
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  document.getElementById('timerDisplay').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+
+  const h = canvasP1.height;
+
+  updatePlayer(p1, dt, true);
+  updatePlayer(p2, dt, false);
+
+  // Spawn timers
+  obstacleTimerP1 -= dt; obstacleTimerP2 -= dt;
+  carrotTimerP1   -= dt; carrotTimerP2   -= dt;
+  if (obstacleTimerP1 <= 0) { spawnObstacle(p1, h, true);  obstacleTimerP1 = OBSTACLE_SPAWN_RATE * (0.7 + Math.random() * 0.6); }
+  if (obstacleTimerP2 <= 0) { spawnObstacle(p2, h, false); obstacleTimerP2 = OBSTACLE_SPAWN_RATE * (0.7 + Math.random() * 0.6); }
+  if (carrotTimerP1   <= 0) { spawnCarrot(p1, h, true);    carrotTimerP1   = CARROT_SPAWN_RATE   * (0.6 + Math.random() * 0.8); }
+  if (carrotTimerP2   <= 0) { spawnCarrot(p2, h, false);   carrotTimerP2   = CARROT_SPAWN_RATE   * (0.6 + Math.random() * 0.8); }
+
+  // Interference — the jumping player's pending flag triggers a fence on THE OPPONENT
+  // p1.interferencePending means "p1 earned a hit against p2" → spawn on p2
+  // p2.interferencePending means "p2 earned a hit against p1" → spawn on p1
+  if (p1.interferencePending > 0) { spawnInterference(p2, h, false); p1.interferencePending--; }
+  if (p2.interferencePending > 0) { spawnInterference(p1, h, true);  p2.interferencePending--; }
+
+  // Input & physics
+  handleInput(p1, dt, true);
+  handleInput(p2, dt, false);
+  updateJump(p1, dt);
+  updateJump(p2, dt);
+
+  // Collisions
+  checkCollisions(p1, h, true,  p2);
+  checkCollisions(p2, h, false, p1);
+}
+
+// ── Drawing ───────────────────────────────────────────────────
+function drawTrack(ctx, w, h, scrollOffset, isP1) {
+  // Background grass
+  ctx.fillStyle = COLORS.track;
+  ctx.fillRect(0, 0, w, h);
+
+  // Stripe variation
+  const stripeH = 80;
+  const stripes = Math.ceil(h / stripeH) + 2;
+  const off = scrollOffset % (stripeH * 2);
+  for (let i = 0; i < stripes * 2; i++) {
+    const y = i * stripeH - off;
+    if (i % 2 === 0) {
+      ctx.fillStyle = COLORS.trackL;
+      ctx.fillRect(0, y, w, stripeH);
+    }
+  }
+
+  // Lane lines (dirt path down center)
+  const margin = 60;
+  const usable = w - margin * 2;
+  ctx.fillStyle = COLORS.dirt + '44';
+  ctx.fillRect(margin, 0, usable, h);
+
+  // Dotted lane dividers
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.setLineDash([12, 18]);
+  ctx.lineWidth = 1.5;
+  const laneW = usable / LANE_COUNT;
+  for (let i = 1; i < LANE_COUNT; i++) {
+    const x = margin + laneW * i;
+    ctx.beginPath();
+    ctx.moveTo(x, 0); ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+}
+
+function drawTrees(ctx, trees, w, h) {
+  for (const t of trees) {
+    const col = t.variant === 0 ? COLORS.tree1 : COLORS.tree2;
+    // Shadow
+    ctx.fillStyle = COLORS.shadow;
+    ctx.beginPath();
+    ctx.ellipse(t.x + 4, t.y + 4, t.r * 0.9, t.r * 0.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Trunk
+    ctx.fillStyle = '#5c3a1a';
+    ctx.fillRect(t.x - 4, t.y - 2, 8, 14);
+    // Canopy
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.arc(t.x, t.y - t.r * 0.3, t.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = t.variant === 0 ? '#3d6b1e' : '#4d8228';
+    ctx.beginPath();
+    ctx.arc(t.x - 4, t.y - t.r * 0.5, t.r * 0.65, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// Draw the ground-level parts of a jump fence (shadow, base, standards)
+function drawObstacleBase(ctx, obs) {
+  if (obs.cleared) return;
+  const { x, y, type } = obs;
+  const hw = obs.hw;
+  const isInter = obs.interference;
+  // Interference fences have taller standards
+  const stdH = isInter ? 36 : 18;
+
+  if (type === 'puddle') {
+    ctx.fillStyle = isInter ? 'rgba(200,40,40,0.45)' : 'rgba(80,120,200,0.52)';
+    ctx.beginPath();
+    ctx.ellipse(x, y, hw, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = isInter ? 'rgba(255,80,80,0.5)' : 'rgba(140,180,255,0.45)';
+    ctx.lineWidth = 1.5; ctx.stroke();
+    if (isInter) {
+      ctx.fillStyle = '#FF6B1A'; ctx.font = 'bold 13px Georgia'; ctx.textAlign = 'center';
+      ctx.fillText('⛔', x, y - 16);
+    }
+    return;
+  }
+
+  // Ground shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.beginPath(); ctx.ellipse(x, y + 4, hw + 4, 7, 0, 0, Math.PI * 2); ctx.fill();
+
+  if (type === 'log' && !isInter) {
+    // Natural log stumps
+    [[x - hw], [x + hw]].forEach(([sx]) => {
+      ctx.fillStyle = '#6b3d14';
+      ctx.beginPath(); ctx.ellipse(sx, y, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#8B5a20';
+      ctx.beginPath(); ctx.ellipse(sx, y - 2, 5, 6, 0, 0, Math.PI * 2); ctx.fill();
+    });
+  } else {
+    // Show-jump standards — taller for interference
+    const stdDark  = isInter ? '#660000' : '#aaa';
+    const stdColor = isInter ? '#cc0000' : '#ddd';
+    const stripe   = isInter ? '#ff2200' : '#cc3333';
+    [[x - hw], [x + hw]].forEach(([sx]) => {
+      ctx.fillStyle = stdDark;  ctx.fillRect(sx - 5, y - stdH, 10, stdH + 6);
+      ctx.fillStyle = stdColor; ctx.fillRect(sx - 4, y - stdH + 1, 8, stdH + 4);
+      // stripes up the standard
+      const stripeCount = isInter ? 4 : 1;
+      for (let i = 0; i < stripeCount; i++) {
+        const sy = y - stdH + 4 + i * (stdH / (stripeCount + 1));
+        ctx.fillStyle = stripe; ctx.fillRect(sx - 4, sy, 8, 4);
+      }
+    });
+  }
+
+  if (isInter) {
+    ctx.fillStyle = '#ff2200'; ctx.font = 'bold 12px Georgia'; ctx.textAlign = 'center';
+    ctx.fillText('⛔ TOO HIGH ⛔', x, y - stdH - 6);
+  }
+}
+
+// Draw fence rails — interference fences get multiple stacked rails and are NEVER hidden
+function drawObstacleRail(ctx, obs, horseX, horseY, jumpZ) {
+  if (obs.cleared) return;
+  if (obs.type === 'puddle') return;
+  const { x, y, type } = obs;
+  const hw = obs.hw;
+  const isInter = obs.interference;
+
+  // For regular fences: hide the rail while horse is overhead and jumping
+  if (!isInter) {
+    const dx = Math.abs(horseX - x);
+    const dy = Math.abs(horseY - y);
+    const overhead = dx < hw + 14 && dy < 40;
+    if (overhead && jumpZ > 20) return;
+  }
+  // Interference fences: rail always visible — they're unjumpable
+
+  if (type === 'log' && !isInter) {
+    // Single natural log rail
+    ctx.strokeStyle = '#7a4a1a'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x - hw + 4, y - 4); ctx.lineTo(x + hw - 4, y - 4); ctx.stroke();
+    ctx.strokeStyle = '#5c3010'; ctx.lineWidth = 1.5;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath(); ctx.moveTo(x + i * 8, y - 8); ctx.lineTo(x + i * 8 + 2, y - 1); ctx.stroke();
+    }
+    ctx.fillStyle = '#9a6030';
+    ctx.beginPath(); ctx.arc(x - hw + 5, y - 4, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + hw - 5, y - 4, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#7a4a1a';
+    ctx.beginPath(); ctx.arc(x - hw + 5, y - 4, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + hw - 5, y - 4, 2, 0, Math.PI * 2); ctx.fill();
+  } else {
+    // Painted pole(s) — interference gets 3 stacked rails
+    const railOffsets = isInter ? [-4, -13, -22] : [-5];
+    const c1 = isInter ? '#ff2200' : '#e8e8e8';
+    const c2 = isInter ? '#880000' : '#cc2222';
+
+    for (const railY of railOffsets) {
+      ctx.lineWidth = isInter ? 7 : 6; ctx.lineCap = 'round';
+      const segments = 6;
+      const segW = (hw * 2) / segments;
+      for (let i = 0; i < segments; i++) {
+        ctx.strokeStyle = i % 2 === 0 ? c1 : c2;
+        ctx.beginPath();
+        ctx.moveTo(x - hw + i * segW, y + railY);
+        ctx.lineTo(x - hw + (i + 1) * segW, y + railY);
+        ctx.stroke();
+      }
+      // highlight
+      ctx.strokeStyle = isInter ? 'rgba(255,150,100,0.4)' : 'rgba(255,255,255,0.4)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x - hw + 4, y + railY - 2); ctx.lineTo(x + hw - 4, y + railY - 2); ctx.stroke();
+    }
+  }
+}
+
+
+
+function drawCarrot(ctx, c) {
+  if (c.collected) return;
+  const { x, y } = c;
+  // body
+  ctx.fillStyle = '#FF6B1A';
+  ctx.beginPath();
+  ctx.moveTo(x, y + 14);
+  ctx.quadraticCurveTo(x - 10, y, x, y - 10);
+  ctx.quadraticCurveTo(x + 10, y, x, y + 14);
+  ctx.fill();
+  // top greens
+  ctx.strokeStyle = '#4a9020';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x, y - 10); ctx.lineTo(x - 6, y - 20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, y - 10); ctx.lineTo(x, y - 22); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, y - 10); ctx.lineTo(x + 6, y - 20); ctx.stroke();
+}
+
+function drawHorse(ctx, p, w, h, isP1) {
+  const x = p.x;
+  const baseY = p.y;
+  const jz = p.jumpZ;
+
+  // --- colours ---
+  const bodyColor  = isP1 ? '#c47a3a' : '#6b4ab5';
+  const darkColor  = isP1 ? '#7a3a10' : '#3a1a7a';
+  const lightColor = isP1 ? '#d4956a' : '#9a7adf';
+  const saddleCol  = isP1 ? '#e03030' : '#3060e0';
+
+  // Shadow stays on the ground and shrinks as horse rises
+  const shadowScale = Math.max(0.25, 1 - jz / 180);
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.beginPath();
+  ctx.ellipse(x, baseY, 8 * shadowScale, 18 * shadowScale, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Jump arc: horse moves forward (toward obstacle) as it rises, peaks overhead, lands past
+  // We shift drawY toward the obstacle direction as the horse arcs
+  const jumpProgress = p.isJumping ? (1 - p.jumpZ / 220) : 0; // 0=takeoff, 1=land
+  const drawY = baseY - jz * 0.5;
+
+  // Height-based scale: at peak the horse body squishes vertically (foreshortening = looks taller/higher)
+  // In top-down: being airborne makes the horse look slightly smaller (altitude)
+  const heightScale = 1 + (jz / 220) * 0.22;  // grows slightly = implies altitude
+
+  ctx.save();
+  ctx.translate(x, drawY);
+
+  // P1 faces UP; P2 faces DOWN (flip Y)
+  if (!isP1) ctx.scale(1, -1);
+
+  // Apply height scale — horse appears to grow as it rises (classic top-down altitude trick)
+  ctx.scale(heightScale, heightScale);
+
+  // gallop phase: legs swing forward/backward (along Y axis in local space)
+  const t = Date.now() / 160;
+  const phase = p.isJumping ? 0 : Math.sin(t);
+  // during jump, splay legs outward
+  const jumpSplay = p.isJumping ? Math.min(jz / 60, 1) : 0;
+
+  // ── TAIL ──
+  ctx.strokeStyle = darkColor;
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  const tailWag = phase * 4;
+  ctx.beginPath();
+  ctx.moveTo(0, 14);
+  ctx.quadraticCurveTo(tailWag * 1.5, 22, tailWag, 30);
+  ctx.stroke();
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.moveTo(-2, 14);
+  ctx.quadraticCurveTo(-5 + tailWag, 23, -4 + tailWag * 0.5, 30);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(2, 14);
+  ctx.quadraticCurveTo(5 + tailWag, 22, 4 + tailWag * 0.7, 30);
+  ctx.stroke();
+
+  // ── LEGS — slimmer, tucked closer to body ──
+  const legConfigs = [
+    { bx: -6,  by: -8,  phase:  phase },
+    { bx:  6,  by: -8,  phase: -phase },
+    { bx: -6,  by:  8,  phase: -phase },
+    { bx:  6,  by:  8,  phase:  phase },
+  ];
+
+  ctx.lineCap = 'round';
+  for (const leg of legConfigs) {
+    const swing = leg.phase * 7;
+    const splayX = leg.bx > 0 ? jumpSplay * 5 : -jumpSplay * 5;
+    const footX = leg.bx + splayX;
+    const footY = leg.by + swing;
+
+    ctx.strokeStyle = bodyColor;
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.moveTo(leg.bx, leg.by);
+    ctx.lineTo(footX * 0.6 + leg.bx * 0.4, footY * 0.5 + leg.by * 0.5);
+    ctx.stroke();
+
+    ctx.strokeStyle = darkColor;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(footX * 0.6 + leg.bx * 0.4, footY * 0.5 + leg.by * 0.5);
+    ctx.lineTo(footX, footY);
+    ctx.stroke();
+
+    ctx.fillStyle = '#222';
+    ctx.beginPath();
+    ctx.arc(footX, footY, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── BODY — slimmer oval ──
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 7, 16, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Spine highlight
+  ctx.fillStyle = lightColor + '55';
+  ctx.beginPath();
+  ctx.ellipse(0, -1, 2.5, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ── SADDLE ──
+  ctx.fillStyle = saddleCol;
+  ctx.beginPath();
+  ctx.ellipse(0, 2, 5, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // ── NECK ──
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath();
+  ctx.ellipse(0, -13, 4.5, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ── MANE ──
+  ctx.fillStyle = darkColor;
+  for (let i = 0; i < 4; i++) {
+    const my = -6 - i * 3;
+    const mx = Math.sin(i * 1.4 + t * 0.3) * 2;
+    ctx.beginPath();
+    ctx.arc(mx, my, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── HEAD ──
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath();
+  ctx.arc(0, -19, 5.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Snout
+  ctx.fillStyle = lightColor;
+  ctx.beginPath();
+  ctx.ellipse(0, -24, 3, 2.8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Nostrils
+  ctx.fillStyle = darkColor;
+  ctx.beginPath(); ctx.ellipse(-1.5, -24.5, 0.9, 0.6, -0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse( 1.5, -24.5, 0.9, 0.6,  0.3, 0, Math.PI * 2); ctx.fill();
+
+  // Eyes
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(-3.5, -20, 1.6, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc( 3.5, -20, 1.6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#111';
+  ctx.beginPath(); ctx.arc(-3.8, -20.2, 0.8, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc( 3.8, -20.2, 0.8, 0, Math.PI * 2); ctx.fill();
+
+  // Ears
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath(); ctx.moveTo(-3.5, -23); ctx.lineTo(-6, -28); ctx.lineTo(-1.5, -25); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo( 3.5, -23); ctx.lineTo( 6, -28); ctx.lineTo( 1.5, -25); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = lightColor;
+  ctx.beginPath(); ctx.moveTo(-3.5, -23); ctx.lineTo(-5.2, -26.5); ctx.lineTo(-2, -24.2); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo( 3.5, -23); ctx.lineTo( 5.2, -26.5); ctx.lineTo( 2, -24.2); ctx.closePath(); ctx.fill();
+
+  // ── Jump highlight ring ──
+  if (p.isJumping && p.jumpZ > 20) {
+    const alpha = Math.min(0.7, p.jumpZ / 100);
+    ctx.strokeStyle = `rgba(255,240,150,${alpha})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 16 + jumpSplay * 4, 26 + jumpSplay * 4, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawCourse(ctx, p, isP1) {
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  drawTrack(ctx, w, h, p.scrollOffset, isP1);
+  drawTrees(ctx, p.trees, w, h);
+  for (const c of p.carrots) drawCarrot(ctx, c);
+  for (const obs of p.obstacles) drawObstacleBase(ctx, obs);
+  // Rails always draw on course layer — horse canvas is transparent so horse floats above
+  for (const obs of p.obstacles) drawObstacleRail(ctx, obs, p.x, p.y, p.jumpZ);
+
+  // Slow penalty visual: blue speed-lines effect at edges
+  if (p.slowTimer > 0) {
+    const intensity = Math.min(1, p.slowTimer / 2.5);
+    ctx.fillStyle = `rgba(0,100,255,${intensity * 0.12})`;
+    ctx.fillRect(0, 0, w, h);
+    // "slow" label
+    ctx.fillStyle = `rgba(100,180,255,${intensity * 0.9})`;
+    ctx.font = `bold ${Math.round(14 + intensity * 8)}px Georgia`;
+    ctx.textAlign = 'center';
+    ctx.fillText('⚡ SLOWED', w / 2, isP1 ? h - 40 : 40);
+  }
+
+  const edgeY = isP1 ? 14 : h - 14;
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.font = '10px Georgia';
+  ctx.textAlign = 'center';
+  ctx.fillText(isP1 ? '▼ W/Space to jump ▼' : '▲ ↑/Enter to jump ▲', w / 2, edgeY);
+}
+
+function drawHorseLayer(ctx, p, isP1) {
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  drawHorse(ctx, p, w, h, isP1);
+
+  // Jump height bar
+  if (p.jumpZ > 0) {
+    const barH = h * 0.35;
+    const barX = w - 18;
+    const barY = isP1 ? h - 20 - barH : 20;
+    const fill = Math.min(1, p.jumpZ / 250);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(barX, barY, 10, barH);
+    ctx.fillStyle = fill > 0.12 ? '#44dd44' : '#dd4444';
+    ctx.fillRect(barX, barY + barH * (1 - fill), 10, barH * fill);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX, barY, 10, barH);
+    const threshY = barY + barH * (1 - 30 / 250);
+    ctx.strokeStyle = '#ffff00';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(barX - 2, threshY); ctx.lineTo(barX + 12, threshY); ctx.stroke();
+  }
+
+  // Approach warning line
+  for (const obs of p.obstacles) {
+    if (obs.cleared) continue;
+    const laneDx = Math.abs(p.x - obs.x);
+    const laneDy = Math.abs(p.y - obs.y);
+    if (laneDx < 50 && laneDy < 160 && laneDy > 40) {
+      const proximity = 1 - (laneDy - 40) / 120;
+      ctx.strokeStyle = `rgba(255,220,0,${proximity * 0.6})`;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y + (isP1 ? -30 : 30));
+      ctx.lineTo(obs.x, obs.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+}
+
+// ── Game loop ─────────────────────────────────────────────────
+function loop(ts) {
+  if (gameState !== 'playing') return;
+  const dt = Math.min((ts - lastTime) / 1000, 0.05);
+  lastTime = ts;
+
+  update(dt);
+  drawCourse(ctxCourseP1, p1, true);
+  drawCourse(ctxCourseP2, p2, false);
+  drawHorseLayer(ctxP1, p1, true);
+  drawHorseLayer(ctxP2, p2, false);
+
+  animFrame = requestAnimationFrame(loop);
+}
+
+function startGame() {
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('endScreen').classList.add('hidden');
+  initGame();
+  gameState = 'playing';
+  lastTime = performance.now();
+  animFrame = requestAnimationFrame(loop);
+}
+
+function endGame() {
+  gameState = 'end';
+  cancelAnimationFrame(animFrame);
+
+  document.getElementById('p1Final').textContent = p1.score;
+  document.getElementById('p2Final').textContent = p2.score;
+
+  const p1Card = document.getElementById('p1Card');
+  const p2Card = document.getElementById('p2Card');
+  const p1Crown = document.getElementById('p1Crown');
+  const p2Crown = document.getElementById('p2Crown');
+
+  p1Card.classList.remove('winner');
+  p2Card.classList.remove('winner');
+  p1Crown.textContent = '';
+  p2Crown.textContent = '';
+
+  let title = "It's a Tie! 🥕🥕";
+  if (p1.score > p2.score) {
+    p1Card.classList.add('winner');
+    p1Crown.textContent = '👑';
+    title = 'P1 Wins the Carrot Chase! 🐎';
+  } else if (p2.score > p1.score) {
+    p2Card.classList.add('winner');
+    p2Crown.textContent = '👑';
+    title = 'P2 Wins the Carrot Chase! 🐴';
+  }
+  document.getElementById('endTitle').textContent = title;
+  document.getElementById('endScreen').classList.remove('hidden');
+}
+
+// ── Touch controls ────────────────────────────────────────────
+function setupTouch() {
+  const topHalf    = document.getElementById('topHalf');
+  const bottomHalf = document.getElementById('bottomHalf');
+
+  function handleTouch(e, isP1) {
+    if (gameState !== 'playing') return;
+    const p = isP1 ? p1 : p2;
+    const rect = e.currentTarget.getBoundingClientRect();
+    for (const touch of e.changedTouches) {
+      const tx = touch.clientX - rect.left;
+      const ty = touch.clientY - rect.top;
+      // Tap near horse = jump
+      const dx = Math.abs(tx - p.x);
+      const dy = Math.abs(ty - p.y);
+      if (dx < 60 && dy < 60) {
+        if (!p.isJumping && p.jumpCD <= 0) {
+          p.isJumping = true;
+          p.jumpZ = 0;
+          p.jumpVZ = 220;
+          p.jumpCD = 0.5;
+        }
+      } else {
+        // Move left/right based on tap position
+        if (tx < p.x && p.laneIdx > 0) p.laneIdx--;
+        else if (tx > p.x && p.laneIdx < LANE_COUNT - 1) p.laneIdx++;
+      }
+    }
+    e.preventDefault();
+  }
+
+  bottomHalf.addEventListener('touchstart', e => handleTouch(e, true),  { passive: false });
+  topHalf.addEventListener   ('touchstart', e => handleTouch(e, false), { passive: false });
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('restartBtn').addEventListener('click', startGame);
+setupTouch();
+</script>
+</body>
+</html>

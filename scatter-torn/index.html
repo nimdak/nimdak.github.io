@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scatter Torn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Special+Elite&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  min-height: 100vh;
+  background: #1a0f07;
+  color: #F5E6C8;
+  font-family: 'Special Elite', serif;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+/* HEADER */
+.game-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 24px;
+  background: rgba(44,24,16,0.95);
+  border-bottom: 2px solid #8B5E3C;
+  position: sticky; top: 0; z-index: 50;
+}
+.game-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem; color: #E8C99A; letter-spacing: 1px;
+}
+.header-right { display: flex; align-items: center; gap: 12px; }
+.timer-display {
+  font-family: 'Courier Prime', monospace;
+  font-size: 1.3rem; color: #E8C99A;
+  background: rgba(0,0,0,0.3);
+  padding: 4px 12px; border-radius: 4px;
+  border: 1px solid #8B5E3C;
+  min-width: 90px; text-align: center;
+}
+.icon-btn {
+  background: none; border: none; font-size: 1.4rem;
+  cursor: pointer; opacity: 0.8; transition: opacity 0.2s;
+}
+.icon-btn:hover { opacity: 1; }
+
+/* SCREENS */
+.screen { display: none; flex: 1; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* VERSE PREVIEW */
+#screen-verse {
+  align-items: center; justify-content: center; padding: 32px;
+}
+.verse-preview-card {
+  background: rgba(44,24,16,0.97);
+  border: 2px solid #8B5E3C;
+  border-radius: 16px;
+  padding: 48px 40px 36px;
+  max-width: 580px; width: 100%;
+  text-align: center;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.7);
+  animation: fadeInUp 0.6s ease forwards;
+}
+@keyframes fadeInUp {
+  from { opacity:0; transform:translateY(24px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.preview-eyebrow {
+  font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase;
+  color: #8B5E3C; margin-bottom: 20px;
+}
+.preview-verse-text {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.3rem, 4vw, 2rem);
+  color: #F5E6C8;
+  line-height: 1.65;
+  margin-bottom: 16px;
+  font-style: italic;
+}
+.preview-verse-ref {
+  font-size: 0.95rem; color: #8B5E3C;
+  margin-bottom: 36px; letter-spacing: 1px;
+}
+.preview-footer {
+  display: flex; align-items: center; justify-content: center; gap: 20px;
+}
+.countdown-ring {
+  position: relative; width: 52px; height: 52px; flex-shrink: 0;
+}
+.countdown-ring svg {
+  transform: rotate(-90deg);
+  position: absolute; top:0; left:0;
+}
+.countdown-ring circle {
+  fill: none; stroke: #8B5E3C; stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+.countdown-ring circle.bg { stroke: rgba(139,94,60,0.2); transition: none; }
+.countdown-num {
+  position: absolute; inset:0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Courier Prime', monospace;
+  font-size: 1.1rem; color: #E8C99A;
+}
+.skip-btn {
+  background: transparent; border: 2px solid #5a3a1a;
+  color: #C8B090; padding: 10px 28px; border-radius: 8px;
+  font-family: 'Special Elite', serif; font-size: 0.95rem;
+  cursor: pointer; transition: border-color 0.2s, color 0.2s;
+  letter-spacing: 1px;
+}
+.skip-btn:hover { border-color: #E8C99A; color: #E8C99A; }
+.preview-hint {
+  font-size: 0.72rem; color: #5a3a1a; letter-spacing: 1px;
+  margin-top: 0; line-height: 1;
+}
+
+/* MENU */
+#screen-menu { align-items: center; justify-content: center; padding: 24px; }
+.menu-card {
+  background: rgba(44,24,16,0.95);
+  border: 2px solid #8B5E3C; border-radius: 12px;
+  padding: 32px; max-width: 640px; width: 100%; text-align: center;
+}
+.menu-icon { font-size: 3rem; margin-bottom: 12px; }
+.menu-card h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem; color: #E8C99A; margin-bottom: 8px;
+}
+.menu-desc { color: #C8B090; margin-bottom: 24px; line-height: 1.5; }
+.level-grid {
+  display: grid; grid-template-columns: repeat(6, 1fr);
+  gap: 6px; margin-bottom: 24px;
+}
+.level-btn {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid #5a3a1a; border-radius: 6px;
+  padding: 6px 4px; cursor: pointer; color: #C8B090;
+  font-family: 'Courier Prime', monospace; font-size: 0.7rem;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.level-btn:hover { background: rgba(139,94,60,0.3); border-color: #8B5E3C; }
+.level-btn.cleared { border-color: #2a7a3a; background: rgba(26,74,42,0.3); }
+.level-num { font-size: 0.85rem; color: #E8C99A; font-weight: bold; }
+.level-words { color: #888; }
+.level-best { color: #6abf8a; font-size: 0.6rem; }
+.start-btn {
+  background: #8B1a1a; color: #F5E6C8; border: none;
+  padding: 12px 32px; border-radius: 8px;
+  font-family: 'Playfair Display', serif; font-size: 1.1rem;
+  cursor: pointer; transition: background 0.2s;
+}
+.start-btn:hover { background: #A52a2a; }
+
+/* SHREDDER */
+#screen-shred {
+  align-items: center; justify-content: flex-start;
+  padding: 24px; overflow: hidden;
+}
+.shredding-label {
+  font-family: 'Playfair Display', serif;
+  color: #E8C99A; font-size: 1.1rem; margin-bottom: 16px; opacity: 0.8;
+}
+.shredder-scene {
+  position: relative; width: 100%; max-width: 500px; height: 420px;
+}
+.shredder-machine {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 200px;
+}
+.shredder-top {
+  background: #2a2a2a; border-radius: 6px 6px 0 0;
+  height: 40px; display: flex; align-items: center; justify-content: center;
+  border: 2px solid #444;
+}
+.shredder-slot {
+  width: 140px; height: 20px; background: #111; border-radius: 2px;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.paper-entering {
+  display: flex; gap: 3px; white-space: nowrap;
+  animation: feedIn 0.8s ease-in forwards;
+}
+@keyframes feedIn {
+  from { transform: translateY(-30px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+.paper-word {
+  font-family: 'Courier Prime', monospace; font-size: 0.55rem;
+  background: #f5e6c8; color: #1a0f07;
+  padding: 1px 2px; border-radius: 2px;
+}
+.shredder-body {
+  background: linear-gradient(135deg, #333 0%, #222 100%);
+  height: 80px; border: 2px solid #444; border-top: none;
+  border-radius: 0 0 8px 8px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px;
+}
+.shredder-brand { color: #888; font-size: 0.6rem; letter-spacing: 2px; }
+.shredder-teeth { display: flex; gap: 3px; }
+.tooth {
+  width: 8px; height: 16px; background: #555; border-radius: 0 0 3px 3px;
+  animation: chew 0.3s infinite alternate;
+}
+.tooth:nth-child(odd) { animation-direction: alternate-reverse; }
+@keyframes chew {
+  from { transform: translateY(-4px); }
+  to   { transform: translateY(4px); }
+}
+.strip-container {
+  position: absolute; top: 120px; left: 0; right: 0; bottom: 0; overflow: hidden;
+}
+.falling-strip {
+  position: absolute; top: 0;
+  width: 28px; height: 36px;
+  background: #F5E6C8; color: #1a0f07;
+  font-family: 'Courier Prime', monospace; font-size: 1rem; font-weight: bold;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 2px; opacity: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  animation: fallDown 1.4s ease-in forwards;
+}
+@keyframes fallDown {
+  0%   { transform: translateY(-20px); opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translateY(340px); opacity: 0.6; }
+}
+
+/* PLAYING */
+#screen-play { align-items: center; padding: 16px; }
+.playing-header {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 16px; padding: 8px 20px;
+  background: rgba(44,24,16,0.8); border-radius: 8px; border: 1px solid #5a3a1a;
+  flex-wrap: wrap; justify-content: center;
+}
+.level-tag {
+  background: #8B1a1a; color: #F5E6C8;
+  padding: 2px 10px; border-radius: 12px; font-size: 0.85rem;
+}
+.verse-ref { font-family: 'Playfair Display', serif; color: #E8C99A; font-size: 1rem; }
+.word-hint { color: #888; font-size: 0.85rem; }
+
+.desk-surface {
+  background: linear-gradient(160deg, #3d2210 0%, #2c1810 50%, #221008 100%);
+  border-radius: 12px; border: 3px solid #5a3a1a;
+  padding: 32px 24px 20px;
+  width: 100%; max-width: 960px;
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.5), 0 8px 32px rgba(0,0,0,0.6);
+}
+.books-row {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  justify-content: center; align-items: flex-end; min-height: 160px;
+}
+
+/* BOOK */
+.book-wrapper {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  transition: transform 0.15s; cursor: pointer;
+  user-select: none; -webkit-user-select: none;
+}
+.book-wrapper:hover { transform: translateY(-4px); }
+.book-wrapper.selected { transform: translateY(-8px); }
+.book-wrapper.can-receive {
+  transform: translateY(-6px);
+  filter: drop-shadow(0 0 10px rgba(232,201,154,0.8));
+}
+.book-wrapper.drop-ready {
+  transform: translateY(-12px) scale(1.05);
+  filter: drop-shadow(0 0 16px #E8C99A);
+}
+
+/* Floating torn page ghost */
+#dragGhost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 999;
+  display: none;
+  width: 54px; height: 68px;
+  background: #F5E6C8;
+  border-radius: 3px 8px 3px 3px;
+  align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem; font-weight: 700;
+  color: #1a0f07;
+  box-shadow: 3px 4px 16px rgba(0,0,0,0.55);
+  transform-origin: top center;
+}
+#dragGhost.active { display: flex; }
+/* Torn top edge via clip-path */
+#dragGhost::before {
+  content: '';
+  position: absolute;
+  top: -4px; left: 0; right: 0; height: 8px;
+  background: #F5E6C8;
+  clip-path: polygon(0% 100%, 4% 20%, 9% 80%, 14% 10%, 20% 70%, 26% 0%, 32% 60%, 38% 15%, 44% 75%, 50% 5%, 56% 65%, 62% 20%, 68% 80%, 74% 10%, 80% 70%, 86% 0%, 92% 60%, 96% 30%, 100% 100%);
+}
+
+.book-3d {
+  display: flex; height: 130px;
+  filter: drop-shadow(2px 4px 8px rgba(0,0,0,0.6));
+  transition: filter 0.2s;
+}
+.book-3d:hover { filter: drop-shadow(2px 4px 12px rgba(232,201,154,0.4)); }
+.book-spine {
+  width: 16px; height: 100%; border-radius: 3px 0 0 3px;
+  display: flex; align-items: center; justify-content: center;
+}
+.spine-num {
+  color: rgba(255,255,255,0.4); font-size: 0.55rem;
+  writing-mode: vertical-rl; letter-spacing: 2px;
+}
+.book-cover {
+  width: 60px; height: 100%;
+  border-radius: 0 4px 4px 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative;
+  border-left: 1px solid rgba(255,255,255,0.1);
+  user-select: none;
+  touch-action: none;
+}
+.cover-letter {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem; font-weight: 700;
+  color: #F5E6C8; text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.cover-empty { font-size: 1.5rem; color: rgba(255,255,255,0.2); }
+.cover-spare { font-size: 0.5rem; letter-spacing: 2px; color: rgba(255,255,255,0.4); }
+.page-count {
+  position: absolute; bottom: 6px;
+  font-family: 'Courier Prime', monospace;
+  font-size: 0.6rem; color: rgba(255,255,255,0.4);
+}
+.book-pages {
+  width: 8px; height: calc(100% - 4px); margin: 2px 0;
+  background: #FFF8E7; border-radius: 0 2px 2px 0; opacity: 0.7;
+  box-shadow: inset -2px 0 4px rgba(0,0,0,0.15);
+}
+.book-label { font-size: 0.65rem; color: #888; letter-spacing: 1px; }
+
+.instructions {
+  margin-top: 20px; text-align: center;
+  color: #7a5a3a; font-size: 0.75rem; letter-spacing: 0.5px;
+}
+
+/* MODAL BASE */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: none; align-items: center; justify-content: center;
+  z-index: 100; padding: 16px;
+}
+.modal-overlay.open { display: flex; }
+
+/* READING MODAL */
+.reading-modal {
+  background: #2c1810; border: 3px solid #8B1a1a;
+  border-radius: 12px; width: 100%; max-width: 440px;
+  overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; color: #F5E6C8; font-size: 0.9rem;
+}
+.modal-close {
+  background: none; border: none; color: #F5E6C8;
+  cursor: pointer; font-size: 1rem; opacity: 0.7; transition: opacity 0.2s;
+}
+.modal-close:hover { opacity: 1; }
+.open-book {
+  margin: 16px; border-radius: 8px; overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.2);
+}
+.book-spread { display: flex; height: 160px; }
+.book-page {
+  flex: 1; display: flex; align-items: center;
+  justify-content: center; background: inherit;
+}
+.spine-center { width: 6px; opacity: 0.6; }
+.page-letter {
+  font-family: 'Playfair Display', serif;
+  font-size: 5rem; font-weight: 700;
+  color: #1a0f07; text-shadow: 1px 1px 0 rgba(0,0,0,0.15);
+}
+.spread-nav {
+  display: flex; align-items: center;
+  justify-content: space-between; padding: 8px 12px;
+  background: rgba(0,0,0,0.1);
+}
+.turn-btn {
+  background: rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.2);
+  color: #1a0f07; padding: 4px 10px; border-radius: 4px;
+  cursor: pointer; font-family: 'Special Elite', serif; font-size: 0.75rem;
+  transition: background 0.2s;
+}
+.turn-btn:disabled { opacity: 0.3; cursor: default; }
+.turn-btn:not(:disabled):hover { background: rgba(0,0,0,0.3); }
+.spread-indicator { font-family: 'Courier Prime', monospace; font-size: 0.8rem; color: #1a0f07; opacity: 0.6; }
+.move-controls { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.1); }
+.move-label { font-size: 0.75rem; color: #C8B090; display: block; margin-bottom: 8px; }
+.move-targets { display: flex; flex-wrap: wrap; gap: 6px; }
+.move-btn {
+  background: rgba(139,94,60,0.3); border: 1px solid #8B5E3C;
+  color: #E8C99A; padding: 4px 10px; border-radius: 6px;
+  cursor: pointer; font-family: 'Special Elite', serif; font-size: 0.75rem;
+  transition: background 0.2s;
+}
+.move-btn:hover { background: rgba(139,94,60,0.6); }
+
+/* WIN */
+.win-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+  display: none; align-items: center; justify-content: center;
+  z-index: 200; padding: 16px;
+}
+.win-overlay.open { display: flex; }
+.win-card {
+  background: linear-gradient(160deg, #2c1810, #1a0f07);
+  border: 3px solid #E8C99A; border-radius: 16px;
+  padding: 36px 32px; max-width: 420px; width: 100%;
+  text-align: center;
+  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 0 60px rgba(232,201,154,0.2);
+}
+@keyframes popIn {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.win-crown { font-size: 2.5rem; margin-bottom: 8px; }
+.win-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.2rem; color: #E8C99A; margin-bottom: 12px;
+}
+.win-verse {
+  font-family: 'Special Elite', serif; color: #F5E6C8;
+  font-size: 1rem; line-height: 1.6;
+  margin-bottom: 4px; font-style: italic;
+}
+.win-ref { color: #8B5E3C; font-size: 0.9rem; margin-bottom: 20px; }
+.win-times { display: flex; gap: 24px; justify-content: center; margin-bottom: 24px; }
+.time-stat { display: flex; flex-direction: column; gap: 4px; }
+.time-label { font-size: 0.7rem; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+.time-value { font-family: 'Courier Prime', monospace; font-size: 1.4rem; color: #E8C99A; }
+.win-actions { display: flex; gap: 12px; justify-content: center; }
+.win-btn {
+  padding: 10px 24px; border-radius: 8px; cursor: pointer;
+  font-family: 'Playfair Display', serif; font-size: 1rem; transition: background 0.2s;
+}
+.win-btn.primary { background: #8B1a1a; color: #F5E6C8; border: none; }
+.win-btn.primary:hover { background: #A52a2a; }
+.win-btn.secondary { background: transparent; color: #C8B090; border: 2px solid #5a3a1a; }
+.win-btn.secondary:hover { border-color: #8B5E3C; }
+
+/* LEADERBOARD */
+.lb-modal {
+  background: #2c1810; border: 2px solid #8B5E3C;
+  border-radius: 12px; padding: 24px;
+  width: 100%; max-width: 420px;
+  max-height: 80vh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.lb-modal h3 {
+  font-family: 'Playfair Display', serif;
+  color: #E8C99A; font-size: 1.3rem; text-align: center;
+}
+.lb-list { display: flex; flex-direction: column; gap: 3px; }
+.lb-row {
+  display: grid; grid-template-columns: 36px 1fr 80px;
+  gap: 8px; padding: 5px 8px; border-radius: 4px;
+  font-size: 0.78rem; background: rgba(0,0,0,0.2);
+}
+.lb-level { color: #E8C99A; font-weight: bold; }
+.lb-ref { color: #C8B090; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-time { font-family: 'Courier Prime', monospace; color: #6abf8a; text-align: right; }
+
+.book-wrapper.solver-from {
+  transform: translateY(-10px);
+  filter: drop-shadow(0 0 12px #ff9944);
+}
+.book-wrapper.solver-to {
+  transform: translateY(-8px) scale(1.06);
+  filter: drop-shadow(0 0 12px #44ccff);
+}
+.solver-btn {  background: transparent;
+  border: 1px dashed #5a3a1a;
+  color: #7a5a3a;
+  padding: 6px 18px;
+  border-radius: 6px;
+  font-family: 'Special Elite', serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: border-color 0.2s, color 0.2s;
+}
+.solver-btn:hover { border-color: #E8C99A; color: #E8C99A; }
+.solver-btn:disabled { opacity: 0.4; cursor: default; }
+::-webkit-scrollbar-track { background: #1a0f07; }
+::-webkit-scrollbar-thumb { background: #5a3a1a; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header class="game-header">
+  <div class="header-left">
+    <h1 class="game-title">📖 Scatter Torn</h1>
+  </div>
+  <div class="header-right">
+    <div class="timer-display" id="timerDisplay" style="display:none">0:00.00</div>
+    <button class="icon-btn" onclick="openLeaderboard()" title="Leaderboard">🏆</button>
+    <button class="icon-btn" onclick="showScreen('menu')" title="Menu">☰</button>
+  </div>
+</header>
+
+<!-- MENU -->
+<div id="screen-menu" class="screen active">
+  <div class="menu-card">
+    <div class="menu-icon">✝</div>
+    <h2>Scatter Torn</h2>
+    <p class="menu-desc">The scripture has been scattered. Reassemble the torn pages into the correct verse — one word per book, one letter per page.</p>
+    <div class="level-grid" id="levelGrid"></div>
+    <button class="start-btn" onclick="startLevel(0)">Begin — Level 0</button>
+  </div>
+</div>
+
+<!-- VERSE PREVIEW -->
+<div id="screen-verse" class="screen">
+  <div class="verse-preview-card">
+    <div class="preview-eyebrow">Memorise this verse</div>
+    <p class="preview-verse-text" id="previewText"></p>
+    <p class="preview-verse-ref" id="previewRef"></p>
+    <div class="preview-footer">
+      <div class="countdown-ring" id="countdownRing">
+        <svg width="52" height="52" viewBox="0 0 52 52">
+          <circle class="bg" cx="26" cy="26" r="22"/>
+          <circle id="countdownArc" cx="26" cy="26" r="22"
+                  stroke-dasharray="138.2" stroke-dashoffset="0"/>
+        </svg>
+        <div class="countdown-num" id="countdownNum">20</div>
+      </div>
+      <div>
+        <button class="skip-btn" onclick="skipPreview()">I'm ready — Shred it! ✂</button>
+        <p class="preview-hint">or wait for the timer</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHREDDING -->
+<div id="screen-shred" class="screen">
+  <div class="shredding-label" id="shredLabel">Shredding…</div>
+  <div class="shredder-scene">
+    <div class="shredder-machine">
+      <div class="shredder-top">
+        <div class="shredder-slot"><div class="paper-entering" id="paperWords"></div></div>
+      </div>
+      <div class="shredder-body">
+        <div class="shredder-brand">⚙ WORD-O-MATIC 3000</div>
+        <div class="shredder-teeth" id="teeth"></div>
+      </div>
+    </div>
+    <div class="strip-container" id="stripContainer"></div>
+  </div>
+</div>
+
+<!-- PLAYING -->
+<div id="screen-play" class="screen">
+  <div class="playing-header">
+    <span class="level-tag" id="playLevelTag">Level 0</span>
+    <span class="verse-ref" id="playVerseRef"></span>
+    <span class="word-hint" id="playWordHint"></span>
+  </div>
+  <div class="desk-surface">
+    <div class="books-row" id="booksRow"></div>
+    <div class="instructions">📖 Click a book to read &nbsp;·&nbsp; 🖱 Drag top page to another book</div>
+  </div>
+</div>
+
+<!-- READING MODAL -->
+<div class="modal-overlay" id="readModal">
+  <div class="reading-modal" id="readModalInner">
+    <div class="modal-header" id="readModalHeader">
+      <span id="readModalTitle">Book</span>
+      <button class="modal-close" onclick="closeReadModal()">✕</button>
+    </div>
+    <div class="open-book" id="openBook">
+      <div class="book-spread" id="bookSpread">
+        <div class="book-page left-page" id="leftPage"></div>
+        <div class="spine-center" id="spreadSpine"></div>
+        <div class="book-page right-page" id="rightPage"></div>
+      </div>
+      <div class="spread-nav">
+        <button class="turn-btn" id="btnPrev" onclick="turnPage(-1)">◀ Turn back</button>
+        <span class="spread-indicator" id="spreadIndicator">1 / 1</span>
+        <button class="turn-btn" id="btnNext" onclick="turnPage(1)">Turn ▶</button>
+      </div>
+    </div>
+    <div class="move-controls">
+      <span class="move-label">Move top page to:</span>
+      <div class="move-targets" id="moveTargets"></div>
+    </div>
+  </div>
+</div>
+
+<!-- WIN OVERLAY -->
+<div class="win-overlay" id="winOverlay">
+  <div class="win-card">
+    <div class="win-crown">✦</div>
+    <h2 class="win-title">Unscrambled!</h2>
+    <p class="win-verse" id="winVerse"></p>
+    <p class="win-ref" id="winRef"></p>
+    <div class="win-times">
+      <div class="time-stat">
+        <span class="time-label">Your time</span>
+        <span class="time-value" id="winTime"></span>
+      </div>
+      <div class="time-stat">
+        <span class="time-label">Best</span>
+        <span class="time-value" id="winBest"></span>
+      </div>
+    </div>
+    <div class="win-actions">
+      <button class="win-btn secondary" id="replayBtn" onclick="replayLevel()">Replay</button>
+      <button class="win-btn primary" id="nextBtn" onclick="nextLevel()">Next Level →</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="modal-overlay" id="lbOverlay" onclick="closeLb(event)">
+  <div class="lb-modal">
+    <h3>🏆 Best Times</h3>
+    <div class="lb-list" id="lbList"></div>
+    <button class="win-btn secondary" onclick="document.getElementById('lbOverlay').classList.remove('open')">Close</button>
+  </div>
+</div>
+
+<!-- DRAG GHOST -->
+<div id="dragGhost"></div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const VERSES_RAW = [
+  { ref: "John 11:35",       text: "Jesus wept" },
+  { ref: "Psalm 46:10",      text: "Be still" },
+  { ref: "1 John 4:8",       text: "God is love" },
+  { ref: "Psalm 118:24",     text: "This is the day" },
+  { ref: "Isaiah 40:31",     text: "Trust in the Lord" },
+  { ref: "Proverbs 3:5",     text: "Rejoice in the Lord" },
+  { ref: "Matthew 5:9",      text: "Blessed are the peacemakers" },
+  { ref: "Romans 8:28",      text: "All things work together" },
+  { ref: "Philippians 4:13", text: "I can do all things" },
+  { ref: "John 14:6",        text: "I am the way the truth" },
+  { ref: "Psalm 23:1",       text: "The Lord is my shepherd" },
+  { ref: "Proverbs 3:6",     text: "In all your ways acknowledge him" },
+  { ref: "Ephesians 2:8",    text: "For it is by grace you have been saved" },
+  { ref: "Psalm 119:105",    text: "Your word is a lamp to my feet" },
+  { ref: "Isaiah 41:10",     text: "Do not fear for I am with you" },
+  { ref: "Romans 12:12",     text: "Be joyful in hope patient in affliction" },
+  { ref: "Jeremiah 29:11",   text: "For I know the plans I have for you" },
+  { ref: "Matthew 11:28",    text: "Come to me all who are weary and burdened" },
+  { ref: "Romans 8:38",      text: "Nothing can separate us from the love of God" },
+  { ref: "Psalm 46:1",       text: "God is our refuge and strength an ever present help in trouble" },
+  { ref: "John 8:32",        text: "Then you will know the truth and the truth will set you free" },
+  { ref: "Isaiah 40:29",     text: "He gives strength to the weary and increases the power of the weak" },
+  { ref: "Psalm 23:4",       text: "Even though I walk through the darkest valley I will fear no evil" },
+  { ref: "Joshua 1:9",       text: "Be strong and courageous do not be afraid for the Lord your God is with you" },
+  { ref: "Matthew 6:33",     text: "But seek first his kingdom and his righteousness and all these things will be given to you" },
+  { ref: "Romans 5:8",       text: "But God demonstrates his own love for us in this while we were still sinners Christ died for us" },
+  { ref: "John 3:17",        text: "For God did not send his son into the world to condemn the world but to save the world through him" },
+  { ref: "Psalm 91:1",       text: "Whoever dwells in the shelter of the Most High will rest in the shadow of the Almighty" },
+  { ref: "Proverbs 22:6",    text: "Start children off on the way they should go and when they are old they will not turn from it" },
+  { ref: "Revelation 21:4",  text: "He will wipe every tear from their eyes there will be no more death or mourning or crying or pain" },
+];
+
+// Sort by word count
+const LEVELS = [...VERSES_RAW].sort((a,b) => words(a.text).length - words(b.text).length);
+
+const BOOK_COLORS = [
+  { spine:"#8B1a1a", cover:"#A52a2a" },
+  { spine:"#1a3a8B", cover:"#2a5aA5" },
+  { spine:"#1a5a2a", cover:"#2a7a3a" },
+  { spine:"#5a3a1a", cover:"#7a5a2a" },
+  { spine:"#3a1a5a", cover:"#5a2a7a" },
+  { spine:"#1a4a4a", cover:"#2a6a6a" },
+  { spine:"#5a1a3a", cover:"#7a2a5a" },
+  { spine:"#4a4a1a", cover:"#6a6a2a" },
+];
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function words(text) { return text.replace(/[^a-zA-Z ]/g,'').split(' ').filter(Boolean); }
+function shuffle(a) {
+  const b = [...a];
+  for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}
+  return b;
+}
+function fmt(ms) {
+  const s=Math.floor(ms/1000), m=Math.floor(s/60);
+  return `${m}:${String(s%60).padStart(2,'0')}.${String(ms%1000).slice(0,2)}`;
+}
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let state = {
+  level: 0,
+  books: [],       // [{id, pages:[], colorIdx}]
+  readBookId: null,
+  readPage: 0,
+  timerStart: null,
+  timerInterval: null,
+  elapsed: 0,
+  scores: {},
+};
+
+// ── STORAGE ───────────────────────────────────────────────────────────────────
+function loadScores() {
+  try { return JSON.parse(localStorage.getItem('ss_scores')||'{}'); } catch { return {}; }
+}
+function saveScore(lvl, ms) {
+  if(!state.scores[lvl] || ms < state.scores[lvl]) state.scores[lvl] = ms;
+  try { localStorage.setItem('ss_scores', JSON.stringify(state.scores)); } catch {}
+}
+
+// ── SCREENS ───────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+
+// ── MENU ──────────────────────────────────────────────────────────────────────
+function buildMenu() {
+  const grid = document.getElementById('levelGrid');
+  grid.innerHTML = '';
+  LEVELS.forEach((v,i)=>{
+    const wc = words(v.text).length;
+    const best = state.scores[i];
+    const btn = document.createElement('button');
+    btn.className = 'level-btn' + (best ? ' cleared':'');
+    btn.innerHTML = `<span class="level-num">${i}</span><span class="level-words">${wc}w</span>${best?`<span class="level-best">${fmt(best)}</span>`:''}`;
+    btn.onclick = () => startLevel(i);
+    grid.appendChild(btn);
+  });
+}
+
+// ── SHREDDER ──────────────────────────────────────────────────────────────────
+function runShredder(verse, onDone) {
+  const ws = words(verse.text);
+  document.getElementById('shredLabel').textContent = `Shredding: ${verse.ref}…`;
+
+  // Build teeth
+  const teeth = document.getElementById('teeth');
+  teeth.innerHTML = Array.from({length:8}).map(()=>'<div class="tooth"></div>').join('');
+
+  // Paper words
+  const pw = document.getElementById('paperWords');
+  pw.innerHTML = ws.map(w=>`<span class="paper-word">${w}</span>`).join('');
+
+  // Build shuffled strips
+  const allLetters = shuffle(ws.join('').toUpperCase().split(''));
+  const container = document.getElementById('stripContainer');
+  container.innerHTML = '';
+
+  allLetters.forEach((letter, i) => {
+    const el = document.createElement('div');
+    el.className = 'falling-strip';
+    const xPos = 10 + Math.random()*80;
+    const rot = (Math.random()-0.5)*50;
+    el.style.left = xPos+'%';
+    el.style.transform = `rotate(${rot}deg)`;
+    el.style.animationDelay = (300 + i*90)+'ms';
+    el.textContent = letter;
+    container.appendChild(el);
+  });
+
+  const totalMs = 300 + allLetters.length*90 + 1200;
+  setTimeout(onDone, totalMs);
+}
+
+// ── LEVEL ─────────────────────────────────────────────────────────────────────
+let previewTimeout = null;
+let previewInterval = null;
+
+function startLevel(idx) {
+  stopTimer();
+  clearTimeout(previewTimeout);
+  clearInterval(previewInterval);
+
+  state.level = idx;
+  state.scores = loadScores();
+  const verse = LEVELS[idx];
+  const ws = words(verse.text);
+
+  // Gather all letters from all words, shuffle them, then deal into books by capacity
+  const allLetters = shuffle(ws.join('').toUpperCase().split(''));
+  let letterIdx = 0;
+  state.books = ws.map((w, i) => ({
+    id: 'book-'+i,
+    pages: allLetters.slice(letterIdx, letterIdx += w.length),
+    maxPages: w.length,
+    colorIdx: i,
+  }));
+  // Spare: starts empty, capacity = number of words (grows in ensureSolvable if needed)
+  state.books.push({ id:'spare', pages:[], maxPages: ws.length, colorIdx: state.books.length });
+
+  // Guarantee solvability — adds extra spare books if needed
+  ensureSolvable();
+
+  state.readBookId = null;
+  state.readPage = 0;
+
+  // Show verse preview — duration scales with verse length (10–30s)
+  const wc = ws.length;
+  const previewSecs = Math.min(30, Math.max(10, Math.round(wc * 1.4)));
+  showVersePreview(verse, previewSecs, launchShredder);
+}
+
+function showVersePreview(verse, secs, onDone) {
+  document.getElementById('previewText').textContent = '\u201C' + verse.text + '\u201D';
+  document.getElementById('previewRef').textContent = '\u2014 ' + verse.ref;
+  showScreen('verse');
+
+  const circumference = 138.2;
+  const arc = document.getElementById('countdownArc');
+  const num = document.getElementById('countdownNum');
+  arc.style.strokeDashoffset = '0';
+  num.textContent = secs;
+
+  let remaining = secs;
+  // Tick every second
+  previewInterval = setInterval(() => {
+    remaining--;
+    num.textContent = remaining;
+    const offset = circumference * (1 - remaining / secs);
+    arc.style.strokeDashoffset = offset;
+    if (remaining <= 0) {
+      clearInterval(previewInterval);
+      onDone();
+    }
+  }, 1000);
+}
+
+function skipPreview() {
+  clearInterval(previewInterval);
+  clearTimeout(previewTimeout);
+  launchShredder();
+}
+
+function launchShredder() {
+  const verse = LEVELS[state.level];
+  showScreen('shred');
+  runShredder(verse, () => {
+    showScreen('play');
+    renderPlayHeader();
+    renderBooks();
+    startTimer();
+  });
+}
+
+function replayLevel() {
+  document.getElementById('winOverlay').classList.remove('open');
+  startLevel(state.level);
+}
+function nextLevel() {
+  document.getElementById('winOverlay').classList.remove('open');
+  startLevel(state.level+1);
+}
+
+// ── TIMER ─────────────────────────────────────────────────────────────────────
+function startTimer() {
+  const td = document.getElementById('timerDisplay');
+  td.style.display = '';
+  state.timerStart = Date.now();
+  state.elapsed = 0;
+  clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(()=>{
+    state.elapsed = Date.now()-state.timerStart;
+    td.textContent = fmt(state.elapsed);
+  }, 50);
+}
+function stopTimer() {
+  clearInterval(state.timerInterval);
+  state.timerInterval = null;
+}
+
+// ── RENDER PLAY ───────────────────────────────────────────────────────────────
+function renderPlayHeader() {
+  const verse = LEVELS[state.level];
+  const wc = words(verse.text).length;
+  document.getElementById('playLevelTag').textContent = 'Level '+state.level;
+  document.getElementById('playVerseRef').textContent = verse.ref;
+  document.getElementById('playWordHint').textContent = wc+' words';
+}
+
+function renderBooks() {
+  const row = document.getElementById('booksRow');
+  row.innerHTML = '';
+  state.books.forEach((book, i)=>{
+    row.appendChild(buildBookEl(book, i));
+  });
+}
+
+function buildBookEl(book, idx) {
+  const isSpare = book.id.startsWith('spare');
+  const color = BOOK_COLORS[book.colorIdx % BOOK_COLORS.length];
+  const coverLetter = book.pages.length > 0 ? book.pages[0] : null;
+  const canTear = book.pages.length > 0;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'book-wrapper';
+  wrapper.dataset.bookId = book.id;
+
+  wrapper.innerHTML = `
+    <div class="book-3d">
+      <div class="book-spine" style="background:${color.spine}">
+        ${!isSpare ? `<span class="spine-num">${idx+1}</span>` : ''}
+      </div>
+      <div class="book-cover" style="background:${isSpare ? '#555' : color.cover}">
+        ${coverLetter
+          ? `<span class="cover-letter">${coverLetter}</span>`
+          : isSpare
+            ? '<span class="cover-spare">SPARE</span>'
+            : '<span class="cover-empty">—</span>'}
+        <span class="page-count">${book.pages.length}/${book.maxPages}</span>
+      </div>
+      <div class="book-pages" style="background:${isSpare ? '#aaa' : '#FFF8E7'}"></div>
+    </div>
+    ${isSpare ? '<div class="book-label">Spare</div>' : ''}
+  `;
+
+  const cover = wrapper.querySelector('.book-cover');
+
+  if (canTear) {
+    cover.style.cursor = 'grab';
+    cover.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      startTear(book.id, coverLetter, e);
+    });
+  }
+
+  // Click to read (only fires if not a drag)
+  wrapper.addEventListener('click', e => {
+    if (drag.active) return;
+    openReadModal(book.id);
+  });
+
+  return wrapper;
+}
+
+// ── TEAR / DRAG ENGINE ────────────────────────────────────────────────────────
+const drag = {
+  active: false,
+  fromId: null,
+  letter: null,
+  startX: 0, startY: 0,
+  ghost: null,
+  hoveredBookId: null,   // tracked during move, used on release
+};
+
+function startTear(bookId, letter, e) {
+  drag.active = false;
+  drag.fromId = bookId;
+  drag.letter = letter;
+  drag.startX = e.clientX;
+  drag.startY = e.clientY;
+  drag.hoveredBookId = null;
+
+  const ghost = document.getElementById('dragGhost');
+  ghost.textContent = letter;
+  ghost.classList.remove('active');
+  ghost.style.left = (e.clientX - 27) + 'px';
+  ghost.style.top  = (e.clientY - 34) + 'px';
+  drag.ghost = ghost;
+
+  // Capture pointer so moves are always delivered even if finger slides off element
+  try { e.target.setPointerCapture(e.pointerId); } catch(_) {}
+
+  window.addEventListener('pointermove', onTearMove);
+  window.addEventListener('pointerup',   onTearUp);
+  window.addEventListener('pointercancel', onTearCancel);
+}
+
+function getClientXY(e) {
+  return { x: e.clientX, y: e.clientY };
+}
+
+function onTearMove(e) {
+  const { x, y } = getClientXY(e);
+  const dx = x - drag.startX;
+  const dy = y - drag.startY;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+
+  // Commit drag after 6px movement
+  if (!drag.active && dist > 6) {
+    drag.active = true;
+    drag.ghost.classList.add('active');
+    // Only highlight books that aren't full
+    document.querySelectorAll('.book-wrapper').forEach(w => {
+      if (w.dataset.bookId === drag.fromId) return;
+      const book = state.books.find(b => b.id === w.dataset.bookId);
+      if (book && book.pages.length < book.maxPages) w.classList.add('can-receive');
+    });
+  }
+
+  if (!drag.active) return;
+
+  // Position ghost centred on pointer, slight rotation follow
+  const rot = Math.max(-22, Math.min(22, dx * 0.08));
+  drag.ghost.style.left = (x - 27) + 'px';
+  drag.ghost.style.top  = (y - 34) + 'px';
+  drag.ghost.style.transform = `rotate(${rot}deg)`;
+
+  // Highlight book directly under pointer and track it for release
+  document.querySelectorAll('.book-wrapper.can-receive').forEach(w => w.classList.remove('drop-ready'));
+  drag.hoveredBookId = null;
+  const target = getBookUnderPointer(x, y);
+  if (target) {
+    target.classList.add('drop-ready');
+    drag.hoveredBookId = target.dataset.bookId;
+  }
+}
+
+function onTearUp(e) {
+  const toId = drag.hoveredBookId;
+  cleanup();
+  if (!drag.active) return;
+
+  if (toId && toId !== drag.fromId) {
+    const targetEl = document.querySelector(`.book-wrapper[data-book-id="${toId}"]`);
+    if (targetEl) {
+      animatePageLand(targetEl, () => movePage(drag.fromId, toId));
+      return;
+    }
+  }
+  snapGhostBack();
+}
+
+function onTearCancel() { cleanup(); snapGhostBack(); }
+
+function cleanup() {
+  window.removeEventListener('pointermove', onTearMove);
+  window.removeEventListener('pointerup',   onTearUp);
+  window.removeEventListener('pointercancel', onTearCancel);
+  document.querySelectorAll('.book-wrapper').forEach(w => {
+    w.classList.remove('can-receive', 'drop-ready');
+  });
+}
+
+function snapGhostBack() {
+  const ghost = drag.ghost;
+  if (!ghost) return;
+  ghost.style.transition = 'opacity 0.25s, transform 0.25s';
+  ghost.style.opacity = '0';
+  ghost.style.transform += ' scale(0.5)';
+  setTimeout(() => {
+    ghost.classList.remove('active');
+    ghost.style.transition = '';
+    ghost.style.opacity = '';
+    ghost.style.transform = '';
+    drag.active = false;
+  }, 260);
+}
+
+function animatePageLand(targetEl, onDone) {
+  const ghost = drag.ghost;
+  const rect = targetEl.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2 - 27;
+  const cy = rect.top + 20;
+  ghost.style.transition = 'left 0.18s ease, top 0.18s ease, transform 0.18s ease, opacity 0.18s ease';
+  ghost.style.left = cx + 'px';
+  ghost.style.top  = cy + 'px';
+  ghost.style.transform = 'rotate(0deg) scale(0.7)';
+  ghost.style.opacity = '0';
+  setTimeout(() => {
+    ghost.classList.remove('active');
+    ghost.style.transition = '';
+    ghost.style.opacity = '';
+    ghost.style.transform = '';
+    drag.active = false;
+    onDone();
+  }, 200);
+}
+
+function getBookUnderPointer(x, y) {
+  const ghost = drag.ghost;
+  ghost.style.visibility = 'hidden';
+  const el = document.elementFromPoint(x, y);
+  ghost.style.visibility = '';
+  if (!el) return null;
+  return el.closest('.book-wrapper.can-receive');
+}
+
+// ── MOVE PAGE ─────────────────────────────────────────────────────────────────
+function movePage(fromId, toId) {
+  const from = state.books.find(b=>b.id===fromId);
+  const to   = state.books.find(b=>b.id===toId);
+  if(!from || !to || from.pages.length===0) return;
+  if(to.pages.length >= to.maxPages) return; // target is full
+  const page = from.pages.shift();
+  to.pages.unshift(page);
+  renderBooks();
+  checkWin();
+}
+
+// ── WIN CHECK ─────────────────────────────────────────────────────────────────
+function checkWin() {
+  const verse = LEVELS[state.level];
+  const ws = words(verse.text);
+  const wordBooks = state.books.filter(b => !b.id.startsWith('spare'));
+  if(wordBooks.length !== ws.length) return;
+  for(let i=0;i<ws.length;i++){
+    if((wordBooks[i]?.pages.join('')||'').toLowerCase() !== ws[i].toLowerCase()) return;
+  }
+  // Win!
+  stopTimer();
+  const t = state.elapsed;
+  saveScore(state.level, t);
+  showWin(t);
+}
+
+function showWin(t) {
+  const verse = LEVELS[state.level];
+  document.getElementById('winVerse').textContent = `"${verse.text}"`;
+  document.getElementById('winRef').textContent = `— ${verse.ref}`;
+  document.getElementById('winTime').textContent = fmt(t);
+  document.getElementById('winBest').textContent = fmt(state.scores[state.level]??t);
+  document.getElementById('nextBtn').style.display = state.level < LEVELS.length-1 ? '' : 'none';
+  document.getElementById('winOverlay').classList.add('open');
+}
+
+// ── READ MODAL ────────────────────────────────────────────────────────────────
+function openReadModal(bookId) {
+  const book = state.books.find(b=>b.id===bookId);
+  if(!book) return;
+  state.readBookId = bookId;
+  state.readPage = 0;
+
+  const isSpare = bookId.startsWith('spare');
+  const idx = state.books.indexOf(book);
+  const color = BOOK_COLORS[book.colorIdx % BOOK_COLORS.length];
+
+  document.getElementById('readModalHeader').style.background = isSpare?'#555':color.spine;
+  document.getElementById('readModalTitle').textContent = isSpare
+    ? `Spare${bookId === 'spare' ? '' : ' '+bookId.replace('spare','')} · ${book.pages.length}/${book.maxPages} pages`
+    : `Book ${idx+1} · ${book.pages.length} page${book.pages.length!==1?'s':''}/${book.maxPages}`;
+  const ob = document.getElementById('openBook');
+  ob.style.background = isSpare ? '#e0e0e0' : '#FFF8E7';
+  document.getElementById('spreadSpine').style.background = isSpare?'#999':color.spine;
+
+  renderSpread();
+  renderMoveTargets(book);
+  document.getElementById('readModal').classList.add('open');
+}
+
+function renderSpread() {
+  const book = state.books.find(b=>b.id===state.readBookId);
+  if(!book) return;
+  const pages = book.pages;
+  const totalSpreads = Math.max(1, Math.ceil(pages.length/2));
+  const li = pages[state.readPage*2]??null;
+  const ri = pages[state.readPage*2+1]??null;
+
+  document.getElementById('leftPage').innerHTML  = li ? `<span class="page-letter">${li}</span>` : '';
+  document.getElementById('rightPage').innerHTML = ri ? `<span class="page-letter">${ri}</span>` : '';
+  document.getElementById('spreadIndicator').textContent = `${state.readPage+1} / ${totalSpreads}`;
+  document.getElementById('btnPrev').disabled = state.readPage === 0;
+  document.getElementById('btnNext').disabled = state.readPage >= totalSpreads-1;
+}
+
+function renderMoveTargets(book) {
+  const targets = document.getElementById('moveTargets');
+  targets.innerHTML = '';
+  if(book.pages.length === 0) return;
+  state.books.forEach((b,i) => {
+    if(b.id === book.id) return;
+    if(b.pages.length >= b.maxPages) return; // full — skip
+    const btn = document.createElement('button');
+    btn.className = 'move-btn';
+    const isSpareBook = b.id.startsWith('spare');
+    const spareNum = b.id.replace('spare','');
+    btn.textContent = isSpareBook ? `Spare${spareNum ? ' '+spareNum : ''}` : `Book ${i+1}`;
+    btn.onclick = () => { movePage(book.id, b.id); closeReadModal(); };
+    targets.appendChild(btn);
+  });
+}
+
+function turnPage(dir) {
+  const book = state.books.find(b=>b.id===state.readBookId);
+  if(!book) return;
+  const total = Math.max(1, Math.ceil(book.pages.length/2));
+  state.readPage = Math.max(0, Math.min(total-1, state.readPage+dir));
+  renderSpread();
+}
+
+function closeReadModal() {
+  document.getElementById('readModal').classList.remove('open');
+  state.readBookId = null;
+}
+
+// ── LEADERBOARD ───────────────────────────────────────────────────────────────
+function openLeaderboard() {
+  const list = document.getElementById('lbList');
+  list.innerHTML = '';
+  LEVELS.forEach((v,i)=>{
+    const best = state.scores[i];
+    const row = document.createElement('div');
+    row.className = 'lb-row';
+    row.innerHTML = `<span class="lb-level">${i}</span><span class="lb-ref">${v.ref}</span><span class="lb-time">${best?fmt(best):'—'}</span>`;
+    list.appendChild(row);
+  });
+  document.getElementById('lbOverlay').classList.add('open');
+}
+function closeLb(e) {
+  if(e.target === document.getElementById('lbOverlay'))
+    document.getElementById('lbOverlay').classList.remove('open');
+}
+
+// ── SOLVER ────────────────────────────────────────────────────────────────────
+// Algorithm: evacuate-and-refill, one word-slot at a time.
+//
+//   For slot i:
+//     1. EVACUATE: move all pages currently in book-i to spare.
+//     2. FILL bottom-up: for pos = word.length-1 down to 0:
+//          find letter word[pos] anywhere (other books or spare),
+//          unbury it (park pages above it to spare, move letter to book-i, restore).
+//
+//   After fill, book-i reads top→bottom = word[0]..word[len-1].
+//
+//   Spare capacity needed: enough to hold all letters of the largest word
+//   (evacuate step) PLUS headroom for unburying during fill.
+//   Minimum spare = maxWordLen. ensureSolvable sets this exactly.
+//   No second spare book should ever be needed, but we add spare2 with 2 pages
+//   as a safety net if somehow the solver still fails.
+
+function buildSolverMoves(booksArray) {
+  const verse = LEVELS[state.level];
+  const ws    = words(verse.text);
+
+  const sim = booksArray.map(b => ({ id: b.id, pages: [...b.pages], maxPages: b.maxPages }));
+  const spares = sim.filter(b =>  b.id.startsWith('spare'));
+  const wBooks = sim.filter(b => !b.id.startsWith('spare'));
+  if (!spares.length || wBooks.length !== ws.length) return null;
+
+  const moves = [];
+
+  function spareRoom() {
+    return spares.reduce((s, sp) => s + (sp.maxPages - sp.pages.length), 0);
+  }
+
+  function mv(fromId, toId) {
+    const from = sim.find(b => b.id === fromId);
+    const to   = sim.find(b => b.id === toId);
+    if (!from || !to || from.pages.length === 0) return false;
+    if (to.pages.length >= to.maxPages) return false;
+    to.pages.unshift(from.pages.shift());
+    moves.push({ fromId, toId });
+    return true;
+  }
+
+  function pushSpare(bookId) {
+    for (const sp of spares) {
+      if (sp.pages.length < sp.maxPages) return mv(bookId, sp.id);
+    }
+    return false;
+  }
+
+  function popSpare(bookId) {
+    // LIFO: pop from spare with most pages (most recently active).
+    let best = null;
+    for (const sp of spares) {
+      if (sp.pages.length > 0 && (!best || sp.pages.length > best.pages.length)) best = sp;
+    }
+    return best ? mv(best.id, bookId) : false;
+  }
+
+  for (let slot = 0; slot < ws.length; slot++) {
+    const word  = ws[slot].toUpperCase();
+    const tgtId = 'book-' + slot;
+    const tgt   = sim.find(b => b.id === tgtId);
+
+    // Step 1: Evacuate book-slot to spare.
+    const evCount = tgt.pages.length;
+    if (spareRoom() < evCount) return null;
+    for (let i = 0; i < evCount; i++) {
+      if (!pushSpare(tgtId)) return null;
+    }
+
+    // Step 2: Fill book-slot bottom-up (last letter → first letter).
+    for (let pos = word.length - 1; pos >= 0; pos--) {
+      const letter = word[pos];
+
+      // Find letter in any book except tgt (tgt is empty).
+      let srcId = null, srcDepth = 0;
+      for (const bk of sim) {
+        if (bk.id === tgtId) continue;
+        for (let d = 0; d < bk.pages.length; d++) {
+          if (bk.pages[d] === letter) { srcId = bk.id; srcDepth = d; break; }
+        }
+        if (srcId) break;
+      }
+      if (!srcId) return null;
+
+      // Need srcDepth spare slots to unbury.
+      if (spareRoom() < srcDepth) return null;
+
+      // Park pages above letter, move letter to tgt, restore.
+      for (let i = 0; i < srcDepth; i++) {
+        if (!pushSpare(srcId)) return null;
+      }
+      if (!mv(srcId, tgtId)) return null;
+      for (let i = 0; i < srcDepth; i++) {
+        if (!popSpare(srcId)) return null;
+      }
+    }
+    // book-slot now spells word top→bottom. ✓
+  }
+
+  return moves;
+}
+
+// ensureSolvable: set spare.maxPages = maxWordLen (minimum to evacuate any book).
+// Safety net: if solver still returns null, add spare2 with 2 pages.
+function ensureSolvable() {
+  const verse = LEVELS[state.level];
+  const ws    = words(verse.text);
+  const maxWordLen = Math.max(...ws.map(w => w.length));
+
+  const spare = state.books.find(b => b.id === 'spare');
+  spare.maxPages = maxWordLen;           // exact minimum needed
+  if (buildSolverMoves(state.books) !== null) return;
+
+  // Safety net: add spare2 with 2 pages, grow up to maxWordLen
+  const spare2 = { id: 'spare2', pages: [], maxPages: 2, colorIdx: state.books.length };
+  state.books.push(spare2);
+  for (; spare2.maxPages <= maxWordLen; spare2.maxPages++) {
+    if (buildSolverMoves(state.books) !== null) return;
+  }
+}
+
+
+let solverRunning = false;
+
+function runSolver() {
+  if (solverRunning) return;
+  const btn = document.getElementById('solverBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Solving…';
+  stopTimer();
+
+  const moves = buildSolverMoves(state.books);
+  if (!moves || !moves.length) {
+    if (!moves) {
+      btn.textContent = '❌ Could not solve';
+      return;
+    }
+    btn.textContent = '✓ Already solved!';
+    checkWin();
+    return;
+  }
+
+  solverRunning = true;
+  const DELAY = 420;
+
+  function step(i) {
+    if (i >= moves.length) {
+      solverRunning = false;
+      btn.disabled = false;
+      btn.textContent = '🔍 Solve it for me';
+      checkWin();
+      return;
+    }
+    const { fromId, toId } = moves[i];
+    const fromEl = document.querySelector(`.book-wrapper[data-book-id="${fromId}"]`);
+    const toEl   = document.querySelector(`.book-wrapper[data-book-id="${toId}"]`);
+    if (fromEl) fromEl.classList.add('solver-from');
+    if (toEl)   toEl.classList.add('solver-to');
+
+    setTimeout(() => {
+      if (fromEl) fromEl.classList.remove('solver-from');
+      if (toEl)   toEl.classList.remove('solver-to');
+      movePage(fromId, toId);
+      setTimeout(() => step(i + 1), DELAY * 0.3);
+    }, DELAY * 0.7);
+  }
+
+  step(0);
+}
+
+
+state.scores = loadScores();
+buildMenu();
+</script>
+</body>
+</html>

@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Hurdy-Gurdy</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=IM+Fell+English:ital@0;1&display=swap');
+
+  :root {
+    --wood-dark:    #1C0F07;
+    --wood-mid:     #4A2510;
+    --wood-light:   #7A4828;
+    --amber:        #C8820A;
+    --amber-glow:   rgba(200,130,10,0.4);
+    --ivory:        #F0E2C0;
+    --ivory-dim:    #C8B48A;
+    --black-key:    #160C04;
+    --parchment:    #E5D09A;
+    --drone-line:   #D4A017;
+    --screen-bg:    #0E0804;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; touch-action: none; }
+  html, body { width:100%; height:100%; overflow:hidden; background:var(--screen-bg); font-family:'IM Fell English',serif; color:var(--parchment); }
+
+  #app { position:fixed; inset:0; display:flex; flex-direction:column; }
+
+  /* TOP */
+  #top-panel { flex:1; min-height:0; display:flex; flex-direction:row; overflow:hidden; }
+
+  /* LEFT info */
+  #left-panel {
+    flex:1; display:flex; flex-direction:column; justify-content:center;
+    padding:16px 10px 16px 14px; gap:9px;
+    background:linear-gradient(160deg,var(--wood-mid) 0%,var(--wood-dark) 100%);
+    border-right:2px solid var(--wood-light); position:relative; overflow:hidden;
+  }
+  #left-panel::before {
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background:repeating-linear-gradient(95deg,transparent 0px,transparent 22px,rgba(255,255,255,0.012) 22px,rgba(255,255,255,0.012) 23px);
+  }
+  .instrument-title { font-family:'UnifrakturMaguntia',cursive; font-size:clamp(1rem,4vw,1.5rem); color:var(--amber); text-shadow:0 0 14px var(--amber-glow); line-height:1; margin-bottom:2px; }
+  .drone-label { font-size:0.58rem; text-transform:uppercase; letter-spacing:0.15em; color:var(--ivory-dim); margin-bottom:2px; }
+  .string-row { display:flex; align-items:center; gap:8px; }
+  .sname { font-size:0.58rem; font-style:italic; color:var(--ivory-dim); width:50px; flex-shrink:0; }
+  .sline { flex:1; height:2px; background:linear-gradient(90deg,transparent 0%,var(--drone-line) 20%,var(--drone-line) 80%,transparent 100%); border-radius:2px; }
+  .sline.vib { animation:vib 0.055s ease-in-out infinite alternate; box-shadow:0 0 5px var(--drone-line); }
+  @keyframes vib { from{transform:translateY(-1.5px)} to{transform:translateY(1.5px)} }
+
+  #chord-display {
+    background:rgba(0,0,0,0.4); border:1px solid rgba(200,130,10,0.3);
+    border-radius:6px; padding:7px 10px; min-height:52px;
+    display:flex; flex-direction:column; gap:2px;
+  }
+  #chord-name { font-size:1.1rem; color:var(--amber); font-style:italic; min-height:1.3em; }
+  #chord-notes { font-size:0.58rem; color:var(--ivory-dim); letter-spacing:0.05em; min-height:1em; }
+
+  #status { font-size:0.65rem; font-style:italic; color:var(--ivory-dim); min-height:1em; }
+  .toggle-row { display:flex; gap:6px; flex-wrap:wrap; }
+  .tog { font-family:'IM Fell English',serif; font-size:0.58rem; padding:3px 8px; border-radius:12px; border:1px solid var(--amber); background:transparent; color:var(--ivory-dim); cursor:pointer; }
+  .tog.on { background:rgba(200,130,10,0.2); color:var(--amber); }
+
+  /* KEY PANEL */
+  #key-panel { width:88px; background:var(--wood-dark); display:flex; flex-direction:row; align-items:stretch; overflow:hidden; }
+
+  .key-col { display:flex; flex-direction:column; align-items:stretch; }
+
+  #col-diatonic {
+    width:52px;
+    background:linear-gradient(90deg,#2a1506,var(--wood-dark));
+    border-right:2px solid rgba(200,130,10,0.15);
+    padding:3px 3px; gap:2px; justify-content:space-around;
+  }
+  #col-chromatic { width:36px; background:var(--wood-dark); padding:3px 3px; gap:2px; justify-content:space-around; }
+
+  .tkey {
+    border-radius:4px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    position:relative; -webkit-tap-highlight-color:transparent; user-select:none; flex:1; min-height:0;
+    transition:filter 0.06s;
+  }
+  .tkey.diat {
+    background:linear-gradient(180deg,var(--ivory) 0%,#d8c898 100%);
+    border:1.5px solid #8a6030; border-bottom:3px solid #5a3010; color:var(--wood-dark);
+  }
+  .tkey.diat.held {
+    background:linear-gradient(180deg,var(--amber) 0%,#9a6008 100%);
+    border-bottom-width:1.5px; box-shadow:0 0 10px var(--amber-glow); color:var(--wood-dark);
+  }
+  .tkey.chrom {
+    background:linear-gradient(180deg,#2e1a08 0%,var(--black-key) 100%);
+    border:1.5px solid #5a3010; border-bottom:3px solid #000; color:var(--amber);
+  }
+  .tkey.chrom.held {
+    background:linear-gradient(180deg,#7a4010,#2e1a08 100%);
+    border-bottom-width:1.5px; box-shadow:0 0 8px var(--amber-glow);
+  }
+  .tkey .klabel {
+    font-family:'IM Fell English',serif;
+    writing-mode:vertical-rl; text-orientation:mixed; transform:rotate(180deg);
+    font-size:0.58rem; font-weight:bold; pointer-events:none; line-height:1;
+  }
+
+  /* WHEEL PANEL */
+  #wheel-panel {
+    height:148px; flex-shrink:0;
+    background:linear-gradient(0deg,#0a0502,var(--wood-dark));
+    border-top:2px solid var(--wood-light);
+    display:flex; align-items:center; justify-content:space-around; padding:0 20px; gap:16px;
+  }
+  #wheel-wrap { position:relative; width:108px; height:108px; flex-shrink:0; }
+  #wheel {
+    width:108px; height:108px; border-radius:50%;
+    background:radial-gradient(circle at 38% 32%,var(--wood-light),var(--wood-mid) 55%,var(--wood-dark) 90%);
+    border:3px solid var(--wood-light);
+    box-shadow:0 4px 20px rgba(0,0,0,0.7),0 0 0 1px rgba(200,130,10,0.2);
+    position:relative;
+  }
+  #wheel.spin { animation:wspin 0.7s linear infinite; }
+  @keyframes wspin { to{transform:rotate(360deg)} }
+  .spoke {
+    position:absolute; top:50%; left:50%; height:2px; width:46%;
+    background:var(--wood-light); transform-origin:left center; border-radius:1px;
+  }
+  .hub {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:14px; height:14px; border-radius:50%;
+    background:var(--amber); box-shadow:0 0 8px var(--amber-glow); z-index:2;
+  }
+  #wheel::before { content:''; position:absolute; inset:7px; border-radius:50%; border:1px solid rgba(200,130,10,0.2); }
+  #crank-handle {
+    position:absolute; right:-24px; top:50%; transform:translateY(-50%);
+    width:26px; height:13px;
+    background:linear-gradient(180deg,var(--wood-light),var(--wood-mid));
+    border-radius:5px; border:1.5px solid var(--wood-light); box-shadow:0 2px 6px rgba(0,0,0,0.5);
+  }
+
+  #wheel-controls { display:flex; flex-direction:column; gap:10px; align-items:flex-start; flex:1; }
+
+  /* Hold-to-crank button */
+  #crank-btn {
+    font-family:'UnifrakturMaguntia',cursive; font-size:1.05rem;
+    background:linear-gradient(180deg,var(--wood-light),var(--wood-mid));
+    border:2px solid var(--amber); border-radius:22px; color:var(--parchment);
+    padding:8px 18px; cursor:pointer; white-space:nowrap;
+    box-shadow:0 2px 10px rgba(0,0,0,0.5),0 0 10px var(--amber-glow);
+    transition:all 0.1s; user-select:none; -webkit-tap-highlight-color:transparent;
+  }
+  #crank-btn.active {
+    background:linear-gradient(180deg,var(--amber),#8a5a06);
+    color:var(--wood-dark); box-shadow:0 0 18px var(--amber-glow);
+  }
+  .hint-text { font-size:0.58rem; color:var(--ivory-dim); opacity:0.7; font-style:italic; }
+
+  .vol-row { display:flex; align-items:center; gap:8px; }
+  .vol-row label { font-size:0.62rem; color:var(--ivory-dim); }
+  input[type=range] { accent-color:var(--amber); width:85px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="top-panel">
+    <div id="left-panel">
+      <div class="instrument-title">Hurdy-Gurdy</div>
+
+      <div class="drone-label">Drone Strings</div>
+      <div class="string-row"><span class="sname">Chanter D3</span><div class="sline" id="s0"></div></div>
+      <div class="string-row"><span class="sname">Gros D2</span><div class="sline" id="s1"></div></div>
+      <div class="string-row"><span class="sname">Trompette</span><div class="sline" id="s2"></div></div>
+      <div class="string-row"><span class="sname">Mouche A2</span><div class="sline" id="s3"></div></div>
+
+      <div id="chord-display">
+        <div id="chord-name">—</div>
+        <div id="chord-notes"></div>
+      </div>
+
+      <div class="toggle-row">
+        <button class="tog on" id="tog-drone">Drone</button>
+        <button class="tog on" id="tog-tromp">Trompette</button>
+      </div>
+      <div id="status">Hold the crank to begin…</div>
+    </div>
+
+    <div id="key-panel">
+      <div class="key-col" id="col-diatonic"></div>
+      <div class="key-col" id="col-chromatic"></div>
+    </div>
+  </div>
+
+  <div id="wheel-panel">
+    <div id="wheel-wrap">
+      <div id="wheel">
+        <div class="spoke" style="transform:translateY(-50%) rotate(0deg)"></div>
+        <div class="spoke" style="transform:translateY(-50%) rotate(51deg)"></div>
+        <div class="spoke" style="transform:translateY(-50%) rotate(102deg)"></div>
+        <div class="spoke" style="transform:translateY(-50%) rotate(153deg)"></div>
+        <div class="spoke" style="transform:translateY(-50%) rotate(204deg)"></div>
+        <div class="spoke" style="transform:translateY(-50%) rotate(255deg)"></div>
+        <div class="spoke" style="transform:translateY(-50%) rotate(306deg)"></div>
+        <div class="hub"></div>
+      </div>
+      <div id="crank-handle"></div>
+    </div>
+    <div id="wheel-controls">
+      <button id="crank-btn">⟳ Hold to Crank</button>
+      <div class="hint-text">hold down to turn wheel</div>
+      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+        <button id="mozart-btn" class="tog">♩ Mozart</button>
+        <select id="song-select" style="font-family:'IM Fell English',serif;font-size:0.58rem;background:#1C0F07;color:#C8B48A;border:1px solid #C8820A;border-radius:8px;padding:3px 5px;max-width:110px;">
+          <option value="0">Eine Kleine</option>
+          <option value="1">Turkish March</option>
+          <option value="2">Symphony 40</option>
+        </select>
+      </div>
+      <div class="vol-row">
+        <label>Vol</label>
+        <input type="range" id="vol" min="0" max="1" step="0.02" value="0.72">
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+function midiHz(m){ return 440*Math.pow(2,(m-69)/12); }
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+function midiName(m){ return NOTE_NAMES[m%12]+(Math.floor(m/12)-1); }
+
+// ── Master output chain ───────────────────────────────────────────
+const masterGain = AC.createGain();
+masterGain.gain.value = 0.75;
+masterGain.connect(AC.destination);
+
+// Warm room reverb
+const conv = AC.createConvolver();
+(()=>{
+  const len = AC.sampleRate*1.6, buf = AC.createBuffer(2,len,AC.sampleRate);
+  for(let c=0;c<2;c++){
+    const d=buf.getChannelData(c);
+    for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.2)*0.7;
+  }
+  conv.buffer=buf;
+})();
+const revG = AC.createGain(); revG.gain.value=0.22;
+conv.connect(revG); revG.connect(masterGain);
+
+// ── BOWED STRING SYNTHESIS ────────────────────────────────────────
+// A real hurdy-gurdy wheel bows the chanter string continuously.
+// We model this as:
+//   sawtooth (raw bow energy)
+//   → waveshaper (soft clip = bow hair friction nonlinearity)
+//   → bandpass filter (resonant string body, sweeps with pitch)
+//   → lowpass (remove harshness above ~3kHz, violin rolloff)
+//   → vibrato LFO (slight natural pitch wobble)
+//   → body resonance peaking filter (violin body ~280Hz bump)
+//
+// Keys act as tangents: they shift the chanter oscillator frequency
+// and also push the filter center up to match, brightening the tone
+// exactly like stopping a string.
+
+// Vibrato LFO — slow, subtle
+const vibratoLFO = AC.createOscillator();
+vibratoLFO.frequency.value = 5.5;
+vibratoLFO.start();
+const vibratoDepth = AC.createGain();
+vibratoDepth.gain.value = 0; // off until wheel running
+vibratoLFO.connect(vibratoDepth);
+
+// Chanter oscillator (the bowed melody string)
+const chanterOsc = AC.createOscillator();
+chanterOsc.type = 'sawtooth';
+chanterOsc.frequency.value = midiHz(50); // open D3
+vibratoDepth.connect(chanterOsc.detune); // detune in cents
+
+// Waveshaper — bow friction soft-clip
+const shaper = AC.createWaveShaper();
+(()=>{
+  const n=512, c=new Float32Array(n);
+  for(let i=0;i<n;i++){
+    const x=(i*2/(n-1))-1;
+    // Asymmetric soft clip: models bow stick-slip
+    c[i] = x < 0
+      ? Math.tanh(x * 2.2) * 0.85
+      : Math.tanh(x * 1.6) * 0.95;
+  }
+  shaper.curve=c; shaper.oversample='4x';
+})();
+
+// Pre-shaper gain to drive into waveshaper
+const driveGain = AC.createGain();
+driveGain.gain.value = 2.8;
+
+// Bandpass — string resonance. Center tracks pitch.
+const bpf = AC.createBiquadFilter();
+bpf.type = 'bandpass';
+bpf.frequency.value = midiHz(50);
+bpf.Q.value = 3.2;
+
+// Body resonance — violin body peak around 280Hz
+const bodyPeak = AC.createBiquadFilter();
+bodyPeak.type = 'peaking';
+bodyPeak.frequency.value = 280;
+bodyPeak.gain.value = 7;
+bodyPeak.Q.value = 1.8;
+
+// Lowpass — remove digital harshness, keep violin warmth
+const lpf = AC.createBiquadFilter();
+lpf.type = 'lowpass';
+lpf.frequency.value = 3200;
+lpf.Q.value = 0.7;
+
+// Chanter output gain (envelope)
+const chanterGain = AC.createGain();
+chanterGain.gain.value = 0;
+
+// Chain: osc → driveGain → shaper → bpf → bodyPeak → lpf → chanterGain → out
+chanterOsc.connect(driveGain);
+driveGain.connect(shaper);
+shaper.connect(bpf);
+bpf.connect(bodyPeak);
+bodyPeak.connect(lpf);
+lpf.connect(chanterGain);
+chanterGain.connect(masterGain);
+chanterGain.connect(conv);
+chanterOsc.start();
+
+// ── TROMPETTE STRING ──────────────────────────────────────────────
+// The trompette is a buzzing drone string on a real hurdy-gurdy.
+// Its bridge (the "chien") rattles and buzzes when the wheel turns fast.
+// We model it as a sawtooth → ring modulator buzz → lowpass.
+const tromp = AC.createOscillator();
+tromp.type = 'sawtooth';
+tromp.frequency.value = midiHz(50); // same pitch as chanter when key held, else drone D
+
+// Buzz ring mod: a high oscillator amplitude-modulates the trompette
+const tBuzzOsc = AC.createOscillator();
+tBuzzOsc.frequency.value = 80; // chien rattle frequency
+tBuzzOsc.type = 'square';
+const tBuzzGain = AC.createGain();
+tBuzzGain.gain.value = 0.5;
+tBuzzOsc.connect(tBuzzGain);
+
+const tRingGain = AC.createGain();
+tRingGain.gain.value = 0; // modulated by buzz
+tBuzzGain.connect(tRingGain.gain); // ring mod
+tromp.connect(tRingGain);
+
+const tLpf = AC.createBiquadFilter();
+tLpf.type = 'lowpass';
+tLpf.frequency.value = 900;
+
+const tGain = AC.createGain();
+tGain.gain.value = 0;
+
+tRingGain.connect(tLpf);
+tLpf.connect(tGain);
+tGain.connect(masterGain);
+tGain.connect(conv);
+tromp.start(); tBuzzOsc.start();
+
+// ── SYMPATHETIC DRONE STRINGS ─────────────────────────────────────
+// Open strings that resonate continuously — much quieter, just air
+const DRONES = [
+  {id:'s1', midi:38, wave:'sawtooth', gv:0.018}, // D2 gros
+  {id:'s3', midi:45, wave:'sawtooth', gv:0.015}, // A2 mouche
+];
+let droneNodes=[], droneEn=true, trompEn=true;
+
+function startSympatheticDrones(){
+  stopSympatheticDrones();
+  DRONES.forEach(d=>{
+    if(!droneEn) return;
+    const osc=AC.createOscillator(), g=AC.createGain();
+    osc.type=d.wave; osc.frequency.value=midiHz(d.midi);
+    osc.detune.value=(Math.random()-0.5)*6;
+    g.gain.value=d.gv;
+    osc.connect(g); g.connect(masterGain); g.connect(conv); osc.start();
+    droneNodes.push({osc,g});
+    document.getElementById(d.id)?.classList.add('vib');
+  });
+}
+function stopSympatheticDrones(){
+  droneNodes.forEach(({osc,g})=>{ try{g.gain.setTargetAtTime(0,AC.currentTime,0.1);setTimeout(()=>osc.stop(),600);}catch(e){} });
+  droneNodes=[];
+  document.querySelectorAll('.sline').forEach(e=>e.classList.remove('vib'));
+}
+
+// ── Wheel state ───────────────────────────────────────────────────
+let wheelOn = false;
+let currentMidi = 50; // open chanter pitch
+
+function wheelStart(){
+  if(wheelOn) return;
+  wheelOn = true;
+  vibratoDepth.gain.value = 6; // cents of vibrato
+
+  // Bring up chanter with slow bow-on attack
+  chanterGain.gain.cancelScheduledValues(AC.currentTime);
+  chanterGain.gain.setTargetAtTime(0.55, AC.currentTime, 0.18);
+
+  // Chanter string glows
+  document.getElementById('s0')?.classList.add('vib');
+
+  // Trompette buzz if enabled
+  if(trompEn){
+    tGain.gain.cancelScheduledValues(AC.currentTime);
+    tGain.gain.setTargetAtTime(0.28, AC.currentTime, 0.25);
+    document.getElementById('s2')?.classList.add('vib');
+  }
+
+  // Sympathetic drones
+  startSympatheticDrones();
+}
+
+function wheelStop(){
+  if(!wheelOn) return;
+  wheelOn = false;
+  vibratoDepth.gain.value = 0;
+
+  // Slow bow-off release
+  chanterGain.gain.cancelScheduledValues(AC.currentTime);
+  chanterGain.gain.setTargetAtTime(0, AC.currentTime, 0.3);
+
+  tGain.gain.cancelScheduledValues(AC.currentTime);
+  tGain.gain.setTargetAtTime(0, AC.currentTime, 0.2);
+
+  stopSympatheticDrones();
+  document.getElementById('s0')?.classList.remove('vib');
+  document.getElementById('s2')?.classList.remove('vib');
+}
+
+// ── Key / Tangent logic ───────────────────────────────────────────
+// When a key is pressed, it acts as a tangent:
+//   1. Shifts chanterOsc frequency to the key's MIDI note
+//   2. Shifts bpf center to match (brighter = higher stopped position)
+//   3. Shifts trompette to same pitch (it tracks on real instruments)
+// When released, reverts to open drone pitch (D3=50)
+
+// Chord map: what's displayed. The actual SOUND is the wheel string at that pitch.
+// Each key also has interval companions that add quiet harmony overtones.
+function mkChord(root, intervals, name){
+  return { name, midi: root, notes: intervals.map(i=>root+i) };
+}
+
+const CHORD_MAP = {
+  50: mkChord(50, [0,12,19],       'D'),
+  52: mkChord(52, [0,4,7],         'E maj'),
+  53: mkChord(53, [0,3,7],         'F min'),
+  55: mkChord(55, [0,5,7],         'G sus4'),
+  57: mkChord(57, [0,4,7,11],      'A maj7'),
+  59: mkChord(59, [0,3,7,10],      'B min7'),
+  60: mkChord(60, [0,4,7,10],      'C dom7'),
+  62: mkChord(62, [0,7,12],        "D' 8va"),
+  64: mkChord(64, [0,3,7],         "E' min"),
+  65: mkChord(65, [0,5,9],         "F' maj"),
+  67: mkChord(67, [0,4,7,9],       "G' add9"),
+  69: mkChord(69, [0,3,7],         "A' min"),
+  71: mkChord(71, [0,4,7,11],      "B' maj7"),
+  72: mkChord(72, [0,5,7],         "C' sus2"),
+  51: mkChord(51, [0,3,6,9],       'D# dim7'),
+  54: mkChord(54, [0,4,7,11],      'F# maj7'),
+  56: mkChord(56, [0,3,6,10],      'G# m7b5'),
+  58: mkChord(58, [0,4,7,9],       'A# 6'),
+  61: mkChord(61, [0,3,7,10],      'C# min7'),
+  63: mkChord(63, [0,3,6,9],       "D#' dim"),
+  66: mkChord(66, [0,4,8],         "F#' aug"),
+  68: mkChord(68, [0,2,7],         "G#' sus2"),
+  70: mkChord(70, [0,3,7,9],       "A#' m6"),
+  73: mkChord(73, [0,4,7,10],      "C#' 7"),
+};
+
+// Harmony overtone nodes (quiet companions to wheel string)
+let harmNodes = [];
+
+function pressKey(midi){
+  if(!wheelOn) return;
+  currentMidi = midi;
+
+  const hz = midiHz(midi);
+  const t  = AC.currentTime;
+  const GLIDE = 0.04; // fast pitch glide like tangent contact
+
+  // Shift chanter pitch
+  chanterOsc.frequency.setTargetAtTime(hz, t, GLIDE);
+
+  // Shift bandpass to track pitch — higher notes get brighter resonance
+  bpf.frequency.setTargetAtTime(hz * 1.5, t, GLIDE);
+
+  // Trompette tracks chanter
+  tromp.frequency.setTargetAtTime(hz, t, GLIDE);
+  tBuzzOsc.frequency.setTargetAtTime(60 + midi*0.8, t, GLIDE); // buzz pitch rises
+
+  // Harmony overtone clouds — soft triangle waves, very low gain
+  stopHarm();
+  const ch = CHORD_MAP[midi];
+  if(ch){
+    ch.notes.slice(1).forEach((n,i)=>{
+      const osc = AC.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = midiHz(n);
+      osc.detune.value = (Math.random()-0.5)*4;
+      const g = AC.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.04/(i+1), t+0.06);
+      osc.connect(g); g.connect(masterGain); g.connect(conv);
+      osc.start();
+      harmNodes.push({osc,g});
+    });
+    document.getElementById('chord-name').textContent = ch.name;
+    document.getElementById('chord-notes').textContent = ch.notes.map(midiName).join('  ');
+  }
+}
+
+function releaseKey(){
+  currentMidi = 50;
+  const hz = midiHz(50);
+  const t  = AC.currentTime;
+  const GLIDE = 0.07;
+
+  // Return to open pitch
+  chanterOsc.frequency.setTargetAtTime(hz, t, GLIDE);
+  bpf.frequency.setTargetAtTime(hz * 1.5, t, GLIDE);
+  tromp.frequency.setTargetAtTime(hz, t, GLIDE);
+  tBuzzOsc.frequency.setTargetAtTime(80, t, GLIDE);
+
+  stopHarm();
+  document.getElementById('chord-name').textContent = '—';
+  document.getElementById('chord-notes').textContent = '';
+}
+
+function stopHarm(){
+  harmNodes.forEach(({osc,g})=>{
+    try{ g.gain.setTargetAtTime(0,AC.currentTime,0.08); setTimeout(()=>osc.stop(),400); }catch(e){}
+  });
+  harmNodes=[];
+}
+
+// ── Keys ──────────────────────────────────────────────────────────
+const DIAT  = [50,52,53,55,57,59,60,62,64,65,67,69,71,72];
+const CHROM = [51,54,56,58,61,63,66,68,70,73];
+const DISPLAY = {
+  50:'D', 52:'E', 53:'F', 55:'G', 57:'A', 59:'B', 60:'C',
+  62:"D'",64:"E'",65:"F'",67:"G'",69:"A'",71:"B'",72:"C'",
+  51:'D#',54:'F#',56:'G#',58:'A#',61:'C#',
+  63:"D#'",66:"F#'",68:"G#'",70:"A#'",73:"C#'"
+};
+
+function makeKey(midi, cls, col){
+  const div = document.createElement('div');
+  div.className = `tkey ${cls}`;
+  const lbl = document.createElement('span');
+  lbl.className = 'klabel';
+  lbl.textContent = DISPLAY[midi]||'?';
+  div.appendChild(lbl);
+
+  function press(e){
+    e.preventDefault();
+    if(AC.state==='suspended') AC.resume();
+    div.classList.add('held');
+    pressKey(midi);
+    setStatus('♩ '+(CHORD_MAP[midi]?.name||''));
+  }
+  function release(e){
+    e.preventDefault();
+    div.classList.remove('held');
+    releaseKey();
+    setStatus(wheelOn ? 'Wheel turning… press a key' : 'Hold the crank to begin…');
+  }
+
+  div.addEventListener('touchstart',  press,   {passive:false});
+  div.addEventListener('touchend',    release, {passive:false});
+  div.addEventListener('touchcancel', release, {passive:false});
+  div.addEventListener('mousedown',   press,   {passive:false});
+  div.addEventListener('mouseup',     release);
+  div.addEventListener('mouseleave',  release);
+  col.appendChild(div);
+}
+
+const diatCol  = document.getElementById('col-diatonic');
+const chromCol = document.getElementById('col-chromatic');
+[...DIAT].reverse().forEach(m  => makeKey(m,'diat', diatCol));
+[...CHROM].reverse().forEach(m => makeKey(m,'chrom',chromCol));
+
+// ── Crank hold-to-run ─────────────────────────────────────────────
+const wheelEl  = document.getElementById('wheel');
+const crankBtn = document.getElementById('crank-btn');
+
+function crankStart(e){
+  e.preventDefault();
+  if(AC.state==='suspended') AC.resume();
+  wheelEl.classList.add('spin');
+  crankBtn.classList.add('active');
+  wheelStart();
+  setStatus('Wheel turning… press a key');
+}
+function crankStop(e){
+  e.preventDefault();
+  wheelEl.classList.remove('spin');
+  crankBtn.classList.remove('active');
+  wheelStop();
+  releaseKey();
+  setStatus('Hold the crank to begin…');
+}
+
+crankBtn.addEventListener('touchstart',  crankStart, {passive:false});
+crankBtn.addEventListener('touchend',    crankStop,  {passive:false});
+crankBtn.addEventListener('touchcancel', crankStop,  {passive:false});
+crankBtn.addEventListener('mousedown',   crankStart, {passive:false});
+crankBtn.addEventListener('mouseup',     crankStop);
+crankBtn.addEventListener('mouseleave',  crankStop);
+
+// ── Toggles ───────────────────────────────────────────────────────
+document.getElementById('tog-drone').addEventListener('click', function(){
+  droneEn=!droneEn; this.classList.toggle('on',droneEn);
+  if(wheelOn){ stopSympatheticDrones(); if(droneEn) startSympatheticDrones(); }
+});
+document.getElementById('tog-tromp').addEventListener('click', function(){
+  trompEn=!trompEn; this.classList.toggle('on',trompEn);
+  if(wheelOn){
+    if(trompEn){ tGain.gain.setTargetAtTime(0.28,AC.currentTime,0.2); document.getElementById('s2')?.classList.add('vib'); }
+    else        { tGain.gain.setTargetAtTime(0,AC.currentTime,0.15);   document.getElementById('s2')?.classList.remove('vib'); }
+  }
+});
+document.getElementById('vol').addEventListener('input', function(){
+  masterGain.gain.setTargetAtTime(+this.value,AC.currentTime,0.04);
+});
+
+function setStatus(t){ document.getElementById('status').textContent=t; }
+
+// ── Mozart Autoplay ───────────────────────────────────────────────
+// Notes encoded as [midiNote, durationMs]
+// Rest = midi 0. Tempo scaled to hurdy-gurdy feel (slightly slower).
+
+const BPM = 116;
+const Q   = 60000 / BPM;       // quarter note ms
+const E   = Q / 2;             // eighth
+const S   = Q / 4;             // sixteenth
+const H   = Q * 2;             // half
+const DQ  = Q * 1.5;           // dotted quarter
+
+const SONGS = [
+  {
+    title: 'Eine Kleine Nachtmusik',
+    // K.525 opening theme, transposed to D dorian range
+    notes: [
+      [62,E],[62,S],[62,S],[62,Q],[59,Q],
+      [62,Q],[64,E],[67,Q+S],[0,S],
+      [67,E],[66,S],[65,S],[64,Q],[0,S],[65,S],[0,S],
+      [65,E],[64,S],[63,S],[62,Q],[0,S],[62,S],[0,S],
+      [62,E],[64,S],[59,S],[62,Q],[60,Q],
+      [59,H],[0,Q],
+      [62,E],[62,S],[62,S],[62,Q],[59,Q],
+      [62,Q],[64,E],[67,DQ],
+      [71,E],[70,S],[69,S],[68,Q],[67,Q],
+      [71,E],[70,S],[69,S],[68,Q],[67,Q],
+      [67,E],[69,S],[65,S],[67,DQ],
+      [64,H],[0,H],
+    ]
+  },
+  {
+    title: 'Turkish March',
+    // K.331 Alla Turca, transposed around D3-D4
+    notes: [
+      [62,S],[64,S],[65,S],[67,S],[69,S],[67,S],[65,S],[64,S],
+      [62,E],[0,S],[62,S],[64,E],[0,S],[64,S],
+      [65,S],[67,S],[69,S],[71,S],[72,S],[71,S],[69,S],[67,S],
+      [65,E],[0,S],[65,S],[67,E],[0,S],[67,S],
+      [69,S],[71,S],[72,S],[74,S],[72,S],[71,S],[69,S],[67,S],
+      [65,E],[65,S],[67,S],[65,E],[64,S],[62,S],
+      [60,E],[60,S],[62,S],[60,E],[59,S],[57,S],
+      [55,H],[0,Q],
+      [62,S],[64,S],[65,S],[67,S],[69,S],[67,S],[65,S],[64,S],
+      [62,E],[0,S],[62,S],[64,Q],[0,Q],
+      [65,S],[67,S],[69,S],[71,S],[72,S],[71,S],[69,S],[67,S],
+      [65,E],[0,S],[65,S],[67,Q],[0,Q],
+      [62,H],[0,H],
+    ]
+  },
+  {
+    title: 'Symphony No. 40',
+    // K.550 first movement theme
+    notes: [
+      [0,E],
+      [64,S],[63,S],[64,Q],[0,E],
+      [64,S],[63,S],[64,Q],[0,E],
+      [64,S],[63,S],[64,E],[60,E],[57,E],
+      [53,H],[0,Q],
+      [57,E],[57,S],[57,S],[57,Q],[0,E],
+      [55,S],[57,S],[59,Q],[60,Q],
+      [59,Q],[57,Q],[55,H],
+      [52,H],[0,Q],
+      [64,S],[63,S],[64,Q],[0,E],
+      [64,S],[63,S],[64,Q],[0,E],
+      [64,S],[63,S],[64,E],[60,E],[57,E],
+      [53,H],[0,Q],
+      [57,E],[57,S],[57,S],[57,Q],[0,E],
+      [59,S],[60,S],[62,Q],[64,Q],
+      [62,H],[0,H],
+    ]
+  }
+];
+
+let autoTimer = null;
+let autoPlaying = false;
+let autoIdx = 0;
+
+function highlightKeyEl(midi, on){
+  document.querySelectorAll('.tkey').forEach(el=>{
+    if(parseInt(el.dataset.midi)===midi) el.classList.toggle('held', on);
+  });
+}
+
+function runAutoplay(song, noteIdx){
+  if(!autoPlaying) return;
+  if(noteIdx >= song.notes.length){
+    // loop
+    noteIdx = 0;
+  }
+  const [midi, dur] = song.notes[noteIdx];
+  const gap = 18; // brief silence between notes for articulation
+
+  if(midi === 0){
+    releaseKey();
+    highlightKeyEl(0, false);
+  } else {
+    // clear previous highlight
+    document.querySelectorAll('.tkey.held').forEach(e=>e.classList.remove('held'));
+    pressKey(midi);
+    highlightKeyEl(midi, true);
+    setStatus('♩ ' + (CHORD_MAP[midi]?.name || '') + ' — ' + song.title);
+  }
+
+  autoTimer = setTimeout(()=>{
+    if(midi !== 0){
+      releaseKey();
+      highlightKeyEl(midi, false);
+    }
+    autoTimer = setTimeout(()=> runAutoplay(song, noteIdx+1), gap);
+  }, dur - gap);
+}
+
+function startAutoplay(){
+  if(autoPlaying) return;
+  autoPlaying = true;
+  // Start wheel if not running
+  if(!wheelOn){
+    wheelEl.classList.add('spin');
+    if(AC.state==='suspended') AC.resume();
+    wheelStart();
+  }
+  const song = SONGS[parseInt(document.getElementById('song-select').value)];
+  runAutoplay(song, 0);
+}
+
+function stopAutoplay(){
+  autoPlaying = false;
+  clearTimeout(autoTimer);
+  releaseKey();
+  document.querySelectorAll('.tkey.held').forEach(e=>e.classList.remove('held'));
+  // stop wheel too
+  wheelEl.classList.remove('spin');
+  wheelStop();
+  setStatus('Hold the crank to begin…');
+}
+
+document.getElementById('mozart-btn').addEventListener('click', function(){
+  if(autoPlaying){
+    stopAutoplay();
+    this.classList.remove('on');
+    this.textContent = '♩ Mozart';
+  } else {
+    if(AC.state==='suspended') AC.resume();
+    startAutoplay();
+    this.classList.add('on');
+    this.textContent = '■ Stop';
+  }
+});
+
+// Stop autoplay if user grabs the crank
+crankBtn.addEventListener('mousedown', ()=>{ if(autoPlaying){ stopAutoplay(); document.getElementById('mozart-btn').classList.remove('on'); document.getElementById('mozart-btn').textContent='♩ Mozart'; } });
+crankBtn.addEventListener('touchstart', ()=>{ if(autoPlaying){ stopAutoplay(); document.getElementById('mozart-btn').classList.remove('on'); document.getElementById('mozart-btn').textContent='♩ Mozart'; } }, {passive:true});
+</script>
+</body>
+</html>
