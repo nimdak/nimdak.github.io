@@ -1,0 +1,2005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Split Ship</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Courier New',monospace;}
+canvas{display:block;touch-action:none;position:fixed;top:0;left:0;}
+.screen{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:50;background:rgba(6,10,18,0.93);transition:opacity 0.25s;}
+.screen.hidden{opacity:0;pointer-events:none;}
+.half-panel{position:fixed;left:0;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:60;padding:14px 24px;}
+.half-panel.top{top:0;height:50%;transform:rotate(180deg);}
+.half-panel.bottom{bottom:0;height:50%;}
+.ptag{font-size:18px;letter-spacing:4px;text-transform:uppercase;opacity:0.4;}
+.ptag.c1{color:#00e5ff;}.ptag.c2{color:#ff4081;}.ptag.ai{color:#b388ff;}
+.stitle{font-size:20px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.55);text-align:center;}
+.yn-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+.gbtn{background:transparent;font-family:'Courier New',monospace;font-size:20px;letter-spacing:3px;text-transform:uppercase;padding:9px 20px;cursor:pointer;transition:all 0.18s;color:#fff;}
+.gbtn.outline{border:1px solid rgba(255,255,255,0.28);}
+.gbtn.outline:active,.gbtn.outline.sel{border-color:rgba(255,255,255,0.9);box-shadow:0 0 16px rgba(255,255,255,0.18);}
+.gbtn.c1{border:1px solid rgba(0,229,255,0.4);color:#00e5ff;}
+.gbtn.c1:active,.gbtn.c1.sel{background:rgba(0,229,255,0.12);border-color:#00e5ff;box-shadow:0 0 14px rgba(0,229,255,0.3);}
+.gbtn.c2{border:1px solid rgba(255,64,129,0.4);color:#ff4081;}
+.gbtn.c2:active,.gbtn.c2.sel{background:rgba(255,64,129,0.12);border-color:#ff4081;box-shadow:0 0 14px rgba(255,64,129,0.3);}
+.gbtn.ai{border:1px solid rgba(179,136,255,0.4);color:#b388ff;}
+.gbtn.ai:active,.gbtn.ai.sel{background:rgba(179,136,255,0.12);border-color:#b388ff;box-shadow:0 0 14px rgba(179,136,255,0.3);}
+.diff-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.diff-btn{background:transparent;font-family:'Courier New',monospace;font-size:16px;letter-spacing:2px;text-transform:uppercase;padding:7px 14px;cursor:pointer;color:#b388ff;border:1px solid rgba(179,136,255,0.3);transition:all 0.18s;}
+.diff-btn.active{background:rgba(179,136,255,0.15);border-color:#b388ff;box-shadow:0 0 12px rgba(179,136,255,0.3);}
+.opts-grid{display:flex;flex-direction:column;gap:6px;width:100%;max-width:290px;}
+.opt-card{border:1px solid rgba(255,255,255,0.15);padding:8px 11px;cursor:pointer;display:flex;flex-direction:column;gap:2px;transition:all 0.18s;text-align:left;}
+.opt-card .opt-name{font-size:18px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.8);}
+.opt-card .opt-desc{font-size:13px;letter-spacing:1px;color:rgba(255,255,255,0.35);line-height:1.4;}
+.opt-card.sel-c1{border-color:#00e5ff;background:rgba(0,229,255,0.1);}.opt-card.sel-c1 .opt-name{color:#00e5ff;}
+.opt-card.sel-c2{border-color:#ff4081;background:rgba(255,64,129,0.1);}.opt-card.sel-c2 .opt-name{color:#ff4081;}
+.done-row{display:flex;justify-content:center;width:100%;max-width:290px;}
+#cdiv{position:fixed;left:0;top:50%;width:100%;height:1px;background:rgba(255,255,255,0.08);z-index:55;pointer-events:none;}
+#center-start{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:70;display:flex;flex-direction:column;align-items:center;gap:10px;}
+#game-title{font-size:22px;letter-spacing:5px;text-transform:uppercase;color:rgba(255,255,255,0.45);}
+.first-to{font-size:14px;letter-spacing:2px;color:rgba(255,255,255,0.2);}
+#score-p1{position:fixed;left:50%;top:50%;transform:translate(-50%,6px);font-size:72px;font-weight:bold;color:#00e5ff;text-shadow:0 0 14px #00e5ff;letter-spacing:-1px;pointer-events:none;z-index:11;}
+#score-p2{position:fixed;left:50%;top:50%;transform:translate(-50%,calc(-100% - 6px)) rotate(180deg);font-size:72px;font-weight:bold;color:#ff4081;text-shadow:0 0 14px #ff4081;letter-spacing:-1px;pointer-events:none;z-index:11;}
+#score-p2.is-ai{color:#b388ff;text-shadow:0 0 14px #b388ff;}
+.ability-badge{position:fixed;font-size:14px;letter-spacing:1px;text-transform:uppercase;padding:3px 7px;border-radius:2px;pointer-events:none;z-index:12;opacity:0.65;}
+#ab-p1-bd{bottom:calc(50% - 46px);left:8px;color:#00e5ff;border:1px solid rgba(0,229,255,0.4);}
+#ab-p1-ds{bottom:calc(50% - 46px);right:8px;color:#00e5ff;border:1px solid rgba(0,229,255,0.4);}
+#ab-p1-al{bottom:calc(50% - 64px);left:50%;transform:translateX(-50%);color:#00e5ff;border:1px solid rgba(0,229,255,0.4);}
+#ab-p2-bd{top:calc(50% - 46px);left:8px;transform:rotate(180deg);color:#ff4081;border:1px solid rgba(255,64,129,0.4);}
+#ab-p2-ds{top:calc(50% - 46px);right:8px;transform:rotate(180deg);color:#ff4081;border:1px solid rgba(255,64,129,0.4);}
+#ab-p2-al{top:calc(50% - 64px);left:50%;transform:translateX(-50%) rotate(180deg);color:#ff4081;border:1px solid rgba(255,64,129,0.4);}
+#ai-badge{position:fixed;top:calc(50% - 88px);left:50%;transform:translateX(-50%) rotate(180deg);font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#b388ff;border:1px solid rgba(179,136,255,0.35);padding:3px 10px;pointer-events:none;z-index:12;opacity:0.7;}
+/* Infinity HUD */
+#inf-timer{position:fixed;left:50%;bottom:8px;transform:translateX(-50%);font-size:13px;letter-spacing:2px;color:rgba(255,255,255,0.4);pointer-events:none;z-index:12;}
+#inf-diff{position:fixed;left:50%;top:calc(50% + 90px);transform:translateX(-50%);font-size:13px;letter-spacing:2px;color:#b388ff;pointer-events:none;z-index:12;}
+#flash{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;opacity:0;transition:opacity 0.05s;}
+#countdown-screen{background:rgba(6,10,18,0.78);gap:12px;}
+#countdown-num{font-size:180px;font-weight:bold;letter-spacing:-4px;color:#fff;text-shadow:0 0 40px rgba(255,255,255,0.4);line-height:1;}
+#countdown-label{font-size:18px;letter-spacing:4px;color:rgba(255,255,255,0.35);}
+#win-screen{background:rgba(6,10,18,0.93);}
+.win-half{position:fixed;left:0;width:100%;height:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px 24px;}
+.win-half.top{top:0;transform:rotate(180deg);}.win-half.bottom{bottom:0;}
+#win-center{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:5px;pointer-events:none;z-index:72;}
+#win-player{font-size:96px;font-weight:bold;letter-spacing:-2px;line-height:1;}
+#win-player.p1{color:#00e5ff;text-shadow:0 0 30px #00e5ff;}
+#win-player.p2{color:#ff4081;text-shadow:0 0 30px #ff4081;}
+#win-player.ai{color:#b388ff;text-shadow:0 0 30px #b388ff;}
+#win-label{font-size:20px;letter-spacing:4px;color:rgba(255,255,255,0.45);}
+#final-score{font-size:18px;letter-spacing:2px;color:rgba(255,255,255,0.25);}
+#inf-win-info{font-size:14px;letter-spacing:2px;color:rgba(255,255,255,0.3);margin-top:2px;}
+.rematch-btn{font-size:20px;letter-spacing:3px;text-transform:uppercase;padding:11px 26px;cursor:pointer;font-family:'Courier New',monospace;background:transparent;color:#fff;transition:all 0.18s;}
+.rematch-btn.c1{border:1px solid rgba(0,229,255,0.4);color:#00e5ff;}
+.rematch-btn.c1.voted{background:rgba(0,229,255,0.15);border-color:#00e5ff;box-shadow:0 0 16px rgba(0,229,255,0.3);}
+.rematch-btn.c2{border:1px solid rgba(255,64,129,0.4);color:#ff4081;}
+.rematch-btn.c2.voted{background:rgba(255,64,129,0.15);border-color:#ff4081;box-shadow:0 0 16px rgba(255,64,129,0.3);}
+.rematch-status{font-size:14px;letter-spacing:2px;color:rgba(255,255,255,0.3);}
+/* fullscreen btn */
+#fs-btn{position:fixed;top:8px;right:8px;z-index:200;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.5);font-family:'Courier New',monospace;font-size:11px;letter-spacing:2px;padding:4px 8px;cursor:pointer;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="flash"></div>
+<button id="fs-btn" onclick="enterFS()">⛶ fullscreen</button>
+
+<div id="score-p1">0</div>
+<div id="score-p2">0</div>
+<div class="ability-badge hidden" id="ab-p1-bd">rapid</div>
+<div class="ability-badge hidden" id="ab-p1-ds">shield</div>
+<div class="ability-badge hidden" id="ab-p1-al">magic</div>
+<div class="ability-badge hidden" id="ab-p2-bd">rapid</div>
+<div class="ability-badge hidden" id="ab-p2-ds">shield</div>
+<div class="ability-badge hidden" id="ab-p2-al">magic</div>
+<div id="ai-badge" style="display:none;">AI opponent</div>
+<div id="inf-timer" style="display:none;"></div>
+<div id="inf-diff" style="display:none;"></div>
+
+<!-- ══ PREGAME ══ -->
+<div class="screen" id="pregame-screen">
+  <div id="cdiv"></div>
+  <!-- P2/AI top (rotated) -->
+  <div class="half-panel top" id="p2-panel">
+    <div id="p2-step0"><div class="ptag c2">player 2</div><div class="stitle" style="opacity:0.3;">waiting for player 1…</div></div>
+    <div id="p2-ai-status" style="display:none;text-align:center;">
+      <div class="ptag ai" style="margin-bottom:6px;">AI opponent</div>
+      <div class="stitle" id="p2-ai-status-msg">standing by…</div>
+    </div>
+    <div id="p2-step0b" style="display:none;flex-direction:column;align-items:center;gap:12px;">
+      <div class="ptag c2">player 2</div>
+      <div class="stitle">play with advanced options?</div>
+      <div class="yn-row"><button class="gbtn c2" id="p2-yes">Yes</button><button class="gbtn outline" id="p2-no">No</button></div>
+    </div>
+    <div id="p2-step1" style="display:none;width:100%;max-width:290px;align-items:center;flex-direction:column;gap:8px;">
+      <div class="ptag c2">player 2</div>
+      <div class="stitle" id="p2-opts-title">select your options</div>
+      <div class="opts-grid" id="p2-opts-grid"></div>
+      <div class="done-row"><button class="gbtn c2" id="p2-done">Confirm</button></div>
+    </div>
+    <div id="p2-step2" style="display:none;text-align:center;">
+      <div class="ptag c2" style="margin-bottom:6px;" id="p2-ready-tag">player 2</div>
+      <div class="stitle" id="p2-ready-msg">ready ✓</div>
+    </div>
+  </div>
+  <!-- P1 bottom -->
+  <div class="half-panel bottom" id="p1-panel">
+    <div id="p1-mode">
+      <div class="ptag c1">player 1</div>
+      <div class="stitle">how many players?</div>
+      <div class="yn-row"><button class="gbtn c1" id="btn-1p">1 Player</button><button class="gbtn outline" id="btn-2p">2 Players</button></div>
+    </div>
+    <!-- 1P: round mode -->
+    <div id="p1-round-mode" style="display:none;flex-direction:column;align-items:center;gap:12px;">
+      <div class="ptag c1">player 1</div>
+      <div class="stitle">single round or infinity?</div>
+      <div class="yn-row">
+        <button class="gbtn c1" id="btn-single">Single Round</button>
+        <button class="gbtn outline" id="btn-infinity">Infinity</button>
+      </div>
+    </div>
+    <!-- 1P: difficulty (single round only) -->
+    <div id="p2-ai-pick" style="display:none;flex-direction:column;align-items:center;gap:12px;">
+      <div class="ptag ai">AI opponent</div>
+      <div class="stitle">choose difficulty</div>
+      <div class="diff-row">
+        <button class="diff-btn active" id="diff-easy">Easy</button>
+        <button class="diff-btn" id="diff-med">Medium</button>
+        <button class="diff-btn" id="diff-hard">Hard</button>
+      </div>
+      <button class="gbtn ai" id="ai-confirm">Confirm</button>
+    </div>
+    <div id="p1-step0" style="display:none;flex-direction:column;align-items:center;gap:12px;">
+      <div class="ptag c1">player 1</div>
+      <div class="stitle">play with advanced options?</div>
+      <div class="yn-row"><button class="gbtn c1" id="p1-yes">Yes</button><button class="gbtn outline" id="p1-no">No</button></div>
+    </div>
+    <div id="p1-step1" style="display:none;width:100%;max-width:290px;align-items:center;flex-direction:column;gap:8px;">
+      <div class="ptag c1">player 1</div>
+      <div class="stitle">select your options</div>
+      <div class="opts-grid" id="p1-opts-grid"></div>
+      <div class="done-row"><button class="gbtn c1" id="p1-done">Confirm</button></div>
+    </div>
+    <div id="p1-step2" style="display:none;text-align:center;">
+      <div class="ptag c1" style="margin-bottom:6px;">player 1</div>
+      <div class="stitle" id="p1-wait-msg">ready ✓</div>
+    </div>
+  </div>
+  <div id="center-start" style="display:none;">
+    <div id="game-title">Split Ship</div>
+    <button class="gbtn outline" id="start-btn" style="font-size:22px;padding:12px 32px;letter-spacing:4px;">Start Game</button>
+    <div class="first-to" id="first-to-label">first to 10 wins</div>
+  </div>
+</div>
+
+<!-- ══ COUNTDOWN ══ -->
+<div class="screen hidden" id="countdown-screen">
+  <div id="countdown-num">10</div>
+  <div id="countdown-label">get ready</div>
+</div>
+
+<!-- ══ WIN ══ -->
+<div class="screen hidden" id="win-screen">
+  <div class="win-half top" id="win-p2-half">
+    <div class="ptag c2" id="win-p2-tag">player 2</div>
+    <button class="rematch-btn c2" id="rematch-p2">Rematch?</button>
+    <div class="rematch-status" id="rematch-p2-status"></div>
+  </div>
+  <div id="win-center">
+    <div id="win-label">winner</div>
+    <div id="win-player">P1</div>
+    <div id="final-score">10 – 0</div>
+    <div id="inf-win-info" style="display:none;"></div>
+  </div>
+  <div class="win-half bottom">
+    <div class="ptag c1">player 1</div>
+    <button class="rematch-btn c1" id="rematch-p1">Rematch?</button>
+    <div class="rematch-status" id="rematch-p1-status"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// FULLSCREEN
+// ══════════════════════════════════════════
+function enterFS(){
+  const el=document.documentElement;
+  if(el.requestFullscreen) el.requestFullscreen();
+  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+}
+// Auto-attempt on first tap
+document.addEventListener('touchstart',()=>{ if(!document.fullscreenElement) enterFS(); },{once:true,passive:true});
+
+// ══════════════════════════════════════════
+// CANVAS
+// ══════════════════════════════════════════
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+let W,H;
+function resize(){
+  W=canvas.width=window.innerWidth;
+  H=canvas.height=window.innerHeight;
+  window._stars=null;
+}
+resize();
+window.addEventListener('resize',()=>{resize();resetShipPositions();});
+
+// ══════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════
+const SHIP_SPEED=3.5;
+const LASER_SPEED=9;
+const BASE_LASER_LIFE=200;
+const SHIP_SIZE=22;
+const HIT_RADIUS=26;
+const WIN_SCORE=10;
+const FPS=60;
+
+// ══════════════════════════════════════════
+// GAME STATE
+// ══════════════════════════════════════════
+let phase='pregame';
+let countdownSec=10,countdownInterval=null;
+const scores=[0,0];
+let aiMode=false;
+let infinityMode=false;
+let aiDifficulty='easy';
+let selectedDiff='easy';
+let p1ChoseAdvanced=false;
+
+// Infinity mode state
+const inf={
+  elapsed:0,       // seconds elapsed
+  diffLevel:0,     // 0=easy,1=medium,2=hard,3=insane
+  nextPowerupTimer:0, // frames until next powerup spawn
+  aiWinDelayMet:false, // true after 60s — AI win check activates
+  secondAISpawned:false, // true after 8 minutes
+};
+
+// Second AI ship (infinity post-insane)
+const SECOND_AI_COLOR='#ff9100';
+const SECOND_AI_ACCENT='#ffb74d';
+let secondAIShip=null; // null until spawned
+const secondAI={thinkTimer:0,dodging:false,diffLevel:1}; // starts medium
+
+// Perks (standard mode)
+const perks=[
+  {bonusDamage:false,defenceShield:false,amazingLaser:false,shieldHits:0},
+  {bonusDamage:false,defenceShield:false,amazingLaser:false,shieldHits:0},
+];
+
+// ── Active power-up state (per player) ──
+// Each entry: { type, timer, state }
+const activePU=[null,null]; // index = player side (P1=1, but we use ship.side)
+
+// Power-up inventory along center line (P1 only in infinity)
+// slots: { type: 'rapid'|'shield'|'magic', collected:true }
+const puInventory={rapid:false,shield:false,magic:false};
+
+// Power-up spawns on canvas (floating collectables)
+const puSpawns=[]; // {x,y,type,pulse}
+
+// ── Rapid fire state ──
+const rapidState=[
+  {active:false,timer:0,heat:0,overheated:false,overheatTimer:0},
+  {active:false,timer:0,heat:0,overheated:false,overheatTimer:0},
+];
+const RAPID_DURATION=32*FPS;   // total powerup duration frames
+const RAPID_BURST=5*FPS;       // burst duration
+const RAPID_COOLDOWN=3*FPS;    // overheat cooldown
+const RAPID_FIRE_INTERVAL=5;   // frames between shots in rapid mode
+const NORMAL_FIRE_COOLDOWN=22;
+const HALF_FIRE_COOLDOWN=44;   // half rate during overheat
+
+// ── Shield harmonics state ──
+const shieldState=[
+  {active:false,timer:0,points:3,recharging:false,rechargeTimer:0,slowTimer:0},
+  {active:false,timer:0,points:3,recharging:false,rechargeTimer:0,slowTimer:0},
+];
+const SHIELD_DURATION=40*FPS;
+const SHIELD_MAX_POINTS=3;
+const SHIELD_RECHARGE_TIME=4*FPS; // 3-5s average
+const SHIELD_SLOW=0.5;
+
+// ── Magic laser portal state ──
+const portalEffects=[]; // {x,y,life,maxLife,side:'entry'|'exit'}
+const MAGIC_CONE=Math.PI/2; // 90 degrees default
+
+// ══════════════════════════════════════════
+// SHIPS
+// ══════════════════════════════════════════
+const ships=[
+  {x:0,y:0,angle:-Math.PI/2,tx:0,ty:0,moving:false,color:'#ff4081',accentColor:'#ff80ab',side:0,cooldown:0,hit:0,stunTimer:0,speedMult:1},
+  {x:0,y:0,angle:Math.PI/2, tx:0,ty:0,moving:false,color:'#00e5ff',accentColor:'#80f8ff',side:1,cooldown:0,hit:0,stunTimer:0,speedMult:1},
+];
+function resetShipPositions(){
+  ships[0].x=W*.5;ships[0].y=H*.25;ships[0].tx=ships[0].x;ships[0].ty=ships[0].y;ships[0].angle=-Math.PI/2;ships[0].moving=false;ships[0].stunTimer=0;ships[0].speedMult=1;
+  ships[1].x=W*.5;ships[1].y=H*.75;ships[1].tx=ships[1].x;ships[1].ty=ships[1].y;ships[1].angle=Math.PI/2; ships[1].moving=false;ships[1].stunTimer=0;ships[1].speedMult=1;
+}
+resetShipPositions();
+
+const lasers=[],particles=[];
+
+// ══════════════════════════════════════════
+// AI POWERUP STATE
+// ══════════════════════════════════════════
+const CLONE_COLOR='#d4aaff';      // pale lavender for clone lasers
+const CLONE_HP=3;
+const CLONE_OFFSET=48;            // pixels flanking the AI ship
+const CLONE_DURATION=7*FPS;       // 7 seconds
+const REVERSE_SHIELD_DURATION=5*FPS;
+const SLOW_LEVELS=[1,0.70,0.45,0.25,0.15];
+const SLOW_DECAY=2*FPS;
+
+const clones=[];
+const aiPU={
+  cloneActive:false, cloneTimer:0,
+  reverseShield:false, reverseShieldTimer:0,
+  nextSpawnTimer:300,
+  // Visible collectable spawns in AI's half
+  spawns:[],         // [{x,y,type,pulse,life}]
+  targeting:null,    // type the AI is currently steering toward
+};
+// P1 slow state
+const p1Slow={stacks:0,decayTimer:0};
+
+function resetAIPU(){
+  clones.length=0;
+  aiPU.cloneActive=false; aiPU.cloneTimer=0;
+  aiPU.reverseShield=false; aiPU.reverseShieldTimer=0;
+  aiPU.nextSpawnTimer=300;
+  aiPU.spawns.length=0;
+  aiPU.targeting=null;
+  p1Slow.stacks=0; p1Slow.decayTimer=0;
+  ships[1].speedMult=1;
+}
+
+// Spawn a visible AI powerup collectable in the top half
+function spawnAIPowerupCollectable(){
+  const options=[];
+  if(!aiPU.cloneActive&&!aiPU.spawns.find(s=>s.type==='clone')) options.push('clone');
+  if(!aiPU.reverseShield&&!aiPU.spawns.find(s=>s.type==='reverseShield')) options.push('reverseShield');
+  if(options.length===0) return;
+
+  const type=options[Math.floor(Math.random()*options.length)];
+  // Random position in AI's half (top, y < H/2) with padding
+  const x=SHIP_SIZE*2+Math.random()*(W-SHIP_SIZE*4);
+  const y=SHIP_SIZE*2+Math.random()*(H/2-SHIP_SIZE*4);
+  aiPU.spawns.push({x,y,type,pulse:0,life:900}); // 15s window before despawn
+}
+
+// Activate the powerup once AI flies over it
+function activateAIPowerup(type){
+  if(type==='clone') spawnClones();
+  else if(type==='reverseShield'){
+    aiPU.reverseShield=true;
+    aiPU.reverseShieldTimer=REVERSE_SHIELD_DURATION;
+  }
+  playReverseShieldSound();
+  aiPU.targeting=null;
+}
+
+function spawnClones(){
+  if(aiPU.cloneActive) return;
+  const aiShip=ships[0];
+  clones.length=0;
+  const perpX=Math.cos(aiShip.angle+Math.PI/2);
+  const perpY=Math.sin(aiShip.angle+Math.PI/2);
+  for(let side=-1;side<=1;side+=2){
+    clones.push({
+      x:aiShip.x+perpX*CLONE_OFFSET*side,
+      y:aiShip.y+perpY*CLONE_OFFSET*side,
+      angle:aiShip.angle,
+      hp:CLONE_HP, cooldown:0,
+      offsetX:perpX*CLONE_OFFSET*side,
+      offsetY:perpY*CLONE_OFFSET*side,
+      hit:0,
+    });
+  }
+  aiPU.cloneActive=true;
+  aiPU.cloneTimer=CLONE_DURATION;
+}
+
+function activateReverseShield(){
+  aiPU.reverseShield=true;
+  aiPU.reverseShieldTimer=REVERSE_SHIELD_DURATION;
+}
+
+function applySlowToP1(){
+  p1Slow.stacks=Math.min(p1Slow.stacks+1,SLOW_LEVELS.length-1);
+  p1Slow.decayTimer=SLOW_DECAY;
+  ships[1].speedMult=SLOW_LEVELS[p1Slow.stacks];
+}
+
+function playCloneLaserSound(){
+  try{
+    const ac=getAudioCtx();const t=ac.currentTime;
+    const osc=ac.createOscillator();const g=ac.createGain();
+    osc.type='triangle';
+    osc.frequency.setValueAtTime(2800,t);
+    osc.frequency.exponentialRampToValueAtTime(600,t+0.09);
+    g.gain.setValueAtTime(0.08,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.1);
+    osc.connect(g);g.connect(ac.destination);osc.start(t);osc.stop(t+0.11);
+  }catch(e){}
+}
+
+function playReverseShieldSound(){
+  try{
+    const ac=getAudioCtx();const t=ac.currentTime;
+    const osc=ac.createOscillator();const g=ac.createGain();
+    osc.type='sine';
+    osc.frequency.setValueAtTime(300,t);osc.frequency.exponentialRampToValueAtTime(900,t+0.2);osc.frequency.exponentialRampToValueAtTime(600,t+0.4);
+    g.gain.setValueAtTime(0.18,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.45);
+    osc.connect(g);g.connect(ac.destination);osc.start(t);osc.stop(t+0.48);
+  }catch(e){}
+}
+
+function playSlowSound(){
+  try{
+    const ac=getAudioCtx();const t=ac.currentTime;
+    const osc=ac.createOscillator();const g=ac.createGain();
+    osc.type='sine';
+    osc.frequency.setValueAtTime(180,t);osc.frequency.exponentialRampToValueAtTime(80,t+0.3);
+    g.gain.setValueAtTime(0.12,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.35);
+    osc.connect(g);g.connect(ac.destination);osc.start(t);osc.stop(t+0.38);
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════
+// ASTEROIDS
+// ══════════════════════════════════════════
+const asteroids=[];
+let asteroidTimer=0;
+const ASTEROID_RADIUS=28;
+
+function getAsteroidInterval(){
+  // more frequent at higher difficulties
+  const base=[2400,1800,1200,900];
+  return base[inf.diffLevel]||900;
+}
+
+function spawnAsteroid(){
+  // Enter from a random edge, cross to opposite
+  const edge=Math.floor(Math.random()*4); // 0=top,1=bottom,2=left,3=right
+  let x,y,vx,vy;
+  const spd=0.4+inf.diffLevel*0.3;
+  const angle=Math.random()*0.6-0.3; // slight variance
+  if(edge===0){x=Math.random()*W;y=-ASTEROID_RADIUS;vx=Math.sin(angle)*spd;vy=spd;}
+  else if(edge===1){x=Math.random()*W;y=H+ASTEROID_RADIUS;vx=Math.sin(angle)*spd;vy=-spd;}
+  else if(edge===2){x=-ASTEROID_RADIUS;y=Math.random()*H;vx=spd;vy=Math.sin(angle)*spd;}
+  else{x=W+ASTEROID_RADIUS;y=Math.random()*H;vx=-spd;vy=Math.sin(angle)*spd;}
+  asteroids.push({x,y,vx,vy,rot:0,rotSpeed:(Math.random()-.5)*0.04,r:ASTEROID_RADIUS,life:600+Math.random()*300});
+}
+
+// ══════════════════════════════════════════
+// AI
+// ══════════════════════════════════════════
+const ai={thinkTimer:0,dodging:false};
+const AI_SETTINGS={
+  easy:  {thinkFrames:90, aimSpread:0.55,dodgeReact:160,moveChance:0.4,shootChance:0.45},
+  medium:{thinkFrames:45, aimSpread:0.25,dodgeReact:90, moveChance:0.65,shootChance:0.72},
+  hard:  {thinkFrames:18, aimSpread:0.08,dodgeReact:35, moveChance:0.85,shootChance:0.90},
+  insane:{thinkFrames:8,  aimSpread:0.02,dodgeReact:20, moveChance:0.95,shootChance:0.98},
+};
+function getAICfg(){
+  const keys=['easy','medium','hard','insane'];
+  return AI_SETTINGS[keys[inf.diffLevel]]||AI_SETTINGS[aiDifficulty];
+}
+
+// ── Smart dodge helper ──────────────────────────────────────────
+// Projects the laser's path, finds the best escape position for
+// a ship in the top half (y < H/2). Evaluates 8 candidate moves
+// and picks the one furthest from the laser trajectory that also
+// moves away from corners and stays in bounds.
+function calcDodgeTarget(ship, laser){
+  const STEP=80, PAD=SHIP_SIZE+6;
+  const halfH=H/2-PAD;
+  // Point on laser path closest to ship (used as threat axis)
+  // Use parametric: P = laser.pos + t * laser.vel
+  const lx=laser.x, ly=laser.y, lvx=laser.vx, lvy=laser.vy;
+  const dx=ship.x-lx, dy=ship.y-ly;
+  const lenSq=lvx*lvx+lvy*lvy;
+  const t=Math.max(0,(dx*lvx+dy*lvy)/lenSq);
+  const closestX=lx+lvx*t, closestY=ly+lvy*t;
+
+  // 8 candidate positions around the ship
+  const candidates=[];
+  for(let a=0;a<8;a++){
+    const angle=(a/8)*Math.PI*2;
+    const cx=ship.x+Math.cos(angle)*STEP;
+    const cy=ship.y+Math.sin(angle)*STEP;
+    // Must stay in AI's half
+    if(cx<PAD||cx>W-PAD||cy<PAD||cy>halfH) continue;
+    // Distance from threat point
+    const distFromThreat=Math.sqrt((cx-closestX)**2+(cy-closestY)**2);
+    // Penalty for being near corners / edges — prefer center of half
+    const centerX=W/2, centerY=H/4;
+    const cornerPenalty=Math.sqrt((cx-centerX)**2+(cy-centerY)**2)*0.3;
+    candidates.push({x:cx,y:cy,score:distFromThreat-cornerPenalty});
+  }
+
+  if(candidates.length===0){
+    // Cornered — move toward center of AI's half
+    return {x:W/2,y:H/4};
+  }
+  candidates.sort((a,b)=>b.score-a.score);
+  return candidates[0];
+}
+
+function aiTick(){
+  if(phase!=='play'||!aiMode) return;
+  const cfg=getAICfg();
+  const ship=ships[0];
+  const enemy=ships[1];
+  if(ship.stunTimer>0) return;
+
+  // Dodge — find most threatening laser in AI's half
+  let dangerLaser=null,minDist=Infinity;
+  for(const l of lasers){
+    if(l.owner===0) continue;
+    const dx=l.x-ship.x,dy=l.y-ship.y;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    if(l.y<H/2+80&&dist<cfg.dodgeReact){if(dist<minDist){minDist=dist;dangerLaser=l;}}
+  }
+  if(dangerLaser){
+    const target=calcDodgeTarget(ship,dangerLaser);
+    ship.tx=target.x;ship.ty=target.y;ship.moving=true;
+    ai.dodging=true; return;
+  } else ai.dodging=false;
+
+  // Between decisions: fire if aimed
+  ai.thinkTimer--;
+  if(ai.thinkTimer>0){
+    if(!ship.moving&&ship.cooldown===0){
+      const ate=Math.atan2(enemy.y-ship.y,enemy.x-ship.x);
+      let diff=ate-ship.angle;
+      while(diff>Math.PI)diff-=Math.PI*2;
+      while(diff<-Math.PI)diff+=Math.PI*2;
+      if(Math.abs(diff)<cfg.aimSpread+0.15) fireLaser(0);
+    }
+    return;
+  }
+  ai.thinkTimer=cfg.thinkFrames+Math.floor(Math.random()*cfg.thinkFrames*.5);
+
+  if(Math.random()<cfg.shootChance&&ship.cooldown===0){
+    const ate=Math.atan2(enemy.y-ship.y,enemy.x-ship.x);
+    const aimAngle=ate+(Math.random()-.5)*cfg.aimSpread;
+    const moveDist=35+Math.random()*55;
+    let tx=ship.x+Math.cos(aimAngle)*moveDist;
+    let ty=ship.y+Math.sin(aimAngle)*moveDist;
+    tx=Math.max(SHIP_SIZE,Math.min(W-SHIP_SIZE,tx));
+    ty=Math.max(SHIP_SIZE,Math.min(H/2-SHIP_SIZE,ty));
+    const dd=Math.sqrt((tx-ship.x)**2+(ty-ship.y)**2);
+    if(dd>8){ship.tx=tx;ship.ty=ty;ship.moving=true;}
+    else fireLaser(0);
+  } else if(Math.random()<cfg.moveChance){
+    const mx=Math.max(SHIP_SIZE,Math.min(W-SHIP_SIZE,W*.15+Math.random()*W*.7));
+    const my=Math.max(SHIP_SIZE,Math.min(H/2-SHIP_SIZE,H*.05+Math.random()*(H/2-SHIP_SIZE*2)));
+    ship.tx=mx;ship.ty=my;ship.moving=true;
+  }
+}
+
+function spawnSecondAI(){
+  if(secondAIShip) return;
+  secondAIShip={x:W*0.3,y:H*0.15,angle:-Math.PI/2,tx:W*0.3,ty:H*0.15,moving:false,color:SECOND_AI_COLOR,accentColor:SECOND_AI_ACCENT,side:0,cooldown:0,hit:0,stunTimer:0,speedMult:1,isSecondAI:true};
+  secondAI.thinkTimer=60;secondAI.diffLevel=1;
+  spawnParticles(secondAIShip.x,secondAIShip.y,SECOND_AI_COLOR,24);
+  spawnParticles(secondAIShip.x,secondAIShip.y,'#ffffff',10);
+}
+
+function secondAITick(){
+  if(!secondAIShip||phase!=='play') return;
+  const minsPost=Math.max(0,(inf.elapsed-8*60)/60);
+  secondAI.diffLevel=minsPost<2?1:minsPost<4?2:3;
+  const ship=secondAIShip;
+  const enemy=ships[1];
+  if(ship.stunTimer>0){ship.stunTimer--;ship.hit=Math.max(0,ship.hit-1);return;}
+  if(ship.cooldown>0) ship.cooldown--;
+  if(ship.hit>0) ship.hit--;
+  if(ship.moving){
+    const dx=ship.tx-ship.x,dy=ship.ty-ship.y;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<SHIP_SPEED+1){ship.x=ship.tx;ship.y=ship.ty;ship.moving=false;}
+    else{ship.x+=(dx/dist)*SHIP_SPEED;ship.y+=(dy/dist)*SHIP_SPEED;ship.angle=Math.atan2(dy,dx);}
+    ship.y=Math.max(SHIP_SIZE,Math.min(H/2-SHIP_SIZE,ship.y));
+    ship.x=Math.max(SHIP_SIZE,Math.min(W-SHIP_SIZE,ship.x));
+  }
+  const keys=['easy','medium','hard','insane'];
+  const cfg=AI_SETTINGS[keys[secondAI.diffLevel]];
+  let dangerLaser=null,minDist=Infinity;
+  for(const l of lasers){
+    if(l.owner===0) continue;
+    const dx=l.x-ship.x,dy=l.y-ship.y;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    if(l.y<H/2+80&&dist<cfg.dodgeReact){if(dist<minDist){minDist=dist;dangerLaser=l;}}
+  }
+  if(dangerLaser){
+    const target=calcDodgeTarget(ship,dangerLaser);
+    ship.tx=target.x;ship.ty=target.y;ship.moving=true;return;
+  }
+  secondAI.thinkTimer--;
+  if(secondAI.thinkTimer>0){
+    if(!ship.moving&&ship.cooldown===0){
+      const ate=Math.atan2(enemy.y-ship.y,enemy.x-ship.x);
+      let diff=ate-ship.angle;
+      while(diff>Math.PI)diff-=Math.PI*2;while(diff<-Math.PI)diff+=Math.PI*2;
+      if(Math.abs(diff)<cfg.aimSpread+0.15){
+        lasers.push({x:ship.x+Math.cos(ship.angle)*SHIP_SIZE,y:ship.y+Math.sin(ship.angle)*SHIP_SIZE,vx:Math.cos(ship.angle)*LASER_SPEED,vy:Math.sin(ship.angle)*LASER_SPEED,owner:0,life:BASE_LASER_LIFE,trail:[],magic:false,portaled:false,isSecondAI:true});
+        ship.cooldown=NORMAL_FIRE_COOLDOWN;playLaserSound('normal',0);
+      }
+    }
+    return;
+  }
+  secondAI.thinkTimer=cfg.thinkFrames+Math.floor(Math.random()*cfg.thinkFrames*.5);
+  if(Math.random()<cfg.shootChance&&ship.cooldown===0){
+    const ate=Math.atan2(enemy.y-ship.y,enemy.x-ship.x);
+    const aimAngle=ate+(Math.random()-.5)*cfg.aimSpread;
+    const moveDist=35+Math.random()*55;
+    let tx=Math.max(SHIP_SIZE,Math.min(W-SHIP_SIZE,ship.x+Math.cos(aimAngle)*moveDist));
+    let ty=Math.max(SHIP_SIZE,Math.min(H/2-SHIP_SIZE,ship.y+Math.sin(aimAngle)*moveDist));
+    if(Math.sqrt((tx-ship.x)**2+(ty-ship.y)**2)>8){ship.tx=tx;ship.ty=ty;ship.moving=true;}
+    else{
+      lasers.push({x:ship.x+Math.cos(ship.angle)*SHIP_SIZE,y:ship.y+Math.sin(ship.angle)*SHIP_SIZE,vx:Math.cos(ship.angle)*LASER_SPEED,vy:Math.sin(ship.angle)*LASER_SPEED,owner:0,life:BASE_LASER_LIFE,trail:[],magic:false,portaled:false,isSecondAI:true});
+      ship.cooldown=NORMAL_FIRE_COOLDOWN;playLaserSound('normal',0);
+    }
+  } else if(Math.random()<cfg.moveChance){
+    ship.tx=Math.max(SHIP_SIZE,Math.min(W-SHIP_SIZE,W*.15+Math.random()*W*.7));
+    ship.ty=Math.max(SHIP_SIZE,Math.min(H/2-SHIP_SIZE,H*.05+Math.random()*(H/2-SHIP_SIZE*2)));
+    ship.moving=true;
+  }
+}
+
+// AI powerup spawner — called each frame during play
+function aiPowerupTick(){
+  if(!aiMode||!infinityMode||phase!=='play') return;
+
+  // Timers
+  if(aiPU.cloneActive){
+    aiPU.cloneTimer--;
+    if(aiPU.cloneTimer<=0){
+      aiPU.cloneActive=false;
+      clones.length=0;
+    }
+  }
+  if(aiPU.reverseShield){
+    aiPU.reverseShieldTimer--;
+    if(aiPU.reverseShieldTimer<=0) aiPU.reverseShield=false;
+  }
+
+  // P1 slow decay
+  if(p1Slow.stacks>0){
+    p1Slow.decayTimer--;
+    if(p1Slow.decayTimer<=0){
+      p1Slow.stacks=Math.max(0,p1Slow.stacks-1);
+      ships[1].speedMult=SLOW_LEVELS[p1Slow.stacks];
+      if(p1Slow.stacks>0) p1Slow.decayTimer=SLOW_DECAY;
+    }
+  }
+
+  // Clone position tracking — mirror AI ship movement
+  if(aiPU.cloneActive){
+    const aiShip=ships[0];
+    for(const clone of clones){
+      clone.x=aiShip.x+clone.offsetX;
+      clone.y=aiShip.y+clone.offsetY;
+      clone.angle=aiShip.angle;
+      // Clone firing
+      if(clone.cooldown>0) clone.cooldown--;
+      if(clone.cooldown===0){
+        const cfg=getAICfg();
+        if(Math.random()<cfg.shootChance*0.7){
+          const enemy=ships[1];
+          const exactAngle=Math.atan2(enemy.y-clone.y,enemy.x-clone.x);
+          const aimAngle=exactAngle+(Math.random()-.5)*cfg.aimSpread*1.4;
+          const vx=Math.cos(aimAngle)*LASER_SPEED;
+          const vy=Math.sin(aimAngle)*LASER_SPEED;
+          lasers.push({
+            x:clone.x+Math.cos(aimAngle)*SHIP_SIZE,
+            y:clone.y+Math.sin(aimAngle)*SHIP_SIZE,
+            vx,vy,owner:0,life:BASE_LASER_LIFE,trail:[],
+            magic:false,portaled:false,isClone:true,
+          });
+          playCloneLaserSound();
+          clone.cooldown=Math.floor(NORMAL_FIRE_COOLDOWN*3);
+        }
+      }
+    }
+  }
+
+  // ── AI powerup collectables: tick spawns, check pickup ──
+  for(let i=aiPU.spawns.length-1;i>=0;i--){
+    const s=aiPU.spawns[i];
+    s.pulse+=0.07; s.life--;
+    // Check if AI ship collected it
+    const aiShip=ships[0];
+    const dx=aiShip.x-s.x, dy=aiShip.y-s.y;
+    if(Math.sqrt(dx*dx+dy*dy)<SHIP_SIZE+14){
+      activateAIPowerup(s.type);
+      spawnParticles(s.x,s.y,s.type==='clone'?CLONE_COLOR:'#ffd740',14);
+      aiPU.spawns.splice(i,1);
+      continue;
+    }
+    if(s.life<=0){ aiPU.spawns.splice(i,1); if(aiPU.targeting===s.type) aiPU.targeting=null; }
+  }
+
+  // ── AI steers toward nearest powerup when not dodging ──
+  if(aiPU.spawns.length>0&&!ai.dodging){
+    const nearest=aiPU.spawns[0];
+    if(aiPU.targeting!==nearest.type){
+      aiPU.targeting=nearest.type;
+    }
+    // Nudge AI toward powerup by setting it as a waypoint (low priority — overridden by combat)
+    const aiShip=ships[0];
+    if(!aiShip.moving&&ai.thinkTimer<=0){
+      aiShip.tx=nearest.x; aiShip.ty=nearest.y; aiShip.moving=true;
+    }
+  }
+
+  // Spawn new AI powerup collectable
+  aiPU.nextSpawnTimer--;
+  if(aiPU.nextSpawnTimer<=0){
+    const intervals=[900,600,420,270];
+    aiPU.nextSpawnTimer=intervals[inf.diffLevel]+(Math.random()*200-100);
+    spawnAIPowerupCollectable();
+  }
+}
+const OPTS=[
+  {key:'bonusDamage',  name:'Rapid Fire',    desc:'Double fire rate for 5s, then half rate cooldown.'},
+  {key:'defenceShield',name:'Shield Harmonics',desc:'3-hit shield. Recharges while moving slowly.'},
+  {key:'amazingLaser', name:'Magic Laser',    desc:'Lasers portal through walls into enemy half.'},
+];
+
+function buildOptsGrid(gridEl,playerIdx){
+  gridEl.innerHTML='';
+  const cls=playerIdx===0?'sel-c1':'sel-c2';
+  OPTS.forEach(opt=>{
+    const card=document.createElement('div');
+    card.className='opt-card';card.dataset.key=opt.key;
+    card.innerHTML=`<div class="opt-name">${opt.name}</div><div class="opt-desc">${opt.desc}</div>`;
+    card.addEventListener('click',()=>{card.classList.toggle(cls);perks[playerIdx][opt.key]=card.classList.contains(cls);});
+    gridEl.appendChild(card);
+  });
+}
+buildOptsGrid(document.getElementById('p1-opts-grid'),0);
+buildOptsGrid(document.getElementById('p2-opts-grid'),1);
+
+function show(el,asFlex){el.style.display=asFlex?'flex':'block';}
+function hide(el){el.style.display='none';}
+
+// Mode
+document.getElementById('btn-1p').addEventListener('click',e=>{
+  e.stopPropagation(); aiMode=true;
+  hide(document.getElementById('p1-mode'));
+  show(document.getElementById('p1-round-mode'),true);
+  hide(document.getElementById('p2-step0'));
+  show(document.getElementById('p2-ai-status'),false);
+  document.getElementById('p2-ai-status-msg').textContent='standing by…';
+});
+document.getElementById('btn-2p').addEventListener('click',e=>{
+  e.stopPropagation(); aiMode=false; infinityMode=false;
+  hide(document.getElementById('p1-mode'));
+  show(document.getElementById('p1-step0'),true);
+});
+
+// Round mode
+document.getElementById('btn-single').addEventListener('click',e=>{
+  e.stopPropagation(); infinityMode=false;
+  hide(document.getElementById('p1-round-mode'));
+  show(document.getElementById('p1-step0'),true);
+});
+document.getElementById('btn-infinity').addEventListener('click',e=>{
+  e.stopPropagation(); infinityMode=true;
+  hide(document.getElementById('p1-round-mode'));
+  // Skip adv options in infinity — powerups come during play
+  // Go straight to ready + show start
+  show(document.getElementById('p1-step2'),false);
+  document.getElementById('p1-wait-msg').textContent='infinity mode ✓';
+  document.getElementById('p2-ai-status-msg').textContent='scaling difficulty ✓';
+  const tag=document.getElementById('p2-ready-tag');
+  tag.className='ptag ai';tag.textContent='AI opponent';
+  document.getElementById('p2-ready-msg').textContent='insane mode incoming ✓';
+  show(document.getElementById('p2-step2'),false);
+  show(document.getElementById('center-start'),true);
+  document.getElementById('first-to-label').textContent='survive as long as you can';
+});
+
+// P1 adv options
+document.getElementById('p1-yes').addEventListener('click',e=>{e.stopPropagation();p1ChoseAdvanced=true;hide(document.getElementById('p1-step0'));show(document.getElementById('p1-step1'),true);});
+document.getElementById('p1-no').addEventListener('click',e=>{e.stopPropagation();p1ChoseAdvanced=false;perks[0].bonusDamage=false;perks[0].defenceShield=false;perks[0].amazingLaser=false;p1Done();});
+document.getElementById('p1-done').addEventListener('click',e=>{e.stopPropagation();p1Done();});
+
+function p1Done(){
+  hide(document.getElementById('p1-step0'));hide(document.getElementById('p1-step1'));
+  if(aiMode){
+    show(document.getElementById('p2-ai-pick'),true);
+  } else {
+    show(document.getElementById('p1-step2'),false);
+    hide(document.getElementById('p2-step0'));
+    if(p1ChoseAdvanced){document.getElementById('p2-opts-title').textContent='your turn — pick an option';show(document.getElementById('p2-step1'),true);}
+    else show(document.getElementById('p2-step0b'),true);
+  }
+}
+
+// AI difficulty confirm
+['easy','med','hard'].forEach(d=>{
+  document.getElementById('diff-'+d).addEventListener('click',e=>{
+    e.stopPropagation();
+    selectedDiff=d==='med'?'medium':d;
+    document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
+    e.target.classList.add('active');
+  });
+});
+document.getElementById('ai-confirm').addEventListener('click',e=>{
+  e.stopPropagation(); aiDifficulty=selectedDiff;
+  hide(document.getElementById('p2-ai-pick'));
+  if(p1ChoseAdvanced){
+    const keys=['bonusDamage','defenceShield','amazingLaser'];
+    const picked=keys[Math.floor(Math.random()*keys.length)];
+    perks[1].bonusDamage=false;perks[1].defenceShield=false;perks[1].amazingLaser=false;
+    perks[1][picked]=true;
+    const names={bonusDamage:'Rapid Fire',defenceShield:'Shield Harmonics',amazingLaser:'Magic Laser'};
+    document.getElementById('p2-ai-status-msg').textContent='picked: '+names[picked]+' ✓';
+  } else {
+    document.getElementById('p2-ai-status-msg').textContent=aiDifficulty+' difficulty ✓';
+  }
+  show(document.getElementById('p1-step2'),false);
+  document.getElementById('p1-wait-msg').textContent='ready ✓';
+  const tag=document.getElementById('p2-ready-tag');
+  tag.className='ptag ai';tag.textContent='AI opponent';
+  document.getElementById('p2-ready-msg').textContent=aiDifficulty+' ✓';
+  show(document.getElementById('p2-step2'),false);
+  show(document.getElementById('center-start'),true);
+});
+
+// P2 adv (2p)
+document.getElementById('p2-yes').addEventListener('click',e=>{e.stopPropagation();hide(document.getElementById('p2-step0b'));show(document.getElementById('p2-step1'),true);});
+document.getElementById('p2-no').addEventListener('click',e=>{e.stopPropagation();perks[1].bonusDamage=false;perks[1].defenceShield=false;perks[1].amazingLaser=false;p2Done();});
+document.getElementById('p2-done').addEventListener('click',e=>{e.stopPropagation();p2Done();});
+function p2Done(){hide(document.getElementById('p2-step0b'));hide(document.getElementById('p2-step1'));show(document.getElementById('p2-step2'),false);show(document.getElementById('center-start'),true);}
+
+// Start
+document.getElementById('start-btn').addEventListener('click',e=>{
+  e.stopPropagation();
+  enterFS();
+  document.getElementById('pregame-screen').classList.add('hidden');
+  scores[0]=0;scores[1]=0;
+  document.getElementById('score-p1').textContent='0';
+  document.getElementById('score-p2').textContent='0';
+  document.getElementById('score-p2').className=aiMode?'is-ai':'';
+  perks[0].shieldHits=0;perks[1].shieldHits=0;
+  // Init rapid/shield state
+  for(let i=0;i<2;i++){
+    rapidState[i]={active:false,timer:0,heat:0,overheated:false,overheatTimer:0};
+    shieldState[i]={active:false,timer:0,points:3,recharging:false,rechargeTimer:0,slowTimer:0};
+    activePU[i]=null;
+  }
+  puInventory.rapid=false;puInventory.shield=false;puInventory.magic=false;
+  puSpawns.length=0; portalEffects.length=0;
+  asteroids.length=0; asteroidTimer=0;
+  inf.elapsed=0;inf.diffLevel=0;inf.nextPowerupTimer=300;
+  inf.aiWinDelayMet=false;inf.secondAISpawned=false;
+  ai.thinkTimer=0;ai.dodging=false;
+  secondAIShip=null;
+  secondAI.thinkTimer=0;secondAI.dodging=false;secondAI.diffLevel=1;
+  resetAIPU();
+  resetShipPositions();lasers.length=0;particles.length=0;
+  updateAbilityBadges();
+  document.getElementById('ai-badge').style.display=aiMode?'block':'none';
+  document.getElementById('inf-timer').style.display=infinityMode?'block':'none';
+  document.getElementById('inf-diff').style.display=(infinityMode&&aiMode)?'block':'none';
+  if(infinityMode&&aiMode) document.getElementById('inf-diff').textContent='AI: Easy';
+  startCountdown();
+});
+
+// Rematch
+const rematchVotes=[false,false];
+function handleRematch(idx){
+  rematchVotes[idx]=true;
+  if(aiMode&&!rematchVotes[1]) rematchVotes[1]=true;
+  document.getElementById(idx===0?'rematch-p1':'rematch-p2').classList.add('voted');
+  document.getElementById(idx===0?'rematch-p1':'rematch-p2').textContent='Ready!';
+  if(!aiMode) document.getElementById(idx===0?'rematch-p1-status':'rematch-p2-status').textContent='waiting…';
+  if(rematchVotes[0]&&rematchVotes[1]){
+    rematchVotes[0]=false;rematchVotes[1]=false;
+    document.getElementById('win-screen').classList.add('hidden');
+    resetPregameUI();
+    document.getElementById('pregame-screen').classList.remove('hidden');
+    p1ChoseAdvanced=false;
+    for(let i=0;i<2;i++){perks[i].bonusDamage=false;perks[i].defenceShield=false;perks[i].amazingLaser=false;perks[i].shieldHits=0;}
+    buildOptsGrid(document.getElementById('p1-opts-grid'),0);
+    buildOptsGrid(document.getElementById('p2-opts-grid'),1);
+    hideAbilityBadges();
+    resetAIPU();
+    secondAIShip=null;
+    secondAI.thinkTimer=0;secondAI.diffLevel=1;
+    document.getElementById('ai-badge').style.display='none';
+    document.getElementById('inf-timer').style.display='none';
+    document.getElementById('inf-diff').style.display='none';
+    ['rematch-p1','rematch-p2'].forEach(id=>{document.getElementById(id).classList.remove('voted');document.getElementById(id).textContent='Rematch?';});
+    document.getElementById('rematch-p1-status').textContent='';
+    document.getElementById('rematch-p2-status').textContent='';
+  }
+}
+document.getElementById('rematch-p1').addEventListener('click',e=>{e.stopPropagation();if(!rematchVotes[0])handleRematch(0);});
+document.getElementById('rematch-p2').addEventListener('click',e=>{e.stopPropagation();if(!aiMode&&!rematchVotes[1])handleRematch(1);});
+
+function resetPregameUI(){
+  show(document.getElementById('p1-mode'),false);
+  hide(document.getElementById('p1-round-mode'));hide(document.getElementById('p1-step0'));hide(document.getElementById('p1-step1'));hide(document.getElementById('p1-step2'));
+  show(document.getElementById('p2-step0'),false);
+  hide(document.getElementById('p2-ai-status'));hide(document.getElementById('p2-ai-pick'));hide(document.getElementById('p2-step0b'));hide(document.getElementById('p2-step1'));hide(document.getElementById('p2-step2'));
+  hide(document.getElementById('center-start'));
+  selectedDiff='easy';aiDifficulty='easy';
+  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('diff-easy').classList.add('active');
+  const tag=document.getElementById('p2-ready-tag');tag.className='ptag c2';tag.textContent='player 2';
+  document.getElementById('p2-ready-msg').textContent='ready ✓';
+  document.getElementById('first-to-label').textContent='first to 10 wins';
+  aiMode=false;infinityMode=false;
+  buildOptsGrid(document.getElementById('p1-opts-grid'),0);
+  buildOptsGrid(document.getElementById('p2-opts-grid'),1);
+}
+
+// ══════════════════════════════════════════
+// ABILITY BADGES
+// ══════════════════════════════════════════
+function updateAbilityBadges(){
+  const t=(id,v)=>document.getElementById(id).classList.toggle('hidden',!v);
+  t('ab-p1-bd',perks[1].bonusDamage);t('ab-p1-ds',perks[1].defenceShield);t('ab-p1-al',perks[1].amazingLaser);
+  t('ab-p2-bd',perks[0].bonusDamage);t('ab-p2-ds',perks[0].defenceShield);t('ab-p2-al',perks[0].amazingLaser);
+}
+function hideAbilityBadges(){['ab-p1-bd','ab-p1-ds','ab-p1-al','ab-p2-bd','ab-p2-ds','ab-p2-al'].forEach(id=>document.getElementById(id).classList.add('hidden'));}
+
+// ══════════════════════════════════════════
+// COUNTDOWN
+// ══════════════════════════════════════════
+function startCountdown(){
+  phase='countdown';countdownSec=10;
+  document.getElementById('countdown-num').textContent='10';
+  document.getElementById('countdown-screen').classList.remove('hidden');
+  countdownInterval=setInterval(()=>{
+    countdownSec--;
+    if(countdownSec<=0){clearInterval(countdownInterval);document.getElementById('countdown-screen').classList.add('hidden');phase='play';}
+    else document.getElementById('countdown-num').textContent=countdownSec;
+  },1000);
+}
+
+// Tap during countdown skips 1 second per tap (min 1)
+function countdownTap(){
+  if(phase!=='play') return; // handled by handleTap
+  if(countdownSec>1){
+    countdownSec--;
+    document.getElementById('countdown-num').textContent=countdownSec;
+  }
+}
+
+// ══════════════════════════════════════════
+// POWER-UPS (infinity mode)
+// ══════════════════════════════════════════
+const PU_TYPES=['rapid','shield','magic'];
+const PU_COLORS={rapid:'#ffb300',shield:'#69f0ae',magic:'#ea80fc'};
+const PU_LABELS={rapid:'⚡',shield:'🛡',magic:'✨'};
+
+function spawnPowerup(){
+  const available=PU_TYPES.filter(t=>!puInventory[t]&&!puSpawns.find(s=>s.type===t));
+  if(available.length===0) return;
+  const type=available[Math.floor(Math.random()*available.length)];
+  // Spawn in P1's half (bottom half, y > H/2)
+  const x=SHIP_SIZE*2+Math.random()*(W-SHIP_SIZE*4);
+  const y=H/2+40+Math.random()*(H/2-80);
+  puSpawns.push({x,y,type,pulse:0,life:600}); // 10 second window
+}
+
+function activatePowerup(type){
+  // side 1 = P1
+  if(type==='rapid'){
+    rapidState[1].active=true;
+    rapidState[1].timer=RAPID_DURATION;
+    rapidState[1].overheated=false;
+    rapidState[1].heat=0;
+  } else if(type==='shield'){
+    shieldState[1].active=true;
+    shieldState[1].timer=SHIELD_DURATION;
+    shieldState[1].points=SHIELD_MAX_POINTS;
+    shieldState[1].recharging=false;
+    shieldState[1].rechargeTimer=0;
+    perks[1].defenceShield=true;
+  } else if(type==='magic'){
+    perks[1].amazingLaser=true;
+    activePU[1]={type:'magic',timer:28*FPS};
+  }
+  puInventory[type]=false; // consumed
+  updateAbilityBadges();
+}
+
+// Check if tap hits a power-up icon on center line (P1 side)
+const PU_ICON_SIZE=32;
+function checkPUIconTap(px,py){
+  if(!infinityMode) return false;
+  // Icons are along center line on P1's side
+  const iconY=H/2+PU_ICON_SIZE/2+4;
+  const types=PU_TYPES.filter(t=>puInventory[t]);
+  for(let i=0;i<types.length;i++){
+    const iconX=20+(i*(PU_ICON_SIZE+10));
+    const dx=px-iconX,dy=py-iconY;
+    if(Math.sqrt(dx*dx+dy*dy)<PU_ICON_SIZE){
+      activatePowerup(types[i]);
+      return true;
+    }
+  }
+  return false;
+}
+
+// ══════════════════════════════════════════
+// INPUT
+// ══════════════════════════════════════════
+function handleTap(px,py){
+  if(phase==='countdown'){ countdownTap(); return; }
+  if(phase!=='play') return;
+  if(infinityMode&&checkPUIconTap(px,py)) return;
+  const side=py>H/2?1:0;
+  if(aiMode&&side===0) return;
+  const ship=ships[side];
+  if(ship.stunTimer>0) return;
+  const dx=px-ship.x,dy=py-ship.y;
+  if(Math.sqrt(dx*dx+dy*dy)<HIT_RADIUS+10) fireLaser(side);
+  else{
+    let cx=px,cy=py;
+    if(side===1) cy=Math.max(cy,H/2+SHIP_SIZE);
+    else cy=Math.min(cy,H/2-SHIP_SIZE);
+    cx=Math.max(SHIP_SIZE,Math.min(W-SHIP_SIZE,cx));
+    ship.tx=cx;ship.ty=cy;ship.moving=true;
+    ship.angle=Math.atan2(cy-ship.y,cx-ship.x);
+  }
+}
+canvas.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches)handleTap(t.clientX,t.clientY);},{passive:false});
+canvas.addEventListener('click',e=>handleTap(e.clientX,e.clientY));
+
+// ══════════════════════════════════════════
+// AUDIO
+// ══════════════════════════════════════════
+let audioCtx=null;
+function getAudioCtx(){
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playLaserSound(type,side){
+  try{
+    const ac=getAudioCtx();
+    const t=ac.currentTime;
+
+    if(type==='normal'){
+      // Quick descending zap — higher pitch for P1 (cyan), lower for P2/AI (pink/purple)
+      const osc=ac.createOscillator();
+      const gain=ac.createGain();
+      const filter=ac.createBiquadFilter();
+      filter.type='bandpass';
+      filter.frequency.value=side===1?2200:1600;
+      filter.Q.value=2;
+      osc.type='sawtooth';
+      const baseFreq=side===1?1800:1200;
+      osc.frequency.setValueAtTime(baseFreq,t);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq*0.25,t+0.12);
+      gain.gain.setValueAtTime(0.18,t);
+      gain.gain.exponentialRampToValueAtTime(0.001,t+0.14);
+      osc.connect(filter);filter.connect(gain);gain.connect(ac.destination);
+      osc.start(t);osc.stop(t+0.15);
+
+    } else if(type==='rapid'){
+      // Snappier, higher pitched
+      const osc=ac.createOscillator();
+      const gain=ac.createGain();
+      osc.type='square';
+      osc.frequency.setValueAtTime(3200,t);
+      osc.frequency.exponentialRampToValueAtTime(800,t+0.06);
+      gain.gain.setValueAtTime(0.1,t);
+      gain.gain.exponentialRampToValueAtTime(0.001,t+0.07);
+      osc.connect(gain);gain.connect(ac.destination);
+      osc.start(t);osc.stop(t+0.08);
+
+    } else if(type==='magic'){
+      // Deep resonant whoosh + shimmer overtone
+      const osc1=ac.createOscillator();
+      const osc2=ac.createOscillator();
+      const gain1=ac.createGain();
+      const gain2=ac.createGain();
+      const reverb=ac.createConvolver();
+      const mainGain=ac.createGain();
+
+      // Build a tiny impulse reverb buffer
+      const irLen=ac.sampleRate*0.3;
+      const irBuf=ac.createBuffer(2,irLen,ac.sampleRate);
+      for(let ch=0;ch<2;ch++){
+        const d=irBuf.getChannelData(ch);
+        for(let i=0;i<irLen;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/irLen,2);
+      }
+      reverb.buffer=irBuf;
+
+      // Low whoosh
+      osc1.type='sine';
+      osc1.frequency.setValueAtTime(80,t);
+      osc1.frequency.exponentialRampToValueAtTime(40,t+0.35);
+      gain1.gain.setValueAtTime(0.3,t);
+      gain1.gain.exponentialRampToValueAtTime(0.001,t+0.4);
+
+      // Shimmer overtone
+      osc2.type='triangle';
+      osc2.frequency.setValueAtTime(2400,t);
+      osc2.frequency.exponentialRampToValueAtTime(400,t+0.25);
+      gain2.gain.setValueAtTime(0.12,t);
+      gain2.gain.exponentialRampToValueAtTime(0.001,t+0.28);
+
+      mainGain.gain.value=0.7;
+      osc1.connect(gain1);osc2.connect(gain2);
+      gain1.connect(reverb);gain2.connect(reverb);
+      reverb.connect(mainGain);mainGain.connect(ac.destination);
+      // Also dry signal
+      gain1.connect(ac.destination);
+
+      osc1.start(t);osc1.stop(t+0.45);
+      osc2.start(t);osc2.stop(t+0.3);
+    }
+  }catch(e){/* audio not available */}
+}
+
+function playHitSound(magic){
+  try{
+    const ac=getAudioCtx();
+    const t=ac.currentTime;
+    if(magic){
+      // Portal crack — sharp attack, spectral shimmer
+      const osc=ac.createOscillator();
+      const noise=ac.createOscillator();
+      const g1=ac.createGain(),g2=ac.createGain(),mg=ac.createGain();
+      osc.type='sawtooth';osc.frequency.setValueAtTime(600,t);osc.frequency.exponentialRampToValueAtTime(60,t+0.2);
+      noise.type='square';noise.frequency.setValueAtTime(80,t);
+      g1.gain.setValueAtTime(0.3,t);g1.gain.exponentialRampToValueAtTime(0.001,t+0.25);
+      g2.gain.setValueAtTime(0.1,t);g2.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+      mg.gain.value=0.8;
+      osc.connect(g1);noise.connect(g2);g1.connect(mg);g2.connect(mg);mg.connect(ac.destination);
+      osc.start(t);osc.stop(t+0.28);noise.start(t);noise.stop(t+0.18);
+    } else {
+      // Standard hit — thump + crackle
+      const osc=ac.createOscillator();
+      const g=ac.createGain();
+      osc.type='sine';
+      osc.frequency.setValueAtTime(220,t);osc.frequency.exponentialRampToValueAtTime(40,t+0.15);
+      g.gain.setValueAtTime(0.4,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);
+      osc.connect(g);g.connect(ac.destination);
+      osc.start(t);osc.stop(t+0.2);
+    }
+  }catch(e){}
+}
+
+function playShieldBlockSound(){
+  try{
+    const ac=getAudioCtx();
+    const t=ac.currentTime;
+    const osc=ac.createOscillator();
+    const g=ac.createGain();
+    osc.type='triangle';
+    osc.frequency.setValueAtTime(800,t);osc.frequency.exponentialRampToValueAtTime(1200,t+0.05);osc.frequency.exponentialRampToValueAtTime(600,t+0.15);
+    g.gain.setValueAtTime(0.2,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);
+    osc.connect(g);g.connect(ac.destination);
+    osc.start(t);osc.stop(t+0.2);
+  }catch(e){}
+}
+
+function playPortalSound(){
+  try{
+    const ac=getAudioCtx();
+    const t=ac.currentTime;
+    // Fracture crack + whoosh
+    const osc=ac.createOscillator();
+    const g=ac.createGain();
+    const filter=ac.createBiquadFilter();
+    filter.type='highpass';filter.frequency.value=300;
+    osc.type='sawtooth';
+    osc.frequency.setValueAtTime(1200,t);osc.frequency.exponentialRampToValueAtTime(100,t+0.18);
+    g.gain.setValueAtTime(0.25,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.22);
+    osc.connect(filter);filter.connect(g);g.connect(ac.destination);
+    osc.start(t);osc.stop(t+0.25);
+  }catch(e){}
+}
+
+function playStunSound(){
+  try{
+    const ac=getAudioCtx();
+    const t=ac.currentTime;
+    const osc=ac.createOscillator();
+    const g=ac.createGain();
+    osc.type='triangle';
+    osc.frequency.setValueAtTime(440,t);
+    osc.frequency.setValueAtTime(330,t+0.05);
+    osc.frequency.setValueAtTime(440,t+0.1);
+    osc.frequency.setValueAtTime(330,t+0.15);
+    g.gain.setValueAtTime(0.15,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.22);
+    osc.connect(g);g.connect(ac.destination);
+    osc.start(t);osc.stop(t+0.25);
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════
+// FIRE
+// ══════════════════════════════════════════
+function fireLaser(side){
+  const ship=ships[side];
+  if(ship.cooldown>0) return;
+  const isMagic=perks[side].amazingLaser;
+  const life=isMagic?999999:BASE_LASER_LIFE;
+  ship.cooldown=NORMAL_FIRE_COOLDOWN;
+  const isRapid=side===1&&rapidState[1].active&&!rapidState[1].overheated;
+  const isOverheat=side===1&&rapidState[1].overheated;
+  if(isRapid) ship.cooldown=RAPID_FIRE_INTERVAL;
+  else if(isOverheat) ship.cooldown=HALF_FIRE_COOLDOWN;
+  const vx=Math.cos(ship.angle)*LASER_SPEED;
+  const vy=Math.sin(ship.angle)*LASER_SPEED;
+  lasers.push({x:ship.x+Math.cos(ship.angle)*SHIP_SIZE,y:ship.y+Math.sin(ship.angle)*SHIP_SIZE,vx,vy,owner:side,life,trail:[],magic:isMagic,portaled:false});
+  spawnParticles(ship.x,ship.y,ship.color,5,ship.angle);
+  // Sound
+  playLaserSound(isMagic?'magic':isRapid?'rapid':'normal',side);
+}
+
+// ══════════════════════════════════════════
+// PARTICLES
+// ══════════════════════════════════════════
+function spawnParticles(x,y,color,count,baseAngle=null,opts={}){
+  for(let i=0;i<count;i++){
+    const angle=baseAngle!==null?baseAngle+(Math.random()-.5)*1.2:Math.random()*Math.PI*2;
+    const speed=(opts.speed||1)+Math.random()*(opts.speedVar||3);
+    particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:opts.life||(20+Math.random()*20),maxLife:opts.maxLife||40,color,r:opts.r||(1.5+Math.random()*2)});
+  }
+}
+
+// Wall fracture effect
+function spawnFracture(x,y,color){
+  for(let i=0;i<14;i++){
+    const angle=Math.random()*Math.PI*2;
+    const speed=2+Math.random()*4;
+    particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:25+Math.random()*20,maxLife:45,color,r:2+Math.random()*3});
+  }
+  for(let i=0;i<8;i++){
+    const angle=Math.random()*Math.PI*2;
+    particles.push({x,y,vx:Math.cos(angle)*(1+Math.random()*2),vy:Math.sin(angle)*(1+Math.random()*2),life:12,maxLife:12,color:'#ffffff',r:3});
+  }
+  portalEffects.push({x,y,life:18,maxLife:18,side:'fracture',color});
+  playPortalSound();
+}
+
+// ══════════════════════════════════════════
+// SCORE
+// ══════════════════════════════════════════
+function addScore(side,pts){
+  if(phase!=='play') return;
+  scores[side]+=pts;
+  document.getElementById('score-p1').textContent=scores[side===1?1:0]===scores[1]?scores[1]:scores[0];
+  document.getElementById('score-p1').textContent=scores[1];
+  document.getElementById('score-p2').textContent=scores[0];
+  const flashEl=document.getElementById('flash');
+  flashEl.style.background=side===1?'rgba(0,229,255,0.18)':'rgba(255,64,129,0.18)';
+  flashEl.style.opacity='1';setTimeout(()=>flashEl.style.opacity='0',140);
+  ships[1-side].hit=20;
+  spawnParticles(ships[1-side].x,ships[1-side].y,ships[1-side].color,22);
+  spawnParticles(ships[1-side].x,ships[1-side].y,'#ffffff',10);
+  if(!infinityMode&&scores[side]>=WIN_SCORE) triggerWin(side);
+  else if(infinityMode&&inf.aiWinDelayMet&&scores[0]>scores[1]) triggerWin(0);
+  else playHitSound(false);
+}
+
+// ══════════════════════════════════════════
+// WIN
+// ══════════════════════════════════════════
+function triggerWin(side){
+  phase='win';
+  requestAnimationFrame(()=>{lasers.length=0;particles.length=0;asteroids.length=0;portalEffects.length=0;clones.length=0;secondAIShip=null;});
+  const isAI=(aiMode&&side===0);
+  document.getElementById('win-player').textContent=side===1?'P1':(isAI?'AI':'P2');
+  document.getElementById('win-player').className=side===1?'p1':(isAI?'ai':'p2');
+  document.getElementById('final-score').textContent=`${scores[1]} – ${scores[0]}`;
+  if(infinityMode){
+    const mins=Math.floor(inf.elapsed/60),secs=Math.floor(inf.elapsed%60);
+    document.getElementById('inf-win-info').textContent=`survived ${mins}:${secs.toString().padStart(2,'0')} · reached ${['Easy','Medium','Hard','Insane'][inf.diffLevel]}`;
+    document.getElementById('inf-win-info').style.display='block';
+  } else document.getElementById('inf-win-info').style.display='none';
+  rematchVotes[0]=false;rematchVotes[1]=false;
+  ['rematch-p1','rematch-p2'].forEach(id=>{document.getElementById(id).classList.remove('voted');document.getElementById(id).textContent='Rematch?';});
+  document.getElementById('rematch-p1-status').textContent='';
+  document.getElementById('rematch-p2-status').textContent='';
+  const p2tag=document.getElementById('win-p2-tag');
+  if(aiMode){p2tag.className='ptag ai';p2tag.textContent='AI opponent';document.getElementById('rematch-p2').style.display='none';}
+  else{p2tag.className='ptag c2';p2tag.textContent='player 2';document.getElementById('rematch-p2').style.display='';}
+  document.getElementById('win-screen').classList.remove('hidden');
+}
+
+// ══════════════════════════════════════════
+// UPDATE
+// ══════════════════════════════════════════
+function update(){
+  if(phase!=='play'&&phase!=='countdown') return;
+  const canMove=phase==='play';
+
+  // ── Infinity mode timers ──
+  if(infinityMode&&phase==='play'){
+    inf.elapsed+=1/FPS;
+    const mins=inf.elapsed/60;
+    const newLevel=mins<2?0:mins<4?1:mins<6?2:3;
+    if(newLevel!==inf.diffLevel){
+      inf.diffLevel=newLevel;
+      const labels=['Easy','Medium','Hard','Insane'];
+      document.getElementById('inf-diff').textContent='AI: '+labels[newLevel];
+    }
+    // 60 second delay before AI win check activates
+    if(!inf.aiWinDelayMet&&inf.elapsed>=60) inf.aiWinDelayMet=true;
+    // Spawn second AI ship at 8 minutes
+    if(!inf.secondAISpawned&&inf.elapsed>=8*60){
+      inf.secondAISpawned=true;
+      spawnSecondAI();
+    }
+    const m=Math.floor(inf.elapsed/60),s=Math.floor(inf.elapsed%60);
+    document.getElementById('inf-timer').textContent=`${m}:${s.toString().padStart(2,'0')}`;
+
+    // Powerup spawning
+    inf.nextPowerupTimer--;
+    if(inf.nextPowerupTimer<=0){
+      spawnPowerup();
+      inf.nextPowerupTimer=480+Math.floor(Math.random()*240);
+    }
+
+    // Powerup spawn collection
+    for(let i=puSpawns.length-1;i>=0;i--){
+      const s=puSpawns[i];
+      s.pulse+=0.08;s.life--;
+      const ship=ships[1]; // P1
+      const dx=ship.x-s.x,dy=ship.y-s.y;
+      if(Math.sqrt(dx*dx+dy*dy)<SHIP_SIZE+16){
+        if(!puInventory[s.type]){puInventory[s.type]=true;spawnParticles(s.x,s.y,PU_COLORS[s.type],12);}
+        puSpawns.splice(i,1);
+      } else if(s.life<=0){puSpawns.splice(i,1);}
+    }
+
+    // Asteroid timer
+    asteroidTimer--;
+    if(asteroidTimer<=0){spawnAsteroid();asteroidTimer=getAsteroidInterval();}
+  }
+
+  // Second AI tick runs every frame in infinity
+  if(infinityMode) secondAITick();
+
+  // ── Rapid fire update (P1 only in infinity, both in standard) ──
+  for(let side=0;side<2;side++){
+    const rs=rapidState[side];
+    if(!rs.active&&!perks[side].bonusDamage) continue;
+    if(rs.active){
+      rs.timer--;
+      if(rs.timer<=0){rs.active=false;perks[side].bonusDamage=false;updateAbilityBadges();continue;}
+      if(rs.overheated){
+        rs.overheatTimer--;
+        if(rs.overheatTimer<=0){rs.overheated=false;rs.heat=0;}
+      } else {
+        rs.heat++;
+        if(rs.heat>=RAPID_BURST){rs.overheated=true;rs.overheatTimer=RAPID_COOLDOWN;rs.heat=0;}
+      }
+    }
+  }
+
+  // ── Shield harmonics update ──
+  for(let side=0;side<2;side++){
+    const ss=shieldState[side];
+    if(!ss.active&&!perks[side].defenceShield) continue;
+    if(ss.active){
+      ss.timer--;
+      if(ss.timer<=0){ss.active=false;perks[side].defenceShield=false;updateAbilityBadges();ships[side].speedMult=1;continue;}
+      // Recharge logic: if points < max and ship is moving slowly (speedMult reduced = recharging)
+      if(ss.points<SHIELD_MAX_POINTS){
+        if(!ss.recharging){
+          ss.recharging=true;ss.rechargeTimer=SHIELD_RECHARGE_TIME;
+          ships[side].speedMult=SHIELD_SLOW;
+        }
+        ss.rechargeTimer--;
+        if(ss.rechargeTimer<=0){
+          ss.points=Math.min(SHIELD_MAX_POINTS,ss.points+1);
+          ss.recharging=false;
+          if(ss.points>=SHIELD_MAX_POINTS) ships[side].speedMult=1;
+          else ss.rechargeTimer=SHIELD_RECHARGE_TIME;
+        }
+      } else {
+        ships[side].speedMult=1;ss.recharging=false;
+      }
+    }
+  }
+
+  // ── Magic laser timer ──
+  for(let side=0;side<2;side++){
+    const pu=activePU[side];
+    if(pu&&pu.type==='magic'){
+      pu.timer--;
+      if(pu.timer<=0){perks[side].amazingLaser=false;activePU[side]=null;updateAbilityBadges();}
+    }
+  }
+
+  aiTick();
+  aiPowerupTick();
+
+  // ── Ship movement ──
+  for(const ship of ships){
+    if(ship.cooldown>0) ship.cooldown--;
+    if(ship.hit>0) ship.hit--;
+    if(ship.stunTimer>0){ship.stunTimer--;ship.moving=false;continue;}
+    if(canMove&&ship.moving){
+      const dx=ship.tx-ship.x,dy=ship.ty-ship.y;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      const spd=SHIP_SPEED*ship.speedMult;
+      if(dist<spd+1){ship.x=ship.tx;ship.y=ship.ty;ship.moving=false;}
+      else{ship.x+=(dx/dist)*spd;ship.y+=(dy/dist)*spd;ship.angle=Math.atan2(dy,dx);}
+      if(ship.side===1) ship.y=Math.max(ship.y,H/2+SHIP_SIZE);
+      else ship.y=Math.min(ship.y,H/2-SHIP_SIZE);
+      ship.x=Math.max(SHIP_SIZE,Math.min(W-SHIP_SIZE,ship.x));
+    }
+  }
+
+  if(phase!=='play') return;
+
+  // ── Asteroids ──
+  for(let i=asteroids.length-1;i>=0;i--){
+    const a=asteroids[i];
+    a.x+=a.vx;a.y+=a.vy;a.rot+=a.rotSpeed;a.life--;
+    // Absorb lasers
+    for(let j=lasers.length-1;j>=0;j--){
+      const l=lasers[j];if(!l) continue;
+      const dx=l.x-a.x,dy=l.y-a.y;
+      if(Math.sqrt(dx*dx+dy*dy)<a.r){spawnParticles(l.x,l.y,'#aaa',4);lasers.splice(j,1);}
+    }
+    // Stun ships
+    for(const ship of ships){
+      const dx=ship.x-a.x,dy=ship.y-a.y;
+      if(Math.sqrt(dx*dx+dy*dy)<a.r+SHIP_SIZE){
+        if(ship.stunTimer===0){
+          ship.stunTimer=2*FPS;ship.hit=2*FPS;
+          spawnParticles(ship.x,ship.y,'#ffcc00',10);
+          playStunSound();
+        }
+      }
+    }
+    // Also stun second AI
+    if(secondAIShip){
+      const dx=secondAIShip.x-a.x,dy=secondAIShip.y-a.y;
+      if(Math.sqrt(dx*dx+dy*dy)<a.r+SHIP_SIZE&&secondAIShip.stunTimer===0){
+        secondAIShip.stunTimer=2*FPS;secondAIShip.hit=2*FPS;
+        spawnParticles(secondAIShip.x,secondAIShip.y,'#ffcc00',8);
+      }
+    }
+    if(a.life<=0||a.x<-100||a.x>W+100||a.y<-100||a.y>H+100) asteroids.splice(i,1);
+  }
+
+  // ── Lasers ──
+  for(let i=lasers.length-1;i>=0;i--){
+    const l=lasers[i];if(!l) continue;
+    l.trail.push({x:l.x,y:l.y});if(l.trail.length>16) l.trail.shift();
+    l.x+=l.vx;l.y+=l.vy;l.life--;
+
+    if(l.magic&&!l.portaled){
+      // Magic laser: portal through walls instead of bouncing
+      let portalX=null,portalY=null,wallHit=false;
+      if(l.x<0){portalX=0;portalY=l.y;wallHit=true;}
+      else if(l.x>W){portalX=W;portalY=l.y;wallHit=true;}
+      else if(l.y<0){portalX=l.x;portalY=0;wallHit=true;}
+      else if(l.y>H){portalX=l.x;portalY=H;wallHit=true;}
+
+      if(wallHit){
+        spawnFracture(portalX,portalY,l.owner===1?'#00e5ff':'#b388ff');
+        // Reappear in enemy half with cone toward enemy
+        const enemySide=1-l.owner;
+        const enemy=ships[enemySide];
+        // Random position along three walls of enemy half
+        const wallChoice=Math.floor(Math.random()*3);
+        let ex,ey;
+        if(enemySide===1){// enemy in bottom half
+          if(wallChoice===0){ex=Math.random()*W;ey=H;}            // bottom wall
+          else if(wallChoice===1){ex=0;ey=H/2+Math.random()*H/2;} // left wall bottom
+          else{ex=W;ey=H/2+Math.random()*H/2;}                     // right wall bottom
+        } else {// enemy in top half
+          if(wallChoice===0){ex=Math.random()*W;ey=0;}             // top wall
+          else if(wallChoice===1){ex=0;ey=Math.random()*H/2;}      // left wall top
+          else{ex=W;ey=Math.random()*H/2;}                          // right wall top
+        }
+        // Direction: cone toward enemy
+        const baseAngle=Math.atan2(enemy.y-ey,enemy.x-ex);
+        const coneAngle=baseAngle+(Math.random()-.5)*MAGIC_CONE;
+        l.x=ex;l.y=ey;
+        l.vx=Math.cos(coneAngle)*LASER_SPEED;
+        l.vy=Math.sin(coneAngle)*LASER_SPEED;
+        l.portaled=true;l.life=BASE_LASER_LIFE;
+        l.trail=[];
+        spawnFracture(ex,ey,l.owner===1?'#00e5ff':'#b388ff');
+        continue;
+      }
+    } else if(!l.magic){
+      // Normal: bounce
+      if(l.x<0){l.x=0;l.vx*=-1;} if(l.x>W){l.x=W;l.vx*=-1;}
+      if(l.y<0){l.y=0;l.vy*=-1;} if(l.y>H){l.y=H;l.vy*=-1;}
+    } else {
+      // Portaled magic laser: bounce normally after portal
+      if(l.x<0){l.x=0;l.vx*=-1;} if(l.x>W){l.x=W;l.vx*=-1;}
+      if(l.y<0){l.y=0;l.vy*=-1;} if(l.y>H){l.y=H;l.vy*=-1;}
+    }
+
+    if(l.life<=0){lasers.splice(i,1);continue;}
+
+    // ── Reverse shield: reflect P1 lasers off AI ship ──
+    if(l.owner===1&&aiPU.reverseShield&&!l.reflected){
+      const aiShip=ships[0];
+      const dx=l.x-aiShip.x,dy=l.y-aiShip.y;
+      if(Math.sqrt(dx*dx+dy*dy)<HIT_RADIUS+8){
+        // Physical reflection off the AI ship surface
+        // Reflect velocity: reverse both components and aim generally downward (toward P1)
+        l.vx=-l.vx;
+        l.vy=Math.abs(l.vy)+1; // ensure it travels toward P1's half
+        l.reflected=true;
+        l.owner=0;    // now an AI-owned round — WILL score against P1
+        l.isClone=false; // scores normally, not a slow-only round
+        l.magic=false;
+        l.life=BASE_LASER_LIFE; // reset life so it has full flight time
+        spawnParticles(l.x,l.y,'#ffd740',10);
+        playShieldBlockSound();
+        continue;
+      }
+    }
+
+    // ── Clone laser hits P1 → slow effect (negated by shield) ──
+    if(l.isClone&&l.owner===0){
+      const p1=ships[1];
+      const dx=l.x-p1.x,dy=l.y-p1.y;
+      if(Math.sqrt(dx*dx+dy*dy)<HIT_RADIUS){
+        const ss=shieldState[1];
+        if(perks[1].defenceShield&&(ss.active||!infinityMode)&&ss.points>0){
+          // Shield negates the slow — no shield point consumed
+          spawnParticles(l.x,l.y,'#ffffff',8);
+          spawnParticles(p1.x,p1.y,p1.color,6);
+          playShieldBlockSound();
+          p1.hit=10;
+        } else {
+          // No shield — apply slow as normal
+          applySlowToP1();
+          p1.hit=15;
+          spawnParticles(l.x,l.y,CLONE_COLOR,8);
+          spawnParticles(p1.x,p1.y,'#d4aaff',6);
+          playSlowSound();
+        }
+        lasers.splice(i,1);
+        continue;
+      }
+    }
+
+    // ── Clone hit detection: P1 lasers hitting clones ──
+    if(l.owner===1&&!l.isClone&&aiPU.cloneActive){
+      let hitClone=false;
+      for(let ci=clones.length-1;ci>=0;ci--){
+        const cl=clones[ci];
+        const dx=l.x-cl.x,dy=l.y-cl.y;
+        if(Math.sqrt(dx*dx+dy*dy)<HIT_RADIUS){
+          cl.hp--;
+          spawnParticles(l.x,l.y,CLONE_COLOR,8);
+          cl.hit=10;
+          lasers.splice(i,1);
+          hitClone=true;
+          if(cl.hp<=0){
+            spawnParticles(cl.x,cl.y,CLONE_COLOR,18);
+            spawnParticles(cl.x,cl.y,'#ffffff',8);
+            clones.splice(ci,1);
+            if(clones.length===0) aiPU.cloneActive=false;
+          }
+          break;
+        }
+      }
+      if(hitClone) continue;
+    }
+
+    // ── Second AI laser hits P1 ──
+    if(l.isSecondAI&&l.owner===0){
+      const p1=ships[1];
+      const dx=l.x-p1.x,dy=l.y-p1.y;
+      if(Math.sqrt(dx*dx+dy*dy)<HIT_RADIUS){
+        addScore(0,1); // shared AI score
+        spawnParticles(l.x,l.y,SECOND_AI_COLOR,10);
+        lasers.splice(i,1);
+        continue;
+      }
+    }
+
+    const target=ships[1-l.owner];
+    const dx=l.x-target.x,dy=l.y-target.y;
+    if(Math.sqrt(dx*dx+dy*dy)<HIT_RADIUS){
+      const defender=perks[1-l.owner];
+      const pts=1;
+      let absorbed=false;
+      if(defender.defenceShield&&shieldState[1-l.owner].points>0){
+        shieldState[1-l.owner].points--;
+        spawnParticles(l.x,l.y,'#ffffff',8);spawnParticles(target.x,target.y,target.color,6);
+        const f=document.getElementById('flash');f.style.background='rgba(255,255,255,0.06)';f.style.opacity='1';setTimeout(()=>f.style.opacity='0',100);
+        target.hit=10;absorbed=true;
+        playShieldBlockSound();
+        // Start recharge if not already
+        if(!shieldState[1-l.owner].recharging&&shieldState[1-l.owner].points<SHIELD_MAX_POINTS){
+          shieldState[1-l.owner].recharging=true;
+          shieldState[1-l.owner].rechargeTimer=SHIELD_RECHARGE_TIME;
+          ships[1-l.owner].speedMult=SHIELD_SLOW;
+        }
+      }
+      if(!absorbed) addScore(l.owner,pts);
+      spawnParticles(l.x,l.y,ships[l.owner].color,10);
+      lasers.splice(i,1);
+    }
+  }
+
+  // ── Portal effects ──
+  for(let i=portalEffects.length-1;i>=0;i--){portalEffects[i].life--;if(portalEffects[i].life<=0)portalEffects.splice(i,1);}
+
+  // ── Particles ──
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.04;p.life--;
+    if(p.life<=0)particles.splice(i,1);
+  }
+}
+
+// ══════════════════════════════════════════
+// DRAW
+// ══════════════════════════════════════════
+function drawBackground(){
+  ctx.fillStyle='#060a12';ctx.fillRect(0,0,W,H);
+  if(!window._stars){window._stars=[];for(let i=0;i<160;i++)window._stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2,a:Math.random()});}
+  for(const s of window._stars){ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${s.a*0.7})`;ctx.fill();}
+  const gT=ctx.createLinearGradient(0,0,0,H/2);gT.addColorStop(0,aiMode?'rgba(179,136,255,0.04)':'rgba(255,64,129,0.04)');gT.addColorStop(1,'transparent');
+  ctx.fillStyle=gT;ctx.fillRect(0,0,W,H/2);
+  const gB=ctx.createLinearGradient(0,H/2,0,H);gB.addColorStop(0,'transparent');gB.addColorStop(1,'rgba(0,229,255,0.04)');
+  ctx.fillStyle=gB;ctx.fillRect(0,H/2,W,H/2);
+  ctx.fillStyle='rgba(255,255,255,0.07)';
+  const dashes=36,dashW=W/(dashes*2);
+  for(let i=0;i<dashes;i++)ctx.fillRect(i*dashW*2,H/2-.5,dashW,1);
+}
+
+function drawShip(ship){
+  ctx.save();ctx.translate(ship.x,ship.y);ctx.rotate(ship.angle);
+  const s=SHIP_SIZE,hit=ship.hit>0,stunned=ship.stunTimer>0;
+  const shipColor=(aiMode&&ship.side===0)?'#b388ff':ship.color;
+  const accentColor=(aiMode&&ship.side===0)?'#d0b0ff':ship.accentColor;
+  const col=stunned?'#ffcc00':hit?'#ffffff':shipColor;
+  ctx.shadowColor=col;ctx.shadowBlur=stunned?24:hit?32:14;
+  ctx.beginPath();ctx.moveTo(s,0);ctx.lineTo(-s*.6,-s*.55);ctx.lineTo(-s*.35,0);ctx.lineTo(-s*.6,s*.55);ctx.closePath();
+  ctx.fillStyle=col;ctx.fill();
+  ctx.beginPath();ctx.ellipse(s*.15,0,s*.22,s*.16,0,0,Math.PI*2);
+  ctx.fillStyle=stunned?'#996600':hit?'#aaa':accentColor;ctx.shadowBlur=4;ctx.fill();
+  if(ship.moving&&!stunned){
+    ctx.shadowColor=shipColor;ctx.shadowBlur=20;
+    ctx.beginPath();ctx.moveTo(-s*.35,0);
+    ctx.lineTo(-s*.35-(Math.random()*s*.7+s*.2),-(Math.random()*s*.18));
+    ctx.lineTo(-s*.35-(Math.random()*s*.7+s*.2),(Math.random()*s*.18));
+    ctx.closePath();ctx.fillStyle=shipColor+'aa';ctx.fill();
+  }
+  const pIdx=ship.side;
+  const ss=shieldState[pIdx];
+  const hasShield=perks[pIdx].defenceShield&&(ss.active||!infinityMode);
+  if(hasShield&&ss.points>0){
+    const shPulse=(Math.sin(Date.now()*.005)*.5+.5)*.4+.2;
+    ctx.beginPath();ctx.arc(0,0,s+12,0,Math.PI*2);
+    ctx.strokeStyle=shipColor+Math.floor(shPulse*255).toString(16).padStart(2,'0');
+    ctx.lineWidth=1.5;ctx.shadowBlur=8;ctx.shadowColor=shipColor;ctx.stroke();
+    // Show shield points as arcs
+    const arcPer=(Math.PI*2)/SHIELD_MAX_POINTS;
+    for(let k=0;k<ss.points;k++){
+      ctx.beginPath();ctx.arc(0,0,s+12,-Math.PI/2+k*arcPer,-Math.PI/2+(k+1)*arcPer-.1);
+      ctx.strokeStyle=shipColor+'dd';ctx.lineWidth=3;ctx.stroke();
+    }
+  }
+  // Rapid fire heat gauge
+  const rs=rapidState[pIdx];
+  if(rs.active){
+    const heatColor=rs.overheated?'#ff5722':'#ffb300';
+    const prog=rs.overheated?(rs.overheatTimer/RAPID_COOLDOWN):(rs.heat/RAPID_BURST);
+    ctx.beginPath();ctx.arc(0,0,s+7,-Math.PI/2,-Math.PI/2+prog*Math.PI*2);
+    ctx.strokeStyle=heatColor;ctx.lineWidth=2.5;ctx.shadowBlur=6;ctx.shadowColor=heatColor;ctx.stroke();
+  } else if(ship.cooldown>0){
+    const prog=ship.cooldown/NORMAL_FIRE_COOLDOWN;
+    ctx.beginPath();ctx.arc(0,0,s+7,-Math.PI/2,-Math.PI/2+(1-prog)*Math.PI*2);
+    ctx.strokeStyle=shipColor+'55';ctx.lineWidth=2;ctx.shadowBlur=0;ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawTapHint(ship){
+  if(phase!=='play'||ship.cooldown>0||ship.stunTimer>0) return;
+  if(aiMode&&ship.side===0) return;
+  const pulse=(Math.sin(Date.now()*.004)*.5+.5)*.35;
+  ctx.beginPath();ctx.arc(ship.x,ship.y,SHIP_SIZE+10,0,Math.PI*2);
+  ctx.strokeStyle=ship.color+Math.floor(pulse*255).toString(16).padStart(2,'0');
+  ctx.lineWidth=1;ctx.shadowBlur=0;ctx.stroke();
+}
+
+function drawLaser(l){
+  if(!l) return;
+  const color=l.isClone?CLONE_COLOR:l.isSecondAI?SECOND_AI_COLOR:(aiMode&&l.owner===0)?'#b388ff':(l.owner===1?ships[1].color:ships[0].color);
+  const isMagic=l.magic&&!l.isClone;
+  if(l.trail.length>1){
+    ctx.beginPath();ctx.moveTo(l.trail[0].x,l.trail[0].y);
+    for(const pt of l.trail)ctx.lineTo(pt.x,pt.y);
+    ctx.lineTo(l.x,l.y);
+    ctx.strokeStyle=color+(isMagic?'77':'44');ctx.lineWidth=isMagic?3:2;
+    ctx.shadowColor=color;ctx.shadowBlur=isMagic?16:8;ctx.stroke();
+  }
+  ctx.save();ctx.translate(l.x,l.y);ctx.rotate(Math.atan2(l.vy,l.vx));
+  ctx.shadowColor=color;ctx.shadowBlur=isMagic?28:18;
+  // Magic laser has a different shape — jagged star-like bolt
+  if(isMagic){
+    ctx.beginPath();ctx.ellipse(0,0,14,4,0,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();
+    ctx.beginPath();ctx.ellipse(0,0,20,7,0,0,Math.PI*2);ctx.fillStyle=color+'99';ctx.fill();
+    // Extra sparkle
+    ctx.strokeStyle=color;ctx.lineWidth=1;
+    for(let k=0;k<4;k++){const a=k*Math.PI/2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*18,Math.sin(a)*18);ctx.stroke();}
+  } else {
+    ctx.beginPath();ctx.ellipse(0,0,10,3,0,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();
+    ctx.beginPath();ctx.ellipse(0,0,14,5,0,0,Math.PI*2);ctx.fillStyle=color+'88';ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawParticle(p){
+  const alpha=p.life/p.maxLife;
+  ctx.beginPath();ctx.arc(p.x,p.y,p.r*alpha,0,Math.PI*2);
+  ctx.fillStyle=p.color+Math.floor(alpha*255).toString(16).padStart(2,'0');
+  ctx.shadowColor=p.color;ctx.shadowBlur=6;ctx.fill();
+}
+
+function drawPortalEffects(){
+  for(const pe of portalEffects){
+    const alpha=pe.life/pe.maxLife;
+    const r=(1-alpha)*40;
+    ctx.beginPath();ctx.arc(pe.x,pe.y,r,0,Math.PI*2);
+    ctx.strokeStyle=pe.color+Math.floor(alpha*180).toString(16).padStart(2,'0');
+    ctx.lineWidth=3;ctx.shadowColor=pe.color;ctx.shadowBlur=20;ctx.stroke();
+    // Crack lines
+    ctx.save();ctx.translate(pe.x,pe.y);
+    for(let k=0;k<6;k++){
+      const a=k*(Math.PI/3)+(pe.life*.1);
+      const len=(1-alpha)*30;
+      ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*len,Math.sin(a)*len);
+      ctx.strokeStyle=pe.color+Math.floor(alpha*200).toString(16).padStart(2,'0');
+      ctx.lineWidth=1.5;ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function drawAsteroid(a){
+  ctx.save();ctx.translate(a.x,a.y);ctx.rotate(a.rot);
+  ctx.shadowColor='#aaa';ctx.shadowBlur=8;
+  ctx.beginPath();
+  const pts=8;
+  for(let i=0;i<pts;i++){
+    const ang=(i/pts)*Math.PI*2;
+    const wobble=a.r*(0.75+.25*Math.sin(i*2.3+a.rot*3));
+    if(i===0)ctx.moveTo(Math.cos(ang)*wobble,Math.sin(ang)*wobble);
+    else ctx.lineTo(Math.cos(ang)*wobble,Math.sin(ang)*wobble);
+  }
+  ctx.closePath();
+  ctx.fillStyle='#2a2a3a';ctx.fill();
+  ctx.strokeStyle='#555566';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.restore();
+}
+
+function drawPowerupSpawns(){
+  for(const s of puSpawns){
+    const pulse=Math.sin(s.pulse)*.3+.7;
+    const col=PU_COLORS[s.type];
+    ctx.save();ctx.translate(s.x,s.y);
+    ctx.beginPath();ctx.arc(0,0,16*pulse,0,Math.PI*2);
+    ctx.strokeStyle=col+Math.floor(pulse*180).toString(16).padStart(2,'0');
+    ctx.lineWidth=2;ctx.shadowColor=col;ctx.shadowBlur=14;ctx.stroke();
+    ctx.font='18px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor=col;ctx.shadowBlur=10;ctx.fillStyle='#fff';ctx.fillText(PU_LABELS[s.type],0,0);
+    ctx.restore();
+  }
+}
+
+// AI powerup collectables — drawn in top half, visible to P1 as a warning
+const AI_PU_COLORS={clone:CLONE_COLOR,reverseShield:'#ffd740'};
+const AI_PU_LABELS={clone:'👥',reverseShield:'🛡'};
+
+function drawAIPowerupSpawns(){
+  for(const s of aiPU.spawns){
+    const pulse=Math.sin(s.pulse)*.35+.65;
+    const col=AI_PU_COLORS[s.type]||'#fff';
+    const label=AI_PU_LABELS[s.type]||'?';
+    ctx.save();ctx.translate(s.x,s.y);
+    // Warning ring — slightly larger than P1's to stand out in the top half
+    ctx.beginPath();ctx.arc(0,0,18*pulse,0,Math.PI*2);
+    ctx.strokeStyle=col+Math.floor(pulse*200).toString(16).padStart(2,'0');
+    ctx.lineWidth=2.5;ctx.shadowColor=col;ctx.shadowBlur=18;ctx.stroke();
+    // Outer warning dashes
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.arc(0,0,24,0,Math.PI*2);
+    ctx.strokeStyle=col+'55';ctx.lineWidth=1;ctx.shadowBlur=0;ctx.stroke();
+    ctx.setLineDash([]);
+    // Icon
+    ctx.font='18px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.shadowColor=col;ctx.shadowBlur=10;ctx.fillStyle='#fff';ctx.fillText(label,0,0);
+    // Life bar underneath — shows how long before it despawns
+    const lifeRatio=s.life/900;
+    const bw=30;
+    ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fillRect(-bw/2,14,bw,3);
+    ctx.fillStyle=col;ctx.fillRect(-bw/2,14,bw*lifeRatio,3);
+    ctx.restore();
+  }
+}
+
+function drawPUInventory(){
+  if(!infinityMode||phase!=='play') return;
+  const types=PU_TYPES.filter(t=>puInventory[t]);
+  if(types.length===0) return;
+  const iconY=H/2+PU_ICON_SIZE/2+4;
+  types.forEach((type,i)=>{
+    const iconX=20+(i*(PU_ICON_SIZE+10));
+    const col=PU_COLORS[type];
+    ctx.save();ctx.translate(iconX,iconY);
+    // Background
+    ctx.beginPath();ctx.arc(0,0,PU_ICON_SIZE/2,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fill();
+    ctx.strokeStyle=col+'99';ctx.lineWidth=1.5;ctx.shadowColor=col;ctx.shadowBlur=8;ctx.stroke();
+    // Icon
+    ctx.font='18px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#fff';ctx.shadowColor=col;ctx.shadowBlur=6;ctx.fillText(PU_LABELS[type],0,0);
+    ctx.restore();
+  });
+  // Label
+  ctx.font='10px Courier New';ctx.fillStyle='rgba(255,255,255,0.3)';ctx.textAlign='left';
+  ctx.fillText('tap to use',types.length*(PU_ICON_SIZE+10)+24,H/2+PU_ICON_SIZE/2+4);
+}
+
+function drawRapidHeatBar(){
+  // Visual heat gauge below P1's score (bottom of screen)
+  const rs=rapidState[1];
+  if(!rs.active) return;
+  const barW=120,barH=6;
+  const bx=(W-barW)/2,by=H-20;
+  const col=rs.overheated?'#ff5722':'#ffb300';
+  ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fillRect(bx,by,barW,barH);
+  const fill=rs.overheated?(rs.overheatTimer/RAPID_COOLDOWN):(rs.heat/RAPID_BURST);
+  ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=6;ctx.fillRect(bx,by,barW*fill,barH);
+  ctx.shadowBlur=0;
+  ctx.font='9px Courier New';ctx.fillStyle=col;ctx.textAlign='center';
+  ctx.fillText(rs.overheated?'COOLING DOWN':'RAPID FIRE',W/2,by-3);
+}
+
+function drawShieldBar(){
+  const ss=shieldState[1];
+  if(!ss.active) return;
+  const barW=100,barH=6;
+  const bx=(W-barW)/2-70,by=H-20;
+  const col='#69f0ae';
+  ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fillRect(bx,by,barW,barH);
+  const fill=ss.timer/SHIELD_DURATION;
+  ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=4;ctx.fillRect(bx,by,barW*fill,barH);
+  ctx.shadowBlur=0;
+  // Shield pip display
+  ctx.font='9px Courier New';ctx.fillStyle=col;ctx.textAlign='center';
+  const pips='●'.repeat(ss.points)+'○'.repeat(SHIELD_MAX_POINTS-ss.points);
+  ctx.fillText(pips,bx+barW/2,by-3);
+}
+
+function drawMagicBar(){
+  const pu=activePU[1];
+  if(!pu||pu.type!=='magic') return;
+  const barW=100,barH=6;
+  const bx=(W+barW)/2+10,by=H-20;
+  const col='#ea80fc';
+  ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fillRect(bx-barW,by,barW,barH);
+  const fill=pu.timer/(28*FPS);
+  ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=4;ctx.fillRect(bx-barW,by,barW*fill,barH);
+  ctx.shadowBlur=0;ctx.font='9px Courier New';ctx.fillStyle=col;ctx.textAlign='center';
+  ctx.fillText('MAGIC LASER',bx-barW/2,by-3);
+}
+
+function loop(){
+  update();
+  ctx.clearRect(0,0,W,H);
+  drawBackground();
+  ctx.shadowBlur=0;
+  drawPortalEffects();
+  for(const p of particles)drawParticle(p);
+  for(const a of asteroids)drawAsteroid(a);
+  for(const l of lasers)drawLaser(l);
+  drawPowerupSpawns();
+  drawAIPowerupSpawns();
+  drawPUInventory();
+  // Draw clones
+  if(aiPU.cloneActive){
+    for(const cl of clones) drawClone(cl);
+  }
+  for(const ship of ships){ctx.shadowBlur=0;drawTapHint(ship);drawShip(ship);}
+  // Draw second AI ship
+  if(secondAIShip){ctx.shadowBlur=0;drawShip(secondAIShip);}
+  // Reverse shield ring drawn on top of AI ship
+  if(aiPU.reverseShield) drawReverseShield();
+  // P1 slow indicator
+  if(p1Slow.stacks>0) drawSlowIndicator();
+  if(infinityMode&&phase==='play'){drawRapidHeatBar();drawShieldBar();drawMagicBar();}
+  requestAnimationFrame(loop);
+}
+function drawClone(cl){
+  ctx.save();ctx.translate(cl.x,cl.y);ctx.rotate(cl.angle);
+  const s=SHIP_SIZE;
+  const alpha=0.55+(cl.hp/CLONE_HP)*0.25; // fades as hp drops
+  ctx.globalAlpha=alpha;
+  ctx.shadowColor=CLONE_COLOR;ctx.shadowBlur=cl.hit>0?20:8;
+  // Dashed outline body
+  ctx.beginPath();ctx.moveTo(s,0);ctx.lineTo(-s*.6,-s*.55);ctx.lineTo(-s*.35,0);ctx.lineTo(-s*.6,s*.55);ctx.closePath();
+  ctx.fillStyle=cl.hit>0?'#ffffff':CLONE_COLOR+'88';ctx.fill();
+  ctx.strokeStyle=CLONE_COLOR;ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.stroke();ctx.setLineDash([]);
+  // HP pips
+  for(let i=0;i<cl.hp;i++){
+    ctx.beginPath();ctx.arc(-s*.1+i*8,s*.7,2.5,0,Math.PI*2);
+    ctx.fillStyle=CLONE_COLOR;ctx.shadowBlur=4;ctx.fill();
+  }
+  if(cl.hit>0) cl.hit--;
+  ctx.globalAlpha=1;
+  ctx.restore();
+}
+
+function drawReverseShield(){
+  const ship=ships[0];
+  const t=Date.now();
+  const pulse=(Math.sin(t*.006)*.5+.5)*.5+.3;
+  const prog=aiPU.reverseShieldTimer/REVERSE_SHIELD_DURATION;
+  ctx.save();ctx.translate(ship.x,ship.y);
+  // Outer gold ring
+  ctx.beginPath();ctx.arc(0,0,SHIP_SIZE+18,0,Math.PI*2);
+  ctx.strokeStyle=`rgba(255,215,0,${pulse})`;
+  ctx.lineWidth=3;ctx.shadowColor='#ffd740';ctx.shadowBlur=16;ctx.stroke();
+  // Progress arc showing remaining time
+  ctx.beginPath();ctx.arc(0,0,SHIP_SIZE+18,-Math.PI/2,-Math.PI/2+prog*Math.PI*2);
+  ctx.strokeStyle='#ffd740';ctx.lineWidth=4;ctx.shadowBlur=20;ctx.stroke();
+  // Hex pattern shimmer
+  for(let i=0;i<6;i++){
+    const a=i*(Math.PI/3)+(t*.002);
+    const r=SHIP_SIZE+14;
+    const px=Math.cos(a)*r,py=Math.sin(a)*r;
+    ctx.beginPath();ctx.arc(px,py,2.5,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,215,0,${pulse*.8})`;ctx.shadowBlur=6;ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawSlowIndicator(){
+  const ship=ships[1];
+  const stacks=p1Slow.stacks;
+  const intensity=stacks/(SLOW_LEVELS.length-1);
+  const t=Date.now();
+  const pulse=(Math.sin(t*.008)*.5+.5)*.4+.2;
+  ctx.save();ctx.translate(ship.x,ship.y);
+  // Ice-blue crystalline ring that grows with stacks
+  const r=SHIP_SIZE+10+stacks*4;
+  ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);
+  ctx.strokeStyle=`rgba(150,200,255,${pulse*(0.3+intensity*.5)})`;
+  ctx.lineWidth=1.5+stacks*.5;ctx.shadowColor='#96c8ff';ctx.shadowBlur=8+stacks*4;ctx.stroke();
+  // Crystal shards radiating outward
+  for(let i=0;i<stacks*2;i++){
+    const a=(i/(stacks*2))*Math.PI*2+(t*.001);
+    const len=6+stacks*3;
+    ctx.beginPath();ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r);
+    ctx.lineTo(Math.cos(a)*(r+len),Math.sin(a)*(r+len));
+    ctx.strokeStyle=`rgba(180,220,255,${pulse*.6})`;ctx.lineWidth=1;ctx.shadowBlur=4;ctx.stroke();
+  }
+  // Speed text
+  const pct=Math.round(SLOW_LEVELS[stacks]*100);
+  ctx.font='bold 11px Courier New';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle=`rgba(180,220,255,${0.5+intensity*.3})`;ctx.shadowBlur=0;
+  ctx.fillText(`${pct}%`,0,r+14);
+  ctx.restore();
+}
+
+loop();
+</script>
+</body>
+</html>

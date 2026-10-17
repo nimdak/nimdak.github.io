@@ -1,0 +1,2241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tank Arena</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d0d1a; color: #e5e7eb; font-family: 'Courier New', monospace; min-height: 100vh; overflow-x: hidden; }
+  button { font-family: 'Courier New', monospace; cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+
+  #app { display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+
+  /* ── Arena ── */
+  #arena-wrap {
+    display: grid;
+    width: min(88vw, 500px);
+    aspect-ratio: 1;
+    border: 2px solid #374151;
+    box-shadow: 0 0 24px #0008;
+    flex-shrink: 0;
+  }
+
+  /* ── Control pad ── */
+  .ctrl-pad-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .ctrl-pad {
+    display: grid;
+    grid-template-columns: 58px 58px 58px;
+    grid-template-rows: 58px 58px 58px;
+    gap: 6px;
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .ctrl-btn {
+    width: 58px; height: 58px; border-radius: 10px;
+    background: #2d2d44; color: #e5e7eb;
+    border: 1px solid #5a5a7a;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: bold; user-select: none;
+    transition: background 0.1s;
+  }
+  .ctrl-btn:hover:not(:disabled) { background: #4a4a6a; }
+  .ctrl-btn:disabled { background: #1f2937; color: #3d3d5a; border-color: #2d2d44; }
+  .ctrl-center {
+    width: 58px; height: 58px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+
+  /* ── Ammo selector ── */
+  .ammo-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .ammo-btns { display: flex; gap: 8px; }
+  .ammo-btn {
+    padding: 8px 10px; border-radius: 8px; border: 1px solid #374151;
+    background: #1f2937; color: #4b5563;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    min-width: 62px; transition: all 0.15s; font-size: 11px;
+  }
+  .ammo-btn.active { font-weight: bold; }
+  .ammo-icon { font-size: 16px; }
+
+  /* ── Move queue ── */
+  .move-slot {
+    width: 40px; height: 40px; border-radius: 8px; border: 1px solid #2d2d4a;
+    background: #111827; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #2d2d4a; transition: all 0.2s;
+  }
+  .move-slot.filled { border-color: var(--tank-color); background: color-mix(in srgb, var(--tank-color) 13%, transparent); color: var(--tank-color); }
+
+  /* ── Player dots ── */
+  .player-dot {
+    width: 14px; height: 14px; border-radius: 3px;
+    border: 2px solid transparent;
+  }
+
+  /* ── Screens ── */
+  .screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; gap: 16px; width: 100%; }
+  .screen.top { justify-content: flex-start; padding: 10px 8px; gap: 10px; }
+
+  .card {
+    background: #111827; border: 1px solid #374151; border-radius: 12px;
+    padding: 16px; width: min(88vw, 400px);
+  }
+
+  .btn-green { background: #22c55e; color: #000; border: none; padding: 14px 0; border-radius: 8px; font-weight: bold; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; width: 100%; }
+  .btn-green:hover { background: #16a34a; }
+  .btn-green:disabled { background: #1f2937; color: #374151; }
+
+  .tag { font-size: 11px; background: #1c1700; border: 1px solid #713f12; border-radius: 8px; padding: 6px 14px; color: #f59e0b; }
+  .tag.red { background: #1a0000; border-color: #7f1d1d; color: #f87171; }
+
+  .status-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .status-item { display: flex; align-items: center; gap: 5px; font-size: 12px; }
+
+  label.section { display: block; margin-bottom: 8px; color: #9ca3af; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; }
+
+  .player-select { display: flex; gap: 8px; }
+  .ps-btn { flex: 1; padding: 10px 0; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: #9ca3af; font-weight: bold; font-size: 15px; }
+  .ps-btn.active-h { border-color: #22c55e; background: #14532d; color: #22c55e; }
+  .ps-btn.active-ai { border-color: #a855f7; background: #3b0764; color: #a855f7; }
+  .ps-btn:disabled { color: #2d2d44; opacity: 0.4; }
+
+  .info-box { background: #1f2937; border-radius: 8px; padding: 12px; font-size: 12px; color: #6b7280; line-height: 1.9; }
+  .ammo-row { display: flex; align-items: center; gap: 8px; }
+
+  /* ── Handoff card ── */
+  .handoff-card { background: #111827; border-radius: 16px; padding: 32px; text-align: center; max-width: 340px; width: 90vw; }
+  .handoff-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 14px; }
+
+  /* ── Shot preview ── */
+  #shot-preview-screen { cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// SOUND ENGINE
+// ════════════════════════════════════════════════════════════
+const sounds = (() => {
+  let ctx = null;
+  function getCtx() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function noise(dur) {
+    const c = getCtx(), sz = c.sampleRate * dur;
+    const buf = c.createBuffer(1, sz, c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < sz; i++) d[i] = Math.random() * 2 - 1;
+    const src = c.createBufferSource(); src.buffer = buf;
+    return { src, c };
+  }
+  return {
+    fireStandard() { try {
+      const c = getCtx(), {src} = noise(0.08);
+      const g = c.createGain(), f = c.createBiquadFilter();
+      f.type = 'highpass'; f.frequency.value = 1200;
+      g.gain.setValueAtTime(0.4, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.08);
+      src.connect(f); f.connect(g); g.connect(c.destination);
+      src.start(); src.stop(c.currentTime + 0.08);
+    } catch(e){} },
+    fireExplosive() { try {
+      const c = getCtx(), {src} = noise(0.15);
+      const osc = c.createOscillator(), gN = c.createGain(), gO = c.createGain(), m = c.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(180, c.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(40, c.currentTime + 0.15);
+      gO.gain.setValueAtTime(0.5, c.currentTime); gO.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.15);
+      gN.gain.setValueAtTime(0.3, c.currentTime); gN.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.15);
+      m.gain.value = 0.8;
+      osc.connect(gO); gO.connect(m); src.connect(gN); gN.connect(m); m.connect(c.destination);
+      osc.start(); osc.stop(c.currentTime + 0.15); src.start(); src.stop(c.currentTime + 0.15);
+    } catch(e){} },
+    fireFlare() { try {
+      const c = getCtx(), osc = c.createOscillator(), g = c.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, c.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(900, c.currentTime + 0.12);
+      osc.frequency.exponentialRampToValueAtTime(600, c.currentTime + 0.25);
+      g.gain.setValueAtTime(0, c.currentTime); g.gain.linearRampToValueAtTime(0.25, c.currentTime + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.25);
+      osc.connect(g); g.connect(c.destination); osc.start(); osc.stop(c.currentTime + 0.25);
+    } catch(e){} },
+    explosion() { try {
+      const c = getCtx(), {src} = noise(0.6), osc = c.createOscillator();
+      const gN = c.createGain(), gO = c.createGain(), f = c.createBiquadFilter();
+      f.type = 'lowpass'; f.frequency.setValueAtTime(800, c.currentTime); f.frequency.exponentialRampToValueAtTime(80, c.currentTime + 0.5);
+      osc.type = 'sine'; osc.frequency.setValueAtTime(90, c.currentTime); osc.frequency.exponentialRampToValueAtTime(25, c.currentTime + 0.5);
+      gN.gain.setValueAtTime(1.0, c.currentTime); gN.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.6);
+      gO.gain.setValueAtTime(0.6, c.currentTime); gO.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5);
+      src.connect(f); f.connect(gN); gN.connect(c.destination);
+      osc.connect(gO); gO.connect(c.destination);
+      src.start(); src.stop(c.currentTime + 0.6); osc.start(); osc.stop(c.currentTime + 0.5);
+    } catch(e){} },
+    flareBurnout() { try {
+      const c = getCtx(), {src} = noise(0.15), g = c.createGain(), f = c.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = 600; f.Q.value = 0.8;
+      g.gain.setValueAtTime(0.15, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.15);
+      src.connect(f); f.connect(g); g.connect(c.destination); src.start(); src.stop(c.currentTime + 0.15);
+    } catch(e){} },
+    radarPing() { try {
+      const c = getCtx(), osc = c.createOscillator(), g = c.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, c.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(800, c.currentTime + 0.3);
+      g.gain.setValueAtTime(0, c.currentTime);
+      g.gain.linearRampToValueAtTime(0.2, c.currentTime + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.4);
+      osc.connect(g); g.connect(c.destination); osc.start(); osc.stop(c.currentTime + 0.4);
+    } catch(e){} },
+
+    // Low rumble burst — tank moves forward
+    tankMove() { try {
+      const c = getCtx();
+      const {src: n1} = noise(0.18);
+      const osc = c.createOscillator();
+      const gainN = c.createGain(), gainO = c.createGain();
+      const filter = c.createBiquadFilter();
+      // Low rumble: heavy lowpass noise + low sine
+      filter.type = 'lowpass'; filter.frequency.value = 120;
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(55, c.currentTime);
+      osc.frequency.setValueAtTime(48, c.currentTime + 0.06);
+      osc.frequency.setValueAtTime(55, c.currentTime + 0.12);
+      gainN.gain.setValueAtTime(0.6, c.currentTime);
+      gainN.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.18);
+      gainO.gain.setValueAtTime(0.35, c.currentTime);
+      gainO.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.18);
+      n1.connect(filter); filter.connect(gainN); gainN.connect(c.destination);
+      osc.connect(gainO); gainO.connect(c.destination);
+      n1.start(); n1.stop(c.currentTime + 0.18);
+      osc.start(); osc.stop(c.currentTime + 0.18);
+    } catch(e){} },
+
+    // Heavier rumble — tank reverses
+    tankReverse() { try {
+      const c = getCtx();
+      const {src: n1} = noise(0.22);
+      const osc = c.createOscillator();
+      const gainN = c.createGain(), gainO = c.createGain();
+      const filter = c.createBiquadFilter();
+      filter.type = 'lowpass'; filter.frequency.value = 100;
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(42, c.currentTime);
+      osc.frequency.setValueAtTime(38, c.currentTime + 0.08);
+      osc.frequency.setValueAtTime(44, c.currentTime + 0.16);
+      gainN.gain.setValueAtTime(0.65, c.currentTime);
+      gainN.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.22);
+      gainO.gain.setValueAtTime(0.4, c.currentTime);
+      gainO.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.22);
+      n1.connect(filter); filter.connect(gainN); gainN.connect(c.destination);
+      osc.connect(gainO); gainO.connect(c.destination);
+      n1.start(); n1.stop(c.currentTime + 0.22);
+      osc.start(); osc.stop(c.currentTime + 0.22);
+    } catch(e){} },
+
+    // Short grind/squeak — tank turns in place
+    tankTurn() { try {
+      const c = getCtx();
+      const {src: n1} = noise(0.12);
+      const osc = c.createOscillator();
+      const gainN = c.createGain(), gainO = c.createGain();
+      const filterL = c.createBiquadFilter(), filterH = c.createBiquadFilter();
+      filterL.type = 'lowpass';  filterL.frequency.value = 200;
+      filterH.type = 'highpass'; filterH.frequency.value = 80;
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(70, c.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(50, c.currentTime + 0.12);
+      gainN.gain.setValueAtTime(0.45, c.currentTime);
+      gainN.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.12);
+      gainO.gain.setValueAtTime(0.3, c.currentTime);
+      gainO.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.12);
+      n1.connect(filterH); filterH.connect(filterL); filterL.connect(gainN); gainN.connect(c.destination);
+      osc.connect(gainO); gainO.connect(c.destination);
+      n1.start(); n1.stop(c.currentTime + 0.12);
+      osc.start(); osc.stop(c.currentTime + 0.12);
+    } catch(e){} },
+  };
+})();
+
+// ════════════════════════════════════════════════════════════
+// CONSTANTS & HELPERS
+// ════════════════════════════════════════════════════════════
+const GRID = 17;
+const DIRS = ['N','E','S','W'];
+const DIR_DELTA = { N:[-1,0], E:[0,1], S:[1,0], W:[0,-1] };
+const DIR_ARROW = { N:'▲', E:'▶', S:'▼', W:'◀' };
+const DIR_ROT   = { N:0, E:90, S:180, W:270 };
+
+const AMMO = {
+  standard:  { label:'Standard',  icon:'●', speed:2, desc:'2 cells/turn, kills on hit' },
+  explosive: { label:'Explosive', icon:'◆', speed:1, desc:'1 cell/turn, explodes on impact (3×3)' },
+  flare:     { label:'Flare',     icon:'★', speed:3, desc:'3 cells/turn, lights 3×3 as it flies, no damage' },
+};
+const AMMO_CYCLE = ['standard','explosive','flare'];
+
+const TANK_COLORS = [
+  { bg:'#22c55e', dark:'#15803d', text:'#fff', name:'Green' },
+  { bg:'#3b82f6', dark:'#1d4ed8', text:'#fff', name:'Blue' },
+  { bg:'#f97316', dark:'#c2410c', text:'#fff', name:'Orange' },
+  { bg:'#ec4899', dark:'#be185d', text:'#fff', name:'Pink' },
+  { bg:'#a855f7', dark:'#7e22ce', text:'#fff', name:'Purple' },
+  { bg:'#eab308', dark:'#a16207', text:'#000', name:'Yellow' },
+];
+
+function inBounds(r,c){ return r>=0&&r<GRID&&c>=0&&c<GRID; }
+function turnLeft(d){ return DIRS[(DIRS.indexOf(d)+3)%4]; }
+function turnRight(d){ return DIRS[(DIRS.indexOf(d)+1)%4]; }
+function movePos(r,c,d,back=false){
+  const [dr,dc]=DIR_DELTA[d];
+  return back?[r-dr,c-dc]:[r+dr,c+dc];
+}
+function manhattanDist(r1,c1,r2,c2){ return Math.abs(r1-r2)+Math.abs(c1-c2); }
+
+function generateMap(){
+  const m = Array.from({length:GRID},()=>Array(GRID).fill(0));
+  for(let i=0;i<GRID;i++){ m[0][i]=1;m[GRID-1][i]=1;m[i][0]=1;m[i][GRID-1]=1; }
+  let s = Date.now()&0xffffffff;
+  const rng=()=>{ s^=s<<13;s^=s>>17;s^=s<<5;return (s>>>0)/0xffffffff; };
+  // Only keep border walls safe — spawns are generated after the map
+  const safe=(r,c)=>r<1||r>GRID-2||c<1||c>GRID-2;
+  const solidCount=8+Math.floor(rng()*5);
+  for(let n=0;n<solidCount;n++){
+    const cr=2+Math.floor(rng()*(GRID-4)), cc=2+Math.floor(rng()*(GRID-4));
+    const shape=Math.floor(rng()*3);
+    const cells=shape===0?[[0,0],[1,0],[2,0],[0,1]]:shape===1?[[0,0],[0,1],[0,2]]:[[0,0],[1,0],[1,1]];
+    for(const [dr,dc] of cells){ const r=cr+dr,c=cc+dc; if(!safe(r,c)) m[r][c]=1; }
+  }
+  const lowCount=8+Math.floor(rng()*7);
+  for(let n=0;n<lowCount;n++){
+    const r=2+Math.floor(rng()*(GRID-4)), c=2+Math.floor(rng()*(GRID-4));
+    if(!safe(r,c)&&m[r][c]===0) m[r][c]=2;
+    if(rng()<0.4){ const nr=r+(rng()<0.5?1:-1),nc=c+(rng()<0.5?1:-1); if(!safe(nr,nc)&&m[nr]&&m[nr][nc]===0) m[nr][nc]=2; }
+  }
+  return m;
+}
+
+// Generate random spawn positions for `count` tanks on the given map.
+// Rules: not on walls/low obstacles, not within 5 Manhattan distance of each other,
+// not on border cells. Falls back gracefully if space is tight.
+function generateSpawns(count, arenaMap){
+  const MIN_DIST = 5;
+  const candidates = [];
+  for(let r=1;r<GRID-1;r++)
+    for(let c=1;c<GRID-1;c++)
+      if(arenaMap[r][c]===0) candidates.push([r,c]);
+
+  // Shuffle candidates
+  for(let i=candidates.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [candidates[i],candidates[j]]=[candidates[j],candidates[i]];
+  }
+
+  const chosen=[];
+  for(const [r,c] of candidates){
+    if(chosen.length>=count) break;
+    const tooClose=chosen.some(([cr,cc])=>manhattanDist(r,c,cr,cc)<MIN_DIST);
+    if(!tooClose) chosen.push([r,c]);
+  }
+
+  // If we couldn't fit everyone with MIN_DIST, relax to 3 for the remaining
+  if(chosen.length<count){
+    for(const [r,c] of candidates){
+      if(chosen.length>=count) break;
+      if(chosen.some(([cr,cc])=>cr===r&&cc===c)) continue; // already picked
+      const tooClose=chosen.some(([cr,cc])=>manhattanDist(r,c,cr,cc)<3);
+      if(!tooClose) chosen.push([r,c]);
+    }
+  }
+
+  const dirs=DIRS;
+  return chosen.map(([r,c])=>[r,c,dirs[Math.floor(Math.random()*4)]]);
+}
+
+function makeHelpers(arenaMap){
+  const isSolid=(r,c)=>!inBounds(r,c)||arenaMap[r][c]===1;
+  const isBlocking=(r,c)=>!inBounds(r,c)||arenaMap[r][c]>=1;
+  function computeVisibility(row,col,dir){
+    const vis=new Set(); vis.add(`${row},${col}`);
+    const [dr,dc]=DIR_DELTA[dir]; let r=row+dr,c=col+dc;
+    while(inBounds(r,c)){ vis.add(`${r},${c}`); if(arenaMap[r][c]===1) break; r+=dr;c+=dc; }
+    return vis;
+  }
+  function computeFlareReveal(row,col){
+    const rev=new Set();
+    for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){ const tr=row+dr,tc=col+dc; if(inBounds(tr,tc)) rev.add(`${tr},${tc}`); }
+    return rev;
+  }
+  function computeBlast(cr,cc,tanks){
+    const killed=[];
+    for(const t of tanks){
+      if(!t.alive) continue;
+      const dr=t.row-cr,dc=t.col-cc;
+      if(Math.abs(dr)>1||Math.abs(dc)>1) continue;
+      if(dr===0&&dc===0){ killed.push(t); continue; }
+      const steps=Math.max(Math.abs(dr),Math.abs(dc));
+      let blocked=false;
+      for(let s=1;s<=steps;s++){ const sr=cr+Math.round(dr*s/steps),sc=cc+Math.round(dc*s/steps); if(isSolid(sr,sc)){blocked=true;break;} }
+      if(!blocked) killed.push(t);
+    }
+    return killed;
+  }
+  return {isSolid,isBlocking,computeVisibility,computeFlareReveal,computeBlast};
+}
+
+// ════════════════════════════════════════════════════════════
+// AI
+// ════════════════════════════════════════════════════════════
+function planAIMoves(tank, allTanks, allProjectiles, maxMoves, arenaMap){
+  const {isBlocking,computeVisibility}=makeHelpers(arenaMap);
+  const moves=[]; let row=tank.row,col=tank.col,dir=tank.dir;
+  const ownShotCells=new Set(allProjectiles.filter(p=>p.ownerId===tank.id).map(p=>`${p.row},${p.col}`));
+  function wouldHitOwnShot(nr,nc){ return ownShotCells.has(`${nr},${nc}`)&&Math.random()<0.95; }
+  function doMove(mv){
+    moves.push(mv);
+    if(mv==='L') dir=turnLeft(dir);
+    else if(mv==='R') dir=turnRight(dir);
+    else if(mv==='F'){ const [nr,nc]=movePos(row,col,dir); if(!isBlocking(nr,nc)){row=nr;col=nc;} }
+    else if(mv==='B'){ const [nr,nc]=movePos(row,col,dir,true); if(!isBlocking(nr,nc)){row=nr;col=nc;} }
+  }
+  function findVisibleEnemy(){
+    const vis=computeVisibility(row,col,dir); let closest=null,closestDist=Infinity;
+    for(const t of allTanks){
+      if(!t.alive||t.id===tank.id) continue;
+      if(vis.has(`${t.row},${t.col}`)){ const d=manhattanDist(row,col,t.row,t.col); if(d<closestDist){closestDist=d;closest=t;} }
+    }
+    return closest;
+  }
+  function bestTurnToward(tr,tc){
+    const dr=tr-row,dc=tc-col;
+    let desired=Math.abs(dr)>=Math.abs(dc)?(dr>0?'S':'N'):(dc>0?'E':'W');
+    if(dir===desired) return null;
+    const diff=(DIRS.indexOf(desired)-DIRS.indexOf(dir)+4)%4;
+    return diff===1?'R':diff===3?'L':'R';
+  }
+  function canMoveF(){ const [nr,nc]=movePos(row,col,dir); return !isBlocking(nr,nc)&&!wouldHitOwnShot(nr,nc); }
+  function canMoveB(){ const [nr,nc]=movePos(row,col,dir,true); return !isBlocking(nr,nc)&&!wouldHitOwnShot(nr,nc); }
+  function canMoveD(d){ const [nr,nc]=movePos(row,col,d); return !isBlocking(nr,nc)&&!wouldHitOwnShot(nr,nc); }
+  for(let i=0;i<maxMoves;i++){
+    const enemy=findVisibleEnemy();
+    if(enemy){
+      const turn=bestTurnToward(enemy.row,enemy.col);
+      if(turn) doMove(turn); else if(canMoveF()) doMove('F'); else doMove('R');
+    } else {
+      if(canMoveF()){ doMove(Math.random()<0.75?'F':(Math.random()<0.5?'L':'R')); }
+      else {
+        const cL=canMoveD(turnLeft(dir)),cR=canMoveD(turnRight(dir));
+        if(cL&&cR) doMove(Math.random()<0.5?'L':'R');
+        else if(cL) doMove('L'); else if(cR) doMove('R');
+        else if(canMoveB()) doMove('B'); else doMove(Math.random()<0.5?'L':'R');
+      }
+    }
+  }
+  const seesEnemy=allTanks.some(t=>t.alive&&t.id!==tank.id&&computeVisibility(tank.row,tank.col,tank.dir).has(`${t.row},${t.col}`));
+  const ammoChoice=seesEnemy?'explosive':(Math.random()<0.15?'flare':'standard');
+  return {moves,ammo:ammoChoice};
+}
+
+// ════════════════════════════════════════════════════════════
+// SPY PLANE
+// ════════════════════════════════════════════════════════════
+// Plane flies in a straight line (cardinal or diagonal) at speed 3.
+// Pings any tank within PLANE_PING_RANGE cells of its flight path.
+// Announced 1 round prior with inbound direction.
+
+const PLANE_SPEED = 3;
+const PLANE_PING_RANGE = 2;
+
+// 8 possible plane directions with row/col deltas
+const PLANE_DIRS = {
+  'N':  { dr:-1, dc: 0, label:'South → North',      fromLabel:'South',      rot:0   },
+  'S':  { dr: 1, dc: 0, label:'North → South',      fromLabel:'North',      rot:180 },
+  'E':  { dr: 0, dc: 1, label:'West → East',        fromLabel:'West',       rot:90  },
+  'W':  { dr: 0, dc:-1, label:'East → West',        fromLabel:'East',       rot:270 },
+  'NE': { dr:-1, dc: 1, label:'SW → NE',            fromLabel:'South-West', rot:45  },
+  'NW': { dr:-1, dc:-1, label:'SE → NW',            fromLabel:'South-East', rot:315 },
+  'SE': { dr: 1, dc: 1, label:'NW → SE',            fromLabel:'North-West', rot:135 },
+  'SW': { dr: 1, dc:-1, label:'NE → SW',            fromLabel:'North-East', rot:225 },
+};
+
+function generatePlaneApproach(){
+  const dirKeys = Object.keys(PLANE_DIRS);
+  const dir = dirKeys[Math.floor(Math.random() * dirKeys.length)];
+  const {dr, dc} = PLANE_DIRS[dir];
+  let row = 0, col = 0;
+
+  // Use else-if so exactly one branch fires
+  if     (dr < 0 && dc === 0) { row = GRID;  col = 1 + Math.floor(Math.random()*(GRID-2)); } // N
+  else if(dr > 0 && dc === 0) { row = -1;    col = 1 + Math.floor(Math.random()*(GRID-2)); } // S
+  else if(dr === 0 && dc > 0) { row = 1 + Math.floor(Math.random()*(GRID-2)); col = -1;    } // E
+  else if(dr === 0 && dc < 0) { row = 1 + Math.floor(Math.random()*(GRID-2)); col = GRID;  } // W
+  else if(dr < 0 && dc > 0)   { row = GRID;  col = -1;    } // NE
+  else if(dr < 0 && dc < 0)   { row = GRID;  col = GRID;  } // NW
+  else if(dr > 0 && dc > 0)   { row = -1;    col = -1;    } // SE
+  else                         { row = -1;    col = GRID;  } // SW
+
+  return { row, col, dir };
+}
+
+function advancePlane(plane){
+  const pd = PLANE_DIRS[plane.dir];
+  if(!pd) return plane; // safety
+  return { ...plane, row: plane.row + pd.dr*PLANE_SPEED, col: plane.col + pd.dc*PLANE_SPEED };
+}
+
+function planeStillFlying(plane){
+  const margin = PLANE_SPEED * 3 + 4;
+  return plane.row > -margin && plane.row < GRID+margin
+      && plane.col > -margin && plane.col < GRID+margin;
+}
+
+function getPlanePings(plane, tanks){
+  if(!tanks || !Array.isArray(tanks)) return [];
+  const pd = PLANE_DIRS[plane.dir];
+  if(!pd) return [];
+  const len = Math.sqrt(pd.dr*pd.dr + pd.dc*pd.dc);
+  if(len === 0) return [];
+  const ux = pd.dc/len, uy = pd.dr/len;
+  const px = -uy, py = ux;
+
+  const pinged = [];
+  for(const t of tanks){
+    if(!t.alive) continue;
+    const relR = t.row - plane.row;
+    const relC = t.col - plane.col;
+    const para = relR*uy + relC*ux;
+    const perp = Math.abs(relR*py + relC*px);
+    if(perp <= PLANE_PING_RANGE && para >= -(PLANE_SPEED+2) && para <= PLANE_SPEED+2){
+      pinged.push({row:t.row, col:t.col});
+    }
+  }
+  return pinged;
+}
+
+// ════════════════════════════════════════════════════════════
+// GAME LOGIC
+// ════════════════════════════════════════════════════════════
+function createTank(id, spawn, isAI=false){
+  const [r,c,dir]=spawn;
+  return {id,row:r,col:c,dir,alive:true,color:TANK_COLORS[id],isAI,ammo:'standard'};
+}
+
+function initGame(numHumans,numAI){
+  const total=numHumans+numAI;
+  const arenaMap=generateMap();
+  const spawns=generateSpawns(total,arenaMap);
+  // Random first player — pick a random human (or any tank if all AI)
+  const firstPlayer = Math.floor(Math.random() * (numHumans > 0 ? numHumans : total));
+  return {
+    numHumans,numAI,numPlayers:total,
+    currentPlayer:firstPlayer,round:1,maxMoves:3,
+    arenaMap,
+    tanks:Array.from({length:total},(_,i)=>createTank(i,spawns[i],i>=numHumans)),
+    projectiles:[],
+    pendingMoves:Array(total).fill(null),
+    winner:null,
+    spyPlane:null,
+    spyPlaneIncoming:null,
+    nextPlaneRound: 4+Math.floor(Math.random()*5),
+    lastSnapshot: null,
+    playerNames: {},      // tankId → custom name
+    namedPlayers: [],     // tankIds that have already been named
+  };
+}
+
+function tankDisplayName(tank, game){
+  if(!game) return tank.color.name;
+  return game.playerNames[tank.id] || tank.color.name;
+}
+
+function applyMoves(tanks,projectiles,allPending,arenaMap){
+  const {computeFlareReveal,computeBlast}=makeHelpers(arenaMap);
+  let ts=tanks.map(t=>({...t}));
+  const log=[]; const blastCells=new Set();
+
+  for(let pid=0;pid<allPending.length;pid++){
+    const pending=allPending[pid]||{moves:[],ammo:'standard'};
+    const t=ts[pid]; if(!t.alive) continue;
+    for(const mv of (pending.moves||[])){
+      if(mv==='L') t.dir=turnLeft(t.dir);
+      else if(mv==='R') t.dir=turnRight(t.dir);
+      else if(mv==='F'){
+        const [nr,nc]=movePos(t.row,t.col,t.dir);
+        if(!inBounds(nr,nc)||arenaMap[nr][nc]>=1||ts.some(o=>o.alive&&o.id!==t.id&&o.row===nr&&o.col===nc)) {}
+        else{ t.row=nr;t.col=nc; }
+      }
+      else if(mv==='B'){
+        const [nr,nc]=movePos(t.row,t.col,t.dir,true);
+        if(!inBounds(nr,nc)||arenaMap[nr][nc]>=1||ts.some(o=>o.alive&&o.id!==t.id&&o.row===nr&&o.col===nc)) {}
+        else{ t.row=nr;t.col=nc; }
+      }
+      // After each move step, check if tank walked into a live projectile
+      if(t.alive){
+        const projHit = projectiles.find(p => p.row===t.row && p.col===t.col && p.ammo!=='flare');
+        if(projHit){
+          if(projHit.ammo==='explosive'){
+            // Detonate — kills everyone in blast radius including the walker
+            const blasted=computeBlast(t.row,t.col,ts);
+            // Always include the walking tank in the blast
+            if(!blasted.find(bt=>bt.id===t.id)) blasted.push(t);
+            let hitEnemy=false;
+            for(const bt of blasted){
+              if(bt.alive){
+                bt.alive=false;
+                const self=bt.id===projHit.ownerId;
+                log.push(self
+                  ? `💀 ${bt.color.name} destroyed themselves walking into their own explosive!`
+                  : `💥 ${bt.color.name} walked into ${TANK_COLORS[projHit.ownerId].name}'s explosive!`);
+                if(!self) hitEnemy=true;
+              }
+            }
+            if(hitEnemy){
+              for(let br=-1;br<=1;br++) for(let bc=-1;bc<=1;bc++) blastCells.add(`${t.row+br},${t.col+bc}`);
+              blasted.forEach(bt=>blastCells.add(`${bt.row},${bt.col}`));
+            }
+          } else {
+            // Standard round — kills the walker
+            t.alive=false;
+            const self=projHit.ownerId===t.id;
+            log.push(self
+              ? `💀 ${t.color.name} drove into their own shot!`
+              : `💥 ${t.color.name} walked into ${TANK_COLORS[projHit.ownerId].name}'s shot!`);
+          }
+          break; // always end moves immediately on any projectile collision
+        }
+      }
+    }
+    t.ammo=pending.ammo||'standard';
+  }
+
+  function stepProjectile(p){
+    const [dr,dc]=DIR_DELTA[p.dir]; const nr=p.row+dr,nc=p.col+dc;
+    // Clear fromBarrel after first step so subsequent steps can explode normally
+    const p2 = p.fromBarrel ? {...p, fromBarrel:false} : p;
+    // Only solid walls (===1) or out-of-bounds stop projectiles. Low obstacles (===2) are passed over.
+    if(!inBounds(nr,nc)||arenaMap[nr][nc]===1){
+      if(p.ammo==='flare'){ log.push(`🔦 ${TANK_COLORS[p.ownerId].name}'s flare burned out.`); }
+      else if(p.ammo==='explosive' && !p.fromBarrel){
+        // Only explode if shot has cleared the barrel (not firing point-blank into a wall)
+        if(inBounds(p.row,p.col)){
+          const blasted=computeBlast(p.row,p.col,ts); let hitEnemy=false;
+          for(const t of blasted){ if(t.alive){ t.alive=false; const self=t.id===p.ownerId; log.push(self?`💀 ${t.color.name} caught in their own blast!`:`💥 ${t.color.name} caught in ${TANK_COLORS[p.ownerId].name}'s blast!`); if(!self)hitEnemy=true; } }
+          if(hitEnemy){ for(let br=-1;br<=1;br++) for(let bc=-1;bc<=1;bc++) blastCells.add(`${p.row+br},${p.col+bc}`); blasted.forEach(t=>blastCells.add(`${t.row},${t.col}`)); }
+        }
+      }
+      return null;
+    }
+    const hit=ts.find(t=>t.alive&&t.row===nr&&t.col===nc);
+    if(hit){
+      if(p.ammo==='flare') return {...p,row:nr,col:nc};
+      if(p.ammo==='explosive'){
+        const blasted=computeBlast(nr,nc,ts); let hitEnemy=false;
+        for(const t of blasted){ if(t.alive){ t.alive=false; const self=t.id===p.ownerId; log.push(self?`💀 ${t.color.name} destroyed themselves with their own blast!`:`💥 ${t.color.name} caught in ${TANK_COLORS[p.ownerId].name}'s blast!`); if(!self)hitEnemy=true; } }
+        if(hitEnemy){ for(let br=-1;br<=1;br++) for(let bc=-1;bc<=1;bc++) blastCells.add(`${nr+br},${nc+bc}`); blasted.forEach(t=>blastCells.add(`${t.row},${t.col}`)); }
+        return null;
+      }
+      if(hit.alive){ hit.alive=false; const self=hit.id===p.ownerId; log.push(self?`💀 ${hit.color.name} drove into their own shot!`:`💥 ${hit.color.name} destroyed by ${TANK_COLORS[p.ownerId].name}!`); }
+      return null;
+    }
+    return {...p2,row:nr,col:nc};
+  }
+
+  function advanceBySpeed(p){
+    const speed=AMMO[p.ammo]?.speed??1; let cur=p;
+    for(let s=0;s<speed;s++){ const next=stepProjectile(cur); if(!next) return null; cur=next; }
+    return cur;
+  }
+
+  let surviving=[];
+  for(const p of projectiles){ const mv=advanceBySpeed(p); if(mv) surviving.push(mv); }
+  for(const t of ts){
+    if(!t.alive) continue;
+    // fromBarrel=true: if the very first step hits a wall, don't explode (shot never left the barrel)
+    const shot={row:t.row,col:t.col,dir:t.dir,ownerId:t.id,ammo:t.ammo,id:Math.random(),fromBarrel:true};
+    const mv=advanceBySpeed(shot); if(mv) surviving.push(mv);
+  }
+
+  const alive=ts.filter(t=>t.alive);
+  const winner=alive.length===1?alive[0].id:alive.length===0?-1:null;
+  const hadElimination=log.some(l=>l.includes('destroyed')||l.includes('caught')||l.includes('themselves'));
+  return {tanks:ts,projectiles:surviving,log,winner,hadElimination,blastCells};
+}
+
+// ════════════════════════════════════════════════════════════
+// RENDER ENGINE
+// ════════════════════════════════════════════════════════════
+// SVG ammo shapes
+function ammoShapeSVG(ammo, color, size=10){
+  const s=size;
+  if(ammo==='standard') return `<svg width="${s*0.7}" height="${s}" viewBox="0 0 7 10"><ellipse cx="3.5" cy="5" rx="3" ry="4.5" fill="${color}"/></svg>`;
+  if(ammo==='explosive') return `<svg width="${s}" height="${s}" viewBox="0 0 10 10"><polygon points="5,0 10,5 5,10 0,5" fill="${color}"/></svg>`;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 10 10"><polygon points="5,0 6,4 10,5 6,6 5,10 4,6 0,5 4,4" fill="${color}"/></svg>`;
+}
+
+function renderArena(container, tanks, projectiles, arenaMap, opts={}){
+  const { visibleCells=null, flareCells=null, blastCells=null, fogMode='all', playerTankId=-1 } = opts;
+  const GRID_W = container.offsetWidth || 500;
+  const cellSize = GRID_W / GRID;
+
+  // Build own proj cells for fog mode
+  const ownProjCells = (fogMode==='fog'&&playerTankId>=0)
+    ? new Set(projectiles.filter(p=>p.ownerId===playerTankId).map(p=>`${p.row},${p.col}`))
+    : null;
+
+  container.innerHTML='';
+  const canvas=document.createElement('canvas');
+  canvas.width=container.offsetWidth||500;
+  canvas.height=canvas.width;
+  container.appendChild(canvas);
+  const ctx2=canvas.getContext('2d');
+  const cs=canvas.width/GRID;
+
+  for(let r=0;r<GRID;r++){
+    for(let c=0;c<GRID;c++){
+      const key=`${r},${c}`;
+      const flarelit=flareCells?flareCells.has(key):false;
+      const blasted=blastCells?blastCells.has(key):false;
+      const ownProj=ownProjCells?ownProjCells.has(key):false;
+      let visible=fogMode==='all'?true
+        :fogMode==='flare'?flarelit
+        :fogMode==='blast'?blasted
+        :(visibleCells?visibleCells.has(key):false)||ownProj;
+
+      const x=c*cs, y=r*cs;
+
+      if(!visible){ ctx2.fillStyle='#000000'; ctx2.fillRect(x,y,cs,cs); continue; }
+
+      const tile=arenaMap[r][c];
+      let bg=tile===1?'#374151':tile===2?'#78716c':'#1a1a2e';
+      if(flarelit&&fogMode==='flare') bg=tile===1?'#4d3800':tile===2?'#5c4a00':'#2a1f00';
+      if(blasted&&fogMode==='blast') bg=tile===1?'#4d1500':tile===2?'#5c2000':'#2a0a00';
+      ctx2.fillStyle=bg; ctx2.fillRect(x,y,cs,cs);
+
+      // grid line
+      ctx2.strokeStyle=tile===1?'#4b5563':tile===2?'#a8a29e':'#1e1e3a';
+      ctx2.lineWidth=0.5; ctx2.strokeRect(x,y,cs,cs);
+
+      // low obstacle marker
+      if(tile===2){
+        const tank=tanks.find(t=>t.alive&&t.row===r&&t.col===c);
+        if(!tank){
+          ctx2.fillStyle='#57534e'; ctx2.globalAlpha=0.7;
+          ctx2.fillRect(x+cs*0.15, y+cs*0.3, cs*0.7, cs*0.4);
+          ctx2.globalAlpha=1;
+        }
+      }
+
+      // flare/blast tint
+      if(flarelit&&fogMode==='flare'){ ctx2.fillStyle='rgba(251,191,36,0.08)'; ctx2.fillRect(x,y,cs,cs); }
+      if(blasted&&fogMode==='blast'){ ctx2.fillStyle='rgba(239,68,68,0.12)'; ctx2.fillRect(x,y,cs,cs); }
+
+      // Tank
+      const tankHere = fogMode==='blast'
+        ? tanks.find(t=>t.row===r&&t.col===c)
+        : tanks.find(t=>t.alive&&t.row===r&&t.col===c);
+
+      if(tankHere){
+        const pad=cs*0.09;
+        ctx2.fillStyle=tankHere.alive?tankHere.color.bg:tankHere.color.bg+'55';
+        ctx2.globalAlpha=1;
+        roundRect(ctx2,x+pad,y+pad,cs-pad*2,cs-pad*2,cs*0.15);
+        ctx2.fill();
+        ctx2.strokeStyle=tankHere.alive?tankHere.color.dark:tankHere.color.dark+'55';
+        ctx2.lineWidth=Math.max(1,cs*0.08);
+        roundRect(ctx2,x+pad,y+pad,cs-pad*2,cs-pad*2,cs*0.15);
+        ctx2.stroke();
+        // direction arrow / skull
+        ctx2.fillStyle=tankHere.alive?tankHere.color.text:'#ffffff88';
+        ctx2.font=`bold ${cs*0.42}px sans-serif`;
+        ctx2.textAlign='center'; ctx2.textBaseline='middle';
+        ctx2.fillText(tankHere.alive?DIR_ARROW[tankHere.dir]:'💥', x+cs/2, y+cs/2);
+        // AI badge
+        if(tankHere.isAI){
+          ctx2.font=`${cs*0.22}px sans-serif`;
+          ctx2.fillText('🤖', x+cs*0.8, y+cs*0.82);
+        }
+      }
+
+      // Projectile (only if no tank)
+      if(!tankHere){
+        const projs=projectiles.filter(p=>p.row===r&&p.col===c);
+        if(projs.length>0){
+          const p=projs[0];
+          const color=TANK_COLORS[p.ownerId]?.bg||'#fff';
+          const [tdr,tdc]=DIR_DELTA[p.dir];
+          const leadSize=(p.ammo==='flare'?0.28:p.ammo==='explosive'?0.24:0.18)*cs;
+          // Trail particles
+          const particles=[{dist:0.26,op:0.55},{dist:0.42,op:0.28},{dist:0.56,op:0.12}];
+          for(let pi=0;pi<particles.length;pi++){
+            const pt=particles[pi];
+            const pr=y+cs/2+(-tdr)*pt.dist*cs;
+            const pc=x+cs/2+(-tdc)*pt.dist*cs;
+            const pSize=Math.max(1,leadSize-(pi+1)*2);
+            ctx2.globalAlpha=pt.op;
+            ctx2.fillStyle=color;
+            ctx2.beginPath(); ctx2.arc(pc,pr,pSize/2,0,Math.PI*2); ctx2.fill();
+          }
+          ctx2.globalAlpha=1;
+          // Lead shape
+          ctx2.shadowColor=color; ctx2.shadowBlur=4;
+          ctx2.fillStyle=color;
+          if(p.ammo==='standard'){
+            // Oval (rotated based on direction)
+            ctx2.save(); ctx2.translate(x+cs/2,y+cs/2);
+            const angle=DIR_ROT[p.dir]*(Math.PI/180);
+            ctx2.rotate(angle);
+            ctx2.beginPath(); ctx2.ellipse(0,0,leadSize*0.45,leadSize*0.75,0,0,Math.PI*2); ctx2.fill();
+            ctx2.restore();
+          } else if(p.ammo==='explosive'){
+            // Diamond
+            ctx2.save(); ctx2.translate(x+cs/2,y+cs/2); ctx2.rotate(Math.PI/4);
+            ctx2.fillRect(-leadSize/2,-leadSize/2,leadSize,leadSize);
+            ctx2.restore();
+          } else {
+            // 4-point star
+            drawStar(ctx2,x+cs/2,y+cs/2,leadSize*0.55,4);
+          }
+          ctx2.shadowBlur=0;
+        }
+      }
+    }
+  }
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+  ctx.closePath();
+}
+
+function drawStar(ctx,cx,cy,r,points){
+  ctx.beginPath();
+  for(let i=0;i<points*2;i++){
+    const angle=(i*Math.PI/points)-Math.PI/2;
+    const radius=i%2===0?r:r*0.45;
+    const x=cx+Math.cos(angle)*radius, y=cy+Math.sin(angle)*radius;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.closePath(); ctx.fill();
+}
+
+// ════════════════════════════════════════════════════════════
+// APP STATE
+// ════════════════════════════════════════════════════════════
+let state = {
+  screen: 'menu',
+  numHumans: 1,
+  numAI: 1,
+  game: null,
+  currentMoves: [],
+  currentAmmo: 'standard',
+  resolveLog: [],
+  resolveResult: null,
+  shotPreview: null,
+  shotPreviewTimer: null,
+  allReplays: [],
+  expandedReplay: null,
+  pendingReplays: [],
+  afterReplayScreen: null,
+};
+
+function getPreviewTank(){
+  const g=state.game; if(!g||state.screen!=='planning') return null;
+  const t=g.tanks[g.currentPlayer]; if(!t||!t.alive) return null;
+  const {isBlocking}=makeHelpers(g.arenaMap);
+  let row=t.row,col=t.col,dir=t.dir;
+  let hitProjectile=false;
+  for(const mv of state.currentMoves){
+    if(hitProjectile) break; // stop simulating once we've crossed a projectile
+    if(mv==='L') dir=turnLeft(dir);
+    else if(mv==='R') dir=turnRight(dir);
+    else if(mv==='F'){const[nr,nc]=movePos(row,col,dir);if(!isBlocking(nr,nc)){row=nr;col=nc;}}
+    else if(mv==='B'){const[nr,nc]=movePos(row,col,dir,true);if(!isBlocking(nr,nc)){row=nr;col=nc;}}
+    // Check if tank's new position overlaps a non-flare projectile
+    const proj=g.projectiles.find(p=>p.row===row&&p.col===col&&p.ammo!=='flare');
+    if(proj) hitProjectile=true;
+  }
+  return {...t,row,col,dir,hitProjectile};
+}
+
+function getVisibleCells(g, pt){
+  if(!g||!pt) return null;
+  const pid=g.currentPlayer;
+  const helpers=makeHelpers(g.arenaMap);
+  const base=helpers.computeVisibility(pt.row,pt.col,pt.dir);
+  g.projectiles.forEach(p=>{
+    if(p.ownerId===pid&&p.ammo==='flare') helpers.computeFlareReveal(p.row,p.col).forEach(k=>base.add(k));
+  });
+  return base;
+}
+
+// ════════════════════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════════════════════
+function render(){
+  const app=document.getElementById('app');
+  app.innerHTML='';
+  const s=state;
+
+  if(s.screen==='menu') renderMenu(app);
+  else if(s.screen==='handoff') renderHandoff(app);
+  else if(s.screen==='planning') renderPlanning(app);
+  else if(s.screen==='shotpreview') renderShotPreview(app);
+  else if(s.screen==='resolve') renderResolve(app);
+  else if(s.screen==='replay') renderReplay(app);
+  else if(s.screen==='gameover') renderGameOver(app);
+}
+
+// ── Menu ──────────────────────────────────────────────────
+function renderMenu(app){
+  const s=state;
+  const total=s.numHumans+s.numAI;
+  const maxAI=6-s.numHumans;
+
+  const el=document.createElement('div');
+  el.className='screen';
+  el.innerHTML=`
+    <div style="font-size:48px">🎯</div>
+    <h1 style="font-size:clamp(22px,5vw,38px);letter-spacing:4px;color:#22c55e;text-transform:uppercase">Tank Arena</h1>
+    <p style="color:#6b7280;text-align:center;max-width:360px;line-height:1.6">Pass-the-device tactical tank combat. Plan in secret. Last tank wins.</p>
+    <div style="background:#111827;border:1px solid #374151;border-radius:12px;padding:24px;width:min(360px,92vw);display:flex;flex-direction:column;gap:18px">
+      <div>
+        <label class="section">👤 Human Players</label>
+        <div class="player-select" id="human-btns">
+          ${[1,2,3,4,5,6].map(n=>`<button class="ps-btn${s.numHumans===n?' active-h':''}" data-h="${n}">${n}</button>`).join('')}
+        </div>
+      </div>
+      <div>
+        <label class="section">🤖 AI Players</label>
+        <div class="player-select" id="ai-btns">
+          ${[0,1,2,3,4,5].map(n=>`<button class="ps-btn${s.numAI===n?' active-ai':''}" data-ai="${n}"${n>maxAI?' disabled':''} >${n}</button>`).join('')}
+        </div>
+      </div>
+      <div class="info-box">
+        <div style="color:#9ca3af;margin-bottom:4px">${total} tanks total${s.numAI>0?` <span style="color:#a855f7">(${s.numAI} AI)</span>`:''}</div>
+        ${AMMO_CYCLE.map(k=>`<div class="ammo-row">${ammoShapeSVG(k,'#9ca3af',10)}<b style="color:#e5e7eb">${AMMO[k].label}</b> — ${AMMO[k].desc}</div>`).join('')}
+        <div style="margin-top:4px">• No kills = +1 move next round (max 8)</div>
+      </div>
+      <button class="btn-green" id="start-btn"${total<2?' disabled':''}>Start Game</button>
+    </div>
+  `;
+  app.appendChild(el);
+
+  el.querySelectorAll('[data-h]').forEach(btn=>btn.onclick=()=>{
+    const n=+btn.dataset.h;
+    state.numHumans=n;
+    if(n+state.numAI>6) state.numAI=6-n;
+    render();
+  });
+  el.querySelectorAll('[data-ai]').forEach(btn=>btn.onclick=()=>{
+    if(!btn.disabled){ state.numAI=+btn.dataset.ai; render(); }
+  });
+  el.querySelector('#start-btn').onclick=()=>{
+    state.game=initGame(state.numHumans,state.numAI);
+    state.currentMoves=[]; state.currentAmmo='standard';
+    state.allReplays=[];
+    state.expandedReplay=null;
+    state.screen=state.numHumans>0?'handoff':'resolve';
+    if(state.screen==='resolve'){ doResolveAI(); }
+    render();
+  };
+}
+
+// ── Handoff ────────────────────────────────────────────────
+function renderHandoff(app){
+  const g=state.game; const pid=g.currentPlayer; const tank=g.tanks[pid];
+  const incoming=g.spyPlaneIncoming;
+  const incomingDir=incoming?incoming.dir:null;
+  const activePlane=g.spyPlane;
+  const displayName = tankDisplayName(tank, g);
+
+  // First turn for this human player — show name input screen
+  if(!tank.isAI && !g.namedPlayers.includes(pid)){
+    const el=document.createElement('div');
+    el.className='screen';
+    el.innerHTML=`
+      <div class="handoff-card" style="border:2px solid ${tank.color.bg}">
+        <div style="font-size:36px;margin-bottom:12px">🎮</div>
+        <div style="color:#6b7280;font-size:12px;letter-spacing:2px;margin-bottom:8px">PLAYER ${pid+1} — ${tank.color.name} TANK</div>
+        <div style="color:${tank.color.bg};font-size:clamp(18px,4vw,24px);font-weight:bold;margin-bottom:16px">What's your name?</div>
+        <input id="name-input" maxlength="16" placeholder="${tank.color.name}"
+          style="width:100%;padding:10px 14px;background:#1f2937;color:#e5e7eb;border:1px solid ${tank.color.bg};border-radius:8px;font-family:'Courier New',monospace;font-size:16px;text-align:center;outline:none;margin-bottom:16px;box-sizing:border-box" />
+        <button id="name-btn" style="padding:12px 28px;background:${tank.color.bg};color:${tank.color.text};border:none;border-radius:8px;font-weight:bold;font-size:14px;letter-spacing:1px;width:100%">Let's Go →</button>
+      </div>
+    `;
+    app.appendChild(el);
+    const input=el.querySelector('#name-input');
+    input.focus();
+    const confirm=()=>{
+      const name=input.value.trim()||tank.color.name;
+      state.game={...state.game,
+        playerNames:{...state.game.playerNames,[pid]:name},
+        namedPlayers:[...state.game.namedPlayers,pid],
+      };
+      state.screen='planning'; render();
+    };
+    el.querySelector('#name-btn').onclick=confirm;
+    input.onkeydown=e=>{ if(e.key==='Enter') confirm(); };
+    return;
+  }
+
+  const el=document.createElement('div');
+  el.className='screen';
+  el.innerHTML=`
+    <div class="handoff-card" style="border:2px solid ${tank.color.bg}">
+      <div style="font-size:36px;margin-bottom:12px">📲</div>
+      <div style="color:#6b7280;font-size:12px;letter-spacing:2px;margin-bottom:6px">ROUND ${g.round} · ${g.maxMoves} MOVES</div>
+      <div style="color:${tank.color.bg};font-size:clamp(20px,5vw,26px);font-weight:bold;margin-bottom:8px">${displayName}</div>
+      <p style="color:#9ca3af;margin:0 0 16px;font-size:14px;line-height:1.6">Pass to <b style="color:#e5e7eb">${displayName}</b>.<br>Don't let others see!</p>
+      ${incomingDir?`
+        <div style="background:#0f1e2e;border:1px solid #0ea5e9;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#7dd3fc;text-align:left">
+          ✈️ <b style="color:#38bdf8">SPY PLANE INCOMING</b><br>
+          Approaching from the <b>${PLANE_DIRS[incomingDir].fromLabel}</b> (${PLANE_DIRS[incomingDir].label}).<br>
+          <span style="color:#0ea5e955">It will ping enemy positions next round.</span>
+        </div>
+      `:''}
+      ${activePlane?`
+        <div style="background:#0f1e0f;border:1px solid #16a34a;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:12px;color:#86efac;text-align:left">
+          ✈️ <b>Spy plane active</b> — ${PLANE_DIRS[activePlane.dir].label}
+        </div>
+      `:''}
+      <div class="handoff-dots">
+        ${g.tanks.map(t=>`<div title="${tankDisplayName(t,g)}" style="width:14px;height:14px;border-radius:3px;background:${t.alive?t.color.bg:'#1f2937'};border:${t.id===pid?'2px solid #fff':'2px solid transparent'};opacity:${t.alive?1:0.2}"></div>`).join('')}
+      </div>
+      <button id="ready-btn" style="padding:12px 28px;background:${tank.color.bg};color:${tank.color.text};border:none;border-radius:8px;font-weight:bold;font-size:14px;letter-spacing:1px">I'm Ready →</button>
+    </div>
+  `;
+  app.appendChild(el);
+  el.querySelector('#ready-btn').onclick=()=>{ state.screen='planning'; render(); };
+}
+
+// ── Planning ───────────────────────────────────────────────
+function renderPlanning(app){
+  const g=state.game; const pid=g.currentPlayer; const tank=g.tanks[pid];
+  const displayName = tankDisplayName(tank, g);
+  const pt=getPreviewTank()||tank;
+  const moveCount=state.currentMoves.length;
+  const maxMoves=g.maxMoves;
+  const previewTanks=g.tanks.map(t=>t.id===pid?pt:t);
+  const visibleCells=getVisibleCells(g,pt);
+  const moveLabel=mv=>({F:'▲',B:'▼',L:'↰',R:'↱'}[mv]||'·');
+  const movesBlocked = moveCount >= maxMoves || !!pt.hitProjectile;
+  const rot=DIR_ROT[pt.dir];
+
+  const el=document.createElement('div');
+  el.className='screen top';
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;width:min(88vw,500px)">
+      <div style="width:14px;height:14px;border-radius:3px;background:${tank.color.bg}"></div>
+      <span style="color:${tank.color.bg};font-weight:bold;font-size:14px">${displayName}</span>
+      <span style="color:#4b5563;font-size:12px">· R${g.round}</span>
+      ${maxMoves>3?`<span style="color:#f59e0b;font-size:11px">⚡${maxMoves}</span>`:''}
+      <span style="margin-left:auto;color:#6b7280;font-size:11px">${movesBlocked && pt.hitProjectile ? '💥 hit projectile' : `${maxMoves-moveCount} left`}</span>
+    </div>
+    <div id="arena-wrap" style="display:grid;grid-template-columns:repeat(${GRID},1fr);width:min(88vw,500px);aspect-ratio:1;border:2px solid #374151;box-shadow:0 0 24px #0008;flex-shrink:0"></div>
+    <div style="display:flex;gap:6px;align-items:center">
+      ${Array.from({length:maxMoves},(_,i)=>`<div class="move-slot${i<moveCount?' filled':''}" style="--tank-color:${tank.color.bg}">${moveLabel(state.currentMoves[i])}</div>`).join('')}
+      <div style="width:40px;height:40px;border-radius:8px;border:1px solid ${tank.color.bg}44;background:${tank.color.bg}11;display:flex;align-items:center;justify-content:center" title="Fire: ${AMMO[state.currentAmmo].label}">
+        ${ammoShapeSVG(state.currentAmmo,tank.color.bg,14)}
+      </div>
+    </div>
+    <div class="ctrl-pad-wrap">
+      <div style="font-size:11px;color:#4b5563;letter-spacing:2px">CONTROLS — <span style="color:${tank.color.bg}">facing ${DIR_ARROW[pt.dir]} ${pt.dir}</span></div>
+      <div class="ctrl-pad" style="transform:rotate(${rot}deg)">
+        <div></div>
+        <button class="ctrl-btn" id="mv-F"${movesBlocked?' disabled':''}>▲</button>
+        <div></div>
+        <button class="ctrl-btn" id="mv-L"${movesBlocked?' disabled':''}>↰</button>
+        <div class="ctrl-center" style="background:${tank.color.bg}18;border:2px solid ${tank.color.bg}55;color:${tank.color.bg}">▲</div>
+        <button class="ctrl-btn" id="mv-R"${movesBlocked?' disabled':''}>↱</button>
+        <div></div>
+        <button class="ctrl-btn" id="mv-B"${movesBlocked?' disabled':''}>▼</button>
+        <div></div>
+      </div>
+    </div>
+    <div class="ammo-wrap">
+      <div style="font-size:11px;color:#4b5563;letter-spacing:2px">AMMO TYPE</div>
+      <div class="ammo-btns">
+        ${AMMO_CYCLE.map(k=>`
+          <button class="ammo-btn${state.currentAmmo===k?' active':''}" data-ammo="${k}"
+            style="${state.currentAmmo===k?`border-color:${tank.color.bg};background:${tank.color.bg}22;color:${tank.color.bg}`:''}">
+            <span class="ammo-icon">${ammoShapeSVG(k,state.currentAmmo===k?tank.color.bg:'#4b5563',16)}</span>
+            <span>${AMMO[k].label}</span>
+          </button>
+        `).join('')}
+      </div>
+      <div style="font-size:10px;color:#4b5563">${AMMO[state.currentAmmo].desc}</div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button id="undo-btn"${moveCount===0||pt.hitProjectile?' disabled':''} style="padding:10px 18px;background:#1f2937;color:${moveCount===0||pt.hitProjectile?'#374151':'#9ca3af'};border:1px solid #374151;border-radius:8px;font-size:13px">← Undo</button>
+      <button id="confirm-btn" style="padding:10px 22px;background:${tank.color.bg};color:${tank.color.text};border:none;border-radius:8px;font-weight:bold;font-size:14px;letter-spacing:1px">Confirm ${moveCount}/${maxMoves}</button>
+    </div>
+    ${pt.hitProjectile ? `
+      <div id="death-banner" style="background:#1a0505;border:2px solid #f87171;border-radius:12px;padding:14px 18px;width:min(88vw,500px);text-align:center;display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:22px">💥</div>
+        <div style="color:#f87171;font-weight:bold;font-size:14px">${[
+          "You drove right into your own shot. Impressive.",
+          "Your projectile was just sitting there. You walked into it.",
+          "Bold strategy — destroy yourself. Did not pay off.",
+          "You had moves left. You used them to die.",
+          "Your shot was waiting patiently. You found it.",
+          "Technically you destroyed your own tank. Congratulations?",
+          "Your projectile sends its regards.",
+        ][Math.floor(Math.random()*7)]}</div>
+        <button id="death-ack" style="padding:10px 20px;background:#f87171;color:#000;border:none;border-radius:8px;font-weight:bold;font-size:13px;cursor:pointer;margin-top:4px">I accept my fate →</button>
+      </div>
+    ` : ''}
+    <div style="color:#2d2d4a;font-size:10px">Fog of war active — you only see directly ahead</div>
+  `;
+  app.appendChild(el);
+
+  // Render arena
+  const arenaEl=el.querySelector('#arena-wrap');
+  setTimeout(()=>{
+    renderArena(arenaEl,previewTanks,g.projectiles,g.arenaMap,{visibleCells,fogMode:'fog',playerTankId:pid});
+  },0);
+
+  // Move buttons — blocked if out of moves OR tank hit a projectile
+  ['F','L','R','B'].forEach(mv=>{
+    const btn=el.querySelector(`#mv-${mv}`);
+    if(btn) btn.onclick=()=>{
+      const pt2=getPreviewTank();
+      if(state.currentMoves.length<maxMoves && !pt2?.hitProjectile){
+        state.currentMoves.push(mv);
+        if(mv==='F') sounds.tankMove();
+        else if(mv==='B') sounds.tankReverse();
+        else sounds.tankTurn();
+        render();
+      }
+    };
+  });
+  el.querySelector('#undo-btn').onclick=()=>{ if(!pt.hitProjectile){ state.currentMoves.pop(); render(); } };
+  el.querySelectorAll('[data-ammo]').forEach(btn=>btn.onclick=()=>{ state.currentAmmo=btn.dataset.ammo; render(); });
+  if(pt.hitProjectile){
+    // Hide the normal confirm button — death ack takes over
+    const confirmBtn=el.querySelector('#confirm-btn');
+    if(confirmBtn) confirmBtn.style.display='none';
+    const ackBtn=el.querySelector('#death-ack');
+    if(ackBtn) ackBtn.onclick=confirmMoves;
+  } else {
+    el.querySelector('#confirm-btn').onclick=confirmMoves;
+  }
+}
+
+// ── Shot Preview ──────────────────────────────────────────
+function renderShotPreview(app){
+  const sp=state.shotPreview; if(!sp) return;
+  const tank=sp.updated.tanks[sp.pid];
+  const ammoColor=sp.ammo==='flare'?'#fbbf24':sp.ammo==='explosive'?'#f97316':'#9ca3af';
+  const ammoLabel=sp.ammo==='flare'?'🔦 Flare fired!':sp.ammo==='explosive'?'💣 Explosive fired!':'● Shot fired!';
+
+  const el=document.createElement('div');
+  el.id='shot-preview-screen';
+  el.className='screen top';
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;width:min(88vw,500px)">
+      <div style="width:14px;height:14px;border-radius:3px;background:${tank.color.bg}"></div>
+      <span style="color:${tank.color.bg};font-weight:bold;font-size:14px">${tank.color.name} Tank</span>
+      <span style="color:#4b5563;font-size:12px">· R${sp.updated.round}</span>
+      <span style="margin-left:auto;color:${ammoColor};font-size:12px;font-weight:bold">${ammoLabel}</span>
+    </div>
+    <div id="arena-wrap" style="display:grid;grid-template-columns:repeat(${GRID},1fr);width:min(88vw,500px);aspect-ratio:1;border:2px solid #374151;box-shadow:0 0 24px #0008;flex-shrink:0"></div>
+    <div style="color:#374151;font-size:11px;margin-top:4px">Tap to continue →</div>
+  `;
+  app.appendChild(el);
+
+  const arenaEl=el.querySelector('#arena-wrap');
+  setTimeout(()=>{
+    renderArena(arenaEl,sp.tanks,sp.projectiles,sp.updated.arenaMap,{visibleCells:sp.visibleCells,fogMode:'fog',playerTankId:sp.pid});
+  },0);
+
+  function proceed(){
+    if(state.shotPreviewTimer){ clearTimeout(state.shotPreviewTimer); state.shotPreviewTimer=null; }
+    state.shotPreview=null;
+    if(sp.next===-1){ doResolveAI(sp.updated); }
+    else { state.game={...sp.updated,currentPlayer:sp.next}; state.screen='handoff'; render(); }
+  }
+  el.onclick=proceed;
+  state.shotPreviewTimer=setTimeout(proceed,1500);
+}
+
+// ── Resolve ───────────────────────────────────────────────
+function renderResolve(app){
+  const g=state.game;
+  const res=state.resolveResult||{};
+  const tanks=res.tanks||[];
+  const winner=res.winner??null;
+  const hadElimination=res.hadElimination||false;
+  const rawBlast=res.blastCells;
+  const blastCells=(rawBlast instanceof Set)?rawBlast:new Set();
+  const planePings=Array.isArray(res.planePings)?res.planePings:[];
+  const newAnnouncement=res.newAnnouncement||null;
+  const spyPlane=res.spyPlane||null;
+
+  const nextMaxMoves=hadElimination?g.maxMoves:Math.min(8,g.maxMoves+1);
+  const hasBlast=blastCells.size>0;
+  const hasPings=planePings.length>0;
+
+  // Use PLANE_DIRS for label — works for all 8 directions
+  const planeLabel = spyPlane && PLANE_DIRS[spyPlane.dir]
+    ? PLANE_DIRS[spyPlane.dir].label
+    : 'unknown path';
+
+  const el=document.createElement('div');
+  el.className='screen';
+  el.innerHTML=`
+    <div style="color:#f59e0b;font-weight:bold;font-size:16px;letter-spacing:3px">⚡ ROUND ${g.round} RESULTS</div>
+    <div class="card">
+      ${(state.resolveLog||[]).length===0
+        ?'<div style="color:#6b7280;font-size:14px;text-align:center">No eliminations this round.</div>'
+        :(state.resolveLog||[]).map(l=>`<div style="font-size:13px;color:#fbbf24;margin-bottom:4px">${l}</div>`).join('')}
+    </div>
+
+    ${hasPings?`
+      <div style="background:#0a1628;border:1px solid #0ea5e9;border-radius:10px;padding:14px;width:min(88vw,400px)">
+        <div style="color:#38bdf8;font-size:13px;font-weight:bold;margin-bottom:8px">✈️ Spy Plane Ping — ${planeLabel}</div>
+        <div style="color:#7dd3fc;font-size:12px;margin-bottom:10px">${planePings.length} contact${planePings.length!==1?'s':''} detected</div>
+        <div id="ping-map" style="position:relative;width:min(60vw,260px);aspect-ratio:1;background:#050d1a;border:1px solid #0ea5e944;border-radius:6px;margin:0 auto"></div>
+        <div style="color:#0ea5e955;font-size:10px;margin-top:6px;text-align:center">Positions only — no terrain revealed</div>
+      </div>
+    `:''}
+
+    ${newAnnouncement?`
+      <div style="background:#0f1e2e;border:1px solid #0ea5e9;border-radius:8px;padding:10px 16px;font-size:12px;color:#7dd3fc">
+        ✈️ <b style="color:#38bdf8">SPY PLANE INCOMING</b> — arriving next round<br>
+        Approaching from the <b>${PLANE_DIRS[newAnnouncement.dir]?PLANE_DIRS[newAnnouncement.dir].fromLabel:'unknown'}</b>
+        (${PLANE_DIRS[newAnnouncement.dir]?PLANE_DIRS[newAnnouncement.dir].label:''})
+      </div>
+    `:''}
+
+    ${hasBlast?`
+      <div class="tag red">💥 Explosion radius</div>
+      <div id="blast-arena" style="width:min(88vw,500px);aspect-ratio:1;border:2px solid #374151;flex-shrink:0"></div>
+    `:''}
+
+    ${!hadElimination&&winner===null?`<div class="tag">⚡ No kills — all tanks gain +1 move (${nextMaxMoves} next round)</div>`:''}
+    <div class="status-row">
+      ${tanks.map(t=>`<div class="status-item" style="color:${t.alive?t.color.bg:'#374151'};opacity:${t.alive?1:0.4}">
+        <div style="width:10px;height:10px;border-radius:2px;background:${t.alive?t.color.bg:'#374151'}"></div>
+        ${tankDisplayName(t,g)}${t.isAI?' 🤖':''} ${t.alive?'●':'💥'}
+      </div>`).join('')}
+    </div>
+    <button id="next-btn" style="padding:12px 32px;background:#22c55e;color:#000;border:none;border-radius:8px;font-weight:bold;font-size:14px;letter-spacing:1px">
+      ${winner!==null?'See Final Results →':'Next Round →'}
+    </button>
+    <button id="quit-btn" style="padding:6px 16px;background:transparent;color:#374151;border:1px solid #2d2d44;border-radius:6px;font-size:12px">Quit</button>
+  `;
+  app.appendChild(el);
+
+  // Render ping mini-map
+  if(hasPings){
+    const pingMap=el.querySelector('#ping-map');
+    setTimeout(()=>{
+      const w=pingMap.offsetWidth||260;
+      const canvas=document.createElement('canvas');
+      canvas.width=w; canvas.height=w;
+      pingMap.appendChild(canvas);
+      const ctx=canvas.getContext('2d');
+      const cs=w/GRID;
+
+      // Draw faint grid
+      ctx.strokeStyle='#0ea5e911'; ctx.lineWidth=0.5;
+      for(let i=0;i<=GRID;i++){
+        ctx.beginPath();ctx.moveTo(i*cs,0);ctx.lineTo(i*cs,w);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(0,i*cs);ctx.lineTo(i*cs,w);ctx.stroke(); // bug fix below
+      }
+      // fix grid lines
+      ctx.clearRect(0,0,w,w);
+      ctx.fillStyle='#050d1a'; ctx.fillRect(0,0,w,w);
+      ctx.strokeStyle='#0ea5e911'; ctx.lineWidth=0.5;
+      for(let i=0;i<=GRID;i++){
+        ctx.beginPath();ctx.moveTo(i*cs,0);ctx.lineTo(i*cs,w);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(0,i*cs);ctx.lineTo(w,i*cs);ctx.stroke();
+      }
+
+      // Draw plane path as faint line
+      if(spyPlane && PLANE_DIRS[spyPlane.dir]){
+        const pd=PLANE_DIRS[spyPlane.dir];
+        const dr=pd.dr, dc=pd.dc;
+        // Trace full path across map
+        const startR=dr>0?0:dr<0?GRID-1:Math.max(0,Math.min(GRID-1,Math.round(spyPlane.row)));
+        const startC=dc>0?0:dc<0?GRID-1:Math.max(0,Math.min(GRID-1,Math.round(spyPlane.col)));
+        const endR=dr>0?GRID-1:dr<0?0:Math.max(0,Math.min(GRID-1,Math.round(spyPlane.row)));
+        const endC=dc>0?GRID-1:dc<0?0:Math.max(0,Math.min(GRID-1,Math.round(spyPlane.col)));
+        ctx.strokeStyle='#38bdf844'; ctx.lineWidth=1.5; ctx.setLineDash([3,4]);
+        ctx.beginPath();
+        ctx.moveTo(startC*cs+cs/2,startR*cs+cs/2);
+        ctx.lineTo(endC*cs+cs/2,endR*cs+cs/2);
+        ctx.stroke(); ctx.setLineDash([]);
+
+        // Plane icon rotated to match direction
+        const planeRot = (pd.rot - 90) * Math.PI / 180;
+        const pr=Math.max(0,Math.min(GRID-1,Math.round(spyPlane.row)));
+        const pc=Math.max(0,Math.min(GRID-1,Math.round(spyPlane.col)));
+        ctx.save();
+        ctx.translate(pc*cs+cs/2, pr*cs+cs/2);
+        ctx.rotate(planeRot);
+        ctx.font=`${cs*1.2}px sans-serif`;
+        ctx.fillStyle='#38bdf8';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('✈', 0, 0);
+        ctx.restore();
+      }
+
+      // Draw pings as glowing white dots (no color — intentionally anonymous)
+      for(const ping of planePings){
+        const px=ping.col*cs+cs/2, py=ping.row*cs+cs/2;
+        ctx.shadowColor='#ffffff'; ctx.shadowBlur=8;
+        ctx.fillStyle='#ffffff';
+        ctx.beginPath(); ctx.arc(px,py,cs*0.3,0,Math.PI*2); ctx.fill();
+        ctx.shadowBlur=0;
+        // Ping rings
+        ctx.strokeStyle='#ffffff66'; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.arc(px,py,cs*0.55,0,Math.PI*2); ctx.stroke();
+      }
+
+      // Cardinal labels
+      ctx.fillStyle='#0ea5e966'; ctx.font=`${cs*0.7}px monospace`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('N',w/2,cs*0.4);
+      ctx.fillText('S',w/2,w-cs*0.4);
+      ctx.fillText('W',cs*0.4,w/2);
+      ctx.fillText('E',w-cs*0.4,w/2);
+    },0);
+  }
+
+  if(hasBlast){
+    const blastEl=el.querySelector('#blast-arena');
+    setTimeout(()=>{
+      renderArena(blastEl,tanks,[],g.arenaMap,{blastCells,fogMode:'blast'});
+    },0);
+  }
+
+  el.querySelector('#next-btn').onclick=nextRound;
+  el.querySelector('#quit-btn').onclick=()=>{ state.screen='menu'; render(); };
+}
+
+// ── Replay ────────────────────────────────────────────────
+function renderReplay(app){
+  if(!state.pendingReplays || state.pendingReplays.length === 0){
+    proceedAfterReplays(); return;
+  }
+
+  const replay = state.pendingReplays[0];
+  const frames = replay.frames || [];
+  const g = state.game;
+  let currentFrame = 0;
+  let animTimer = null;
+
+  const el = document.createElement('div');
+  el.className = 'screen';
+  el.innerHTML = `
+    <div style="color:#f87171;font-weight:bold;font-size:14px;letter-spacing:3px">📼 KILL CAM</div>
+    <div style="color:#e5e7eb;font-size:16px;font-weight:bold">
+      <span style="color:${replay.tankColor.bg}">${replay.tankName} Tank</span> eliminated
+    </div>
+    <div style="color:#6b7280;font-size:11px">Round ${g.round} · ${frames.length} frame${frames.length!==1?'s':''}</div>
+
+    <canvas id="replay-canvas" width="260" height="260"
+      style="border:2px solid #374151;border-radius:8px;image-rendering:pixelated;cursor:pointer"
+      title="Tap to step through"></canvas>
+
+    <div style="display:flex;gap:4px;align-items:center;justify-content:center" id="frame-dots"></div>
+    <div id="frame-label" style="font-size:11px;color:#6b7280;letter-spacing:1px;min-height:16px;text-align:center"></div>
+
+    <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+      <button id="btn-prev" style="padding:8px 14px;background:#1f2937;color:#9ca3af;border:1px solid #374151;border-radius:8px;font-size:13px">◀ Prev</button>
+      <button id="btn-play" style="padding:8px 14px;background:#374151;color:#e5e7eb;border:1px solid #4b5563;border-radius:8px;font-size:13px">⏸ Pause</button>
+      <button id="btn-next" style="padding:8px 14px;background:#1f2937;color:#9ca3af;border:1px solid #374151;border-radius:8px;font-size:13px">Next ▶</button>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:4px">
+      ${state.pendingReplays.length > 1
+        ? `<button id="next-replay" style="padding:10px 20px;background:#374151;color:#e5e7eb;border:1px solid #4b5563;border-radius:8px;font-size:13px">Next death (${state.pendingReplays.length-1} more)</button>`
+        : ''}
+      <button id="done-replay" style="padding:10px 24px;background:#22c55e;color:#000;border:none;border-radius:8px;font-weight:bold;font-size:14px">
+        ${state.pendingReplays.length > 1 ? 'Skip All' : 'Continue →'}
+      </button>
+    </div>
+  `;
+  app.appendChild(el);
+
+  const canvas = el.querySelector('#replay-canvas');
+  const dotsEl = el.querySelector('#frame-dots');
+  const labelEl = el.querySelector('#frame-label');
+  const btnPrev = el.querySelector('#btn-prev');
+  const btnPlay = el.querySelector('#btn-play');
+  const btnNext = el.querySelector('#btn-next');
+
+  frames.forEach((_,i) => {
+    const d = document.createElement('div');
+    d.style.cssText = 'width:8px;height:8px;border-radius:50%;background:#2d2d44;transition:background 0.15s';
+    d.id = 'fdot-'+i;
+    dotsEl.appendChild(d);
+  });
+
+  let playing = true;
+  const FRAME_MS = 600;
+
+  function showFrame(idx){
+    currentFrame = Math.max(0, Math.min(frames.length-1, idx));
+    const frame = frames[currentFrame];
+    drawReplayFrame(canvas, replay, frame, frame.isDeath || false);
+    labelEl.textContent = frame.label || '';
+    labelEl.style.color = frame.isDeath ? '#f87171' : '#6b7280';
+    frames.forEach((_,i)=>{
+      const d = el.querySelector('#fdot-'+i);
+      if(d) d.style.background = i===currentFrame
+        ? (frames[i].isDeath ? '#f87171' : replay.tankColor.bg)
+        : '#2d2d44';
+    });
+    btnPrev.disabled = currentFrame === 0;
+    btnNext.disabled = currentFrame === frames.length-1;
+  }
+
+  function startAnim(){
+    if(animTimer) clearInterval(animTimer);
+    animTimer = setInterval(()=>{
+      if(currentFrame < frames.length-1){
+        showFrame(currentFrame+1);
+      } else {
+        playing = false;
+        clearInterval(animTimer); animTimer = null;
+        btnPlay.textContent = '▶ Play';
+      }
+    }, FRAME_MS);
+    btnPlay.textContent = '⏸ Pause';
+  }
+
+  function stopAnim(){
+    if(animTimer){ clearInterval(animTimer); animTimer=null; }
+    btnPlay.textContent = '▶ Play';
+  }
+
+  setTimeout(()=>{
+    showFrame(0);
+    startAnim();
+  }, 50);
+
+  btnPlay.onclick = ()=>{
+    if(playing){ playing=false; stopAnim(); }
+    else { playing=true; if(currentFrame===frames.length-1) showFrame(0); startAnim(); }
+  };
+  btnPrev.onclick = ()=>{ stopAnim(); playing=false; showFrame(currentFrame-1); };
+  btnNext.onclick = ()=>{ stopAnim(); playing=false; showFrame(currentFrame+1); };
+  canvas.onclick  = ()=>{ stopAnim(); playing=false; showFrame(currentFrame===frames.length-1?0:currentFrame+1); };
+
+  function cleanup(){ if(animTimer){ clearInterval(animTimer); animTimer=null; } }
+
+  el.querySelector('#done-replay').onclick = ()=>{ cleanup(); state.pendingReplays=[]; proceedAfterReplays(); };
+  const nextBtn = el.querySelector('#next-replay');
+  if(nextBtn) nextBtn.onclick = ()=>{ cleanup(); state.pendingReplays.shift(); if(state.pendingReplays.length>0) render(); else proceedAfterReplays(); };
+}
+
+function drawReplayFrame(canvas, replay, frame, isDeathFrame){
+  const SIZE = 5;
+  const half = Math.floor(SIZE/2);
+  const cs = canvas.width / SIZE;
+  const ctx = canvas.getContext('2d');
+
+  // Center on the subject tank's position in THIS frame, not the fixed death position.
+  // Subject tank = the one with replay.tankId. Fall back to death position if not found.
+  const subjectTank = frame.tanks.find(t => t.id === replay.tankId);
+  const cr = subjectTank ? subjectTank.row : replay.centerRow;
+  const cc = subjectTank ? subjectTank.col : replay.centerCol;
+
+  for(let dr=0; dr<SIZE; dr++){
+    for(let dc=0; dc<SIZE; dc++){
+      const r = cr - half + dr;
+      const c = cc - half + dc;
+      const x = dc*cs, y = dr*cs;
+
+      let bg = '#1a1a2e';
+      if(!inBounds(r,c)) bg='#0a0a14';
+      else { const tile=replay.arenaMap[r][c]; bg=tile===1?'#374151':tile===2?'#78716c':'#1a1a2e'; }
+      ctx.fillStyle=bg; ctx.fillRect(x,y,cs,cs);
+
+      if(inBounds(r,c) && replay.arenaMap[r][c]===2){
+        if(!frame.tanks.some(t=>t.row===r&&t.col===c)){
+          ctx.fillStyle='#57534e'; ctx.globalAlpha=0.7;
+          ctx.fillRect(x+cs*0.15,y+cs*0.3,cs*0.7,cs*0.4);
+          ctx.globalAlpha=1;
+        }
+      }
+
+      ctx.strokeStyle='#1e1e3a'; ctx.lineWidth=0.5;
+      ctx.strokeRect(x,y,cs,cs);
+
+      if(!inBounds(r,c)) continue;
+
+      const tank = isDeathFrame
+        ? frame.tanks.find(t=>t.row===r&&t.col===c)
+        : frame.tanks.find(t=>t.alive&&t.row===r&&t.col===c);
+
+      if(tank){
+        const dead = !tank.alive;
+        const pad=cs*0.1;
+        ctx.fillStyle = dead ? tank.color.bg+'55' : tank.color.bg;
+        roundRect(ctx,x+pad,y+pad,cs-pad*2,cs-pad*2,cs*0.18); ctx.fill();
+        ctx.strokeStyle = dead ? tank.color.dark+'55' : tank.color.dark;
+        ctx.lineWidth=Math.max(1,cs*0.08);
+        roundRect(ctx,x+pad,y+pad,cs-pad*2,cs-pad*2,cs*0.18); ctx.stroke();
+        ctx.fillStyle = dead ? '#ffffff88' : tank.color.text;
+        ctx.font=`bold ${cs*0.45}px sans-serif`;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(dead?'💥':DIR_ARROW[tank.dir], x+cs/2, y+cs/2);
+      }
+
+      if(!tank){
+        const projs = frame.projectiles ? frame.projectiles.filter(p=>p.row===r&&p.col===c) : [];
+        if(projs.length>0){
+          const p = projs[0];
+          const color = TANK_COLORS[p.ownerId]?.bg||'#fff';
+          const leadSize=(p.ammo==='flare'?0.28:p.ammo==='explosive'?0.26:0.2)*cs;
+          const [tdr,tdc]=DIR_DELTA[p.dir]||[0,0];
+          [{dist:0.26,op:0.5},{dist:0.42,op:0.25}].forEach((pt,pi)=>{
+            ctx.globalAlpha=pt.op; ctx.fillStyle=color;
+            ctx.beginPath();
+            ctx.arc(x+cs/2+(-tdc)*pt.dist*cs, y+cs/2+(-tdr)*pt.dist*cs, Math.max(1,leadSize/2-(pi+1)*1.5),0,Math.PI*2);
+            ctx.fill();
+          });
+          ctx.globalAlpha=1;
+          ctx.shadowColor=color; ctx.shadowBlur=4; ctx.fillStyle=color;
+          if(p.ammo==='standard'){
+            ctx.save(); ctx.translate(x+cs/2,y+cs/2); ctx.rotate((DIR_ROT[p.dir]||0)*Math.PI/180);
+            ctx.beginPath(); ctx.ellipse(0,0,leadSize*0.45,leadSize*0.75,0,0,Math.PI*2); ctx.fill();
+            ctx.restore();
+          } else if(p.ammo==='explosive'){
+            ctx.save(); ctx.translate(x+cs/2,y+cs/2); ctx.rotate(Math.PI/4);
+            ctx.fillRect(-leadSize/2,-leadSize/2,leadSize,leadSize); ctx.restore();
+          } else {
+            drawStar(ctx,x+cs/2,y+cs/2,leadSize*0.55,4);
+          }
+          ctx.shadowBlur=0;
+        }
+      }
+    }
+  }
+
+  // Canvas border changes color on death frame
+  ctx.strokeStyle = isDeathFrame ? '#f87171' : replay.tankColor.bg;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1,1,canvas.width-2,canvas.height-2);
+
+  // Center cell highlight
+  const cx2=half*cs, cy2=half*cs;
+  ctx.strokeStyle = isDeathFrame ? '#f8717166' : replay.tankColor.bg+'66';
+  ctx.lineWidth=1.5;
+  ctx.strokeRect(cx2+1,cy2+1,cs-2,cs-2);
+}
+function proceedAfterReplays(){
+  const nextScreen = state.afterReplayScreen || 'handoff';
+  state.screen = nextScreen;
+  state.afterReplayScreen = null;
+  if(nextScreen === 'resolve') doResolveAI();
+  else render();
+}
+
+// ── Mid-game Replay ───────────────────────────────────────
+function renderReplay(app){
+  if(!state.pendingReplays || state.pendingReplays.length === 0){
+    proceedAfterReplays(); return;
+  }
+  const replay = state.pendingReplays[0];
+  const frames = replay.frames || [];
+  const g = state.game;
+  let currentFrame = 0, animTimer = null, playing = true;
+  const FRAME_MS = 600;
+
+  const el = document.createElement('div');
+  el.className = 'screen';
+  el.innerHTML = `
+    <div style="color:#f87171;font-weight:bold;font-size:14px;letter-spacing:3px">📼 KILL CAM</div>
+    <div style="color:#e5e7eb;font-size:15px;font-weight:bold">
+      <span style="color:${replay.tankColor.bg}">${replay.tankName}</span> eliminated
+    </div>
+    <div style="color:#6b7280;font-size:11px">Round ${replay.round} · ${frames.length} frames</div>
+    <canvas id="rc" width="260" height="260"
+      style="border:2px solid #374151;border-radius:8px;image-rendering:pixelated;cursor:pointer"></canvas>
+    <div style="display:flex;gap:4px;justify-content:center" id="fdots"></div>
+    <div id="flabel" style="font-size:11px;color:#6b7280;min-height:14px;text-align:center"></div>
+    <div style="display:flex;gap:6px">
+      <button id="rp-prev" style="padding:7px 14px;background:#1f2937;color:#9ca3af;border:1px solid #374151;border-radius:7px;font-size:12px">◀</button>
+      <button id="rp-play" style="padding:7px 14px;background:#374151;color:#e5e7eb;border:1px solid #4b5563;border-radius:7px;font-size:12px">⏸</button>
+      <button id="rp-next" style="padding:7px 14px;background:#1f2937;color:#9ca3af;border:1px solid #374151;border-radius:7px;font-size:12px">▶</button>
+    </div>
+    <div style="display:flex;gap:10px">
+      ${state.pendingReplays.length > 1
+        ? `<button id="rp-skip1" style="padding:9px 18px;background:#374151;color:#e5e7eb;border:1px solid #4b5563;border-radius:8px;font-size:12px">Next kill</button>`
+        : ''}
+      <button id="rp-done" style="padding:9px 22px;background:#22c55e;color:#000;border:none;border-radius:8px;font-weight:bold;font-size:13px">
+        ${state.pendingReplays.length > 1 ? 'Skip All' : 'Continue →'}
+      </button>
+    </div>
+  `;
+  app.appendChild(el);
+
+  const canvas = el.querySelector('#rc');
+  const dotsEl = el.querySelector('#fdots');
+  const labelEl = el.querySelector('#flabel');
+  frames.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='width:7px;height:7px;border-radius:50%;background:#2d2d44;transition:background 0.15s';
+    d.id='rd'+i; dotsEl.appendChild(d);
+  });
+
+  function showFrame(idx){
+    currentFrame=Math.max(0,Math.min(frames.length-1,idx));
+    const f=frames[currentFrame];
+    drawReplayFrame(canvas,replay,f,f.isDeath||false);
+    labelEl.textContent=f.label||'';
+    labelEl.style.color=f.isDeath?'#f87171':'#6b7280';
+    frames.forEach((_,i)=>{
+      const d=el.querySelector('#rd'+i);
+      if(d) d.style.background=i===currentFrame?(frames[i].isDeath?'#f87171':replay.tankColor.bg):'#2d2d44';
+    });
+    el.querySelector('#rp-prev').disabled=currentFrame===0;
+    el.querySelector('#rp-next').disabled=currentFrame===frames.length-1;
+  }
+  function startAnim(){
+    if(animTimer) clearInterval(animTimer);
+    animTimer=setInterval(()=>{
+      if(currentFrame<frames.length-1){ showFrame(currentFrame+1); }
+      else { playing=false; clearInterval(animTimer); animTimer=null; el.querySelector('#rp-play').textContent='▶'; }
+    },FRAME_MS);
+    el.querySelector('#rp-play').textContent='⏸'; playing=true;
+  }
+  function stopAnim(){ if(animTimer){clearInterval(animTimer);animTimer=null;} el.querySelector('#rp-play').textContent='▶'; playing=false; }
+  function cleanup(){ if(animTimer){clearInterval(animTimer);animTimer=null;} }
+
+  setTimeout(()=>{ showFrame(0); startAnim(); }, 50);
+
+  el.querySelector('#rp-play').onclick=()=>{ playing?(stopAnim()):(currentFrame===frames.length-1?showFrame(0):null,startAnim()); };
+  el.querySelector('#rp-prev').onclick=()=>{ stopAnim(); showFrame(currentFrame-1); };
+  el.querySelector('#rp-next').onclick=()=>{ stopAnim(); showFrame(currentFrame+1); };
+  canvas.onclick=()=>{ stopAnim(); showFrame(currentFrame===frames.length-1?0:currentFrame+1); };
+
+  el.querySelector('#rp-done').onclick=()=>{ cleanup(); state.pendingReplays=[]; proceedAfterReplays(); };
+  const s1=el.querySelector('#rp-skip1');
+  if(s1) s1.onclick=()=>{ cleanup(); state.pendingReplays.shift(); state.pendingReplays.length>0?render():proceedAfterReplays(); };
+}
+
+function proceedAfterReplays(){
+  const next = state.afterReplayScreen || 'handoff';
+  state.afterReplayScreen = null;
+  if(next === 'aiResolve'){
+    fastForwardAI();
+  } else if(next === 'resolve'){
+    state.screen = 'resolve';
+    doResolveAI();
+  } else {
+    state.screen = next;
+    render();
+  }
+}
+
+// ── Game Over ─────────────────────────────────────────────
+function renderGameOver(app){
+  const g = state.game;
+  const winnerTank = g.winner >= 0 ? g.tanks[g.winner] : null;
+  const replays = state.allReplays;
+
+  const el = document.createElement('div');
+  el.className = 'screen';
+  el.style.cssText = 'padding:16px 12px;gap:14px;justify-content:flex-start;padding-top:20px';
+  el.innerHTML = `
+    ${winnerTank ? `
+      <div style="font-size:48px">${winnerTank.isAI?'🤖':'🏆'}</div>
+      <div style="color:${winnerTank.color.bg};font-size:clamp(20px,5vw,32px);font-weight:bold">
+        ${tankDisplayName(winnerTank,g)}${winnerTank.isAI?' (AI)':''} Wins!
+      </div>
+      <div style="color:#6b7280;font-size:12px">After ${g.round} round${g.round!==1?'s':''}</div>
+    ` : `
+      <div style="font-size:48px">💥</div>
+      <div style="color:#f87171;font-size:24px;font-weight:bold">Mutual Destruction!</div>
+    `}
+
+    ${replays.length > 0 ? `
+      <div style="font-size:13px;color:#f87171;font-weight:bold;letter-spacing:2px">📼 KILL CAM — ${replays.length} kill${replays.length!==1?'s':''}</div>
+      <div id="kill-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;width:min(90vw,520px)"></div>
+      <div id="expanded-player" style="display:none;flex-direction:column;align-items:center;gap:8px;width:min(90vw,520px)">
+        <div style="display:flex;align-items:center;gap:8px;width:100%">
+          <div id="exp-title" style="font-size:13px;color:#e5e7eb;font-weight:bold;flex:1"></div>
+          <button id="exp-close" style="padding:4px 10px;background:#374151;color:#9ca3af;border:1px solid #4b5563;border-radius:6px;font-size:12px">✕ Close</button>
+          <button id="exp-gif" style="padding:4px 12px;background:#7c3aed;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:bold">⬇ GIF</button>
+        </div>
+        <canvas id="exp-canvas" width="280" height="280"
+          style="border:2px solid #374151;border-radius:8px;image-rendering:pixelated;cursor:pointer"></canvas>
+        <div style="display:flex;gap:4px" id="exp-dots"></div>
+        <div id="exp-label" style="font-size:11px;color:#6b7280;min-height:14px;text-align:center"></div>
+        <div style="display:flex;gap:6px">
+          <button id="exp-prev" style="padding:6px 12px;background:#1f2937;color:#9ca3af;border:1px solid #374151;border-radius:7px;font-size:12px">◀</button>
+          <button id="exp-play" style="padding:6px 12px;background:#374151;color:#e5e7eb;border:1px solid #4b5563;border-radius:7px;font-size:12px">⏸</button>
+          <button id="exp-next" style="padding:6px 12px;background:#1f2937;color:#9ca3af;border:1px solid #374151;border-radius:7px;font-size:12px">▶</button>
+        </div>
+      </div>
+    ` : ''}
+
+    <button id="play-again" style="padding:12px 28px;background:#374151;color:#e5e7eb;border:1px solid #4b5563;border-radius:8px;font-weight:bold;font-size:14px;margin-top:4px">Play Again</button>
+  `;
+  app.appendChild(el);
+
+  el.querySelector('#play-again').onclick = ()=>{
+    state.screen='menu'; state.allReplays=[]; state.expandedReplay=null;
+    state.pendingReplays=[]; state.afterReplayScreen=null; render();
+  };
+
+  if(replays.length === 0) return;
+
+  // ── Build kill grid thumbnails ──
+  const grid = el.querySelector('#kill-grid');
+  replays.forEach((replay, idx) => {
+    const card = document.createElement('div');
+    card.style.cssText = `background:#111827;border:1px solid #374151;border-radius:8px;padding:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:border-color 0.15s`;
+    card.innerHTML = `
+      <canvas width="100" height="100" style="border-radius:4px;image-rendering:pixelated"></canvas>
+      <div style="font-size:10px;color:${replay.tankColor.bg};font-weight:bold">${replay.tankName}</div>
+      <div style="font-size:9px;color:#4b5563">R${replay.round} · ${replay.frames.length}f</div>
+    `;
+    grid.appendChild(card);
+
+    // Draw thumbnail = death frame
+    setTimeout(()=>{
+      const thumb = card.querySelector('canvas');
+      const deathFrame = replay.frames[replay.frames.length-1];
+      drawReplayFrame(thumb, replay, deathFrame, true);
+    }, 0);
+
+    card.onmouseenter = ()=>card.style.borderColor = replay.tankColor.bg;
+    card.onmouseleave = ()=>card.style.borderColor = state.expandedReplay===idx ? replay.tankColor.bg : '#374151';
+    card.onclick = ()=> openExpanded(idx);
+  });
+
+  // ── Expanded player ──
+  let expFrame = 0, expTimer = null, expPlaying = false;
+  const expPlayer = el.querySelector('#expanded-player');
+  const expCanvas = el.querySelector('#exp-canvas');
+  const expTitle = el.querySelector('#exp-title');
+  const expDots = el.querySelector('#exp-dots');
+  const expLabel = el.querySelector('#exp-label');
+  const expPrev = el.querySelector('#exp-prev');
+  const expPlay = el.querySelector('#exp-play');
+  const expNext = el.querySelector('#exp-next');
+
+  function stopExpAnim(){ if(expTimer){clearInterval(expTimer);expTimer=null;} expPlay.textContent='▶'; expPlaying=false; }
+  function startExpAnim(replay){
+    if(expTimer) clearInterval(expTimer);
+    expTimer = setInterval(()=>{
+      if(expFrame < replay.frames.length-1){ showExpFrame(replay, expFrame+1); }
+      else { stopExpAnim(); }
+    }, 550);
+    expPlay.textContent='⏸'; expPlaying=true;
+  }
+  function showExpFrame(replay, idx){
+    expFrame = Math.max(0, Math.min(replay.frames.length-1, idx));
+    const frame = replay.frames[expFrame];
+    drawReplayFrame(expCanvas, replay, frame, frame.isDeath||false);
+    expLabel.textContent = frame.label||'';
+    expLabel.style.color = frame.isDeath ? '#f87171' : '#6b7280';
+    Array.from(expDots.children).forEach((d,i)=>{
+      d.style.background = i===expFrame ? (replay.frames[i].isDeath?'#f87171':replay.tankColor.bg) : '#2d2d44';
+    });
+    expPrev.disabled = expFrame===0;
+    expNext.disabled = expFrame===replay.frames.length-1;
+  }
+
+  function openExpanded(idx){
+    state.expandedReplay = idx;
+    const replay = replays[idx];
+    expPlayer.style.display = 'flex';
+    expTitle.textContent = `${replay.tankName} · Round ${replay.round}`;
+    expTitle.style.color = replay.tankColor.bg;
+    // Rebuild dots
+    expDots.innerHTML = '';
+    replay.frames.forEach((_,i)=>{
+      const d=document.createElement('div');
+      d.style.cssText='width:7px;height:7px;border-radius:50%;background:#2d2d44;transition:background 0.15s';
+      expDots.appendChild(d);
+    });
+    stopExpAnim();
+    expFrame = 0;
+    showExpFrame(replay, 0);
+    startExpAnim(replay);
+    // Scroll to player
+    expPlayer.scrollIntoView({behavior:'smooth',block:'nearest'});
+    // Update card borders
+    grid.querySelectorAll('div').forEach((c,i)=>{
+      if(c.querySelector('canvas')) c.style.borderColor = i===idx ? replay.tankColor.bg : '#374151';
+    });
+  }
+
+  el.querySelector('#exp-close').onclick = ()=>{
+    stopExpAnim(); expPlayer.style.display='none'; state.expandedReplay=null;
+  };
+  expPrev.onclick = ()=>{ stopExpAnim(); showExpFrame(replays[state.expandedReplay], expFrame-1); };
+  expNext.onclick = ()=>{ stopExpAnim(); showExpFrame(replays[state.expandedReplay], expFrame+1); };
+  expPlay.onclick = ()=>{
+    const r = replays[state.expandedReplay];
+    if(expPlaying){ stopExpAnim(); }
+    else { if(expFrame===r.frames.length-1) showExpFrame(r,0); startExpAnim(r); }
+  };
+  expCanvas.onclick = ()=>{
+    const r = replays[state.expandedReplay];
+    stopExpAnim(); showExpFrame(r, expFrame===r.frames.length-1?0:expFrame+1);
+  };
+
+  // ── GIF export ──
+  el.querySelector('#exp-gif').onclick = ()=>{
+    const idx = state.expandedReplay;
+    if(idx==null) return;
+    const replay = replays[idx];
+    const gifBtn = el.querySelector('#exp-gif');
+    gifBtn.textContent = '⏳ Encoding…'; gifBtn.disabled = true;
+
+    // Check gif.js loaded
+    if(typeof GIF === 'undefined'){
+      gifBtn.textContent = '❌ gif.js not loaded'; gifBtn.disabled=false; return;
+    }
+
+    const gif = new GIF({
+      workers: 2, quality: 6, width: 280, height: 280,
+      workerScript: 'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js',
+    });
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width = 280; offscreen.height = 280;
+
+    replay.frames.forEach((frame, i) => {
+      drawReplayFrame(offscreen, replay, frame, frame.isDeath||false);
+      // Hold on death frame longer
+      const delay = frame.isDeath ? 1200 : (i===0 ? 900 : 550);
+      gif.addFrame(offscreen, {delay, copy:true});
+    });
+
+    gif.on('finished', blob=>{
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `killcam-${replay.tankName.toLowerCase()}-r${replay.round}.gif`;
+      a.click();
+      URL.revokeObjectURL(url);
+      gifBtn.textContent = '✅ Downloaded!';
+      gifBtn.disabled = false;
+      setTimeout(()=>{ gifBtn.textContent='⬇ GIF'; }, 2500);
+    });
+
+    gif.on('error', ()=>{
+      gifBtn.textContent = '❌ Failed'; gifBtn.disabled=false;
+    });
+
+    gif.render();
+  };
+
+  // Auto-open first replay
+  if(replays.length > 0) setTimeout(()=>openExpanded(0), 100);
+}
+
+// ════════════════════════════════════════════════════════════
+// GAME ACTIONS
+// ════════════════════════════════════════════════════════════
+function confirmMoves(){
+  const g=state.game; const pid=g.currentPlayer;
+  const pending={moves:state.currentMoves.slice(),ammo:state.currentAmmo};
+  let newPending=g.pendingMoves.map((m,i)=>i===pid?pending:m);
+  const chosenAmmo=state.currentAmmo;
+  state.currentMoves=[]; state.currentAmmo='standard';
+
+  // Fill AI
+  newPending=newPending.map((m,i)=>{
+    if(m!==null) return m;
+    const t=g.tanks[i];
+    if(!t.alive||!t.isAI) return m;
+    return planAIMoves(t,g.tanks,g.projectiles,g.maxMoves,g.arenaMap);
+  });
+
+  let next=-1;
+  for(let i=1;i<=g.numPlayers;i++){
+    const n=(pid+i)%g.numPlayers;
+    if(g.tanks[n].alive&&!g.tanks[n].isAI&&newPending[n]===null){next=n;break;}
+  }
+
+  const updated={...g,pendingMoves:newPending};
+
+  // Simulate player's moves to get final position
+  const {isBlocking}=makeHelpers(g.arenaMap);
+  const origTank=g.tanks[pid];
+  let row=origTank.row,col=origTank.col,dir=origTank.dir;
+  for(const mv of pending.moves){
+    if(mv==='L') dir=turnLeft(dir);
+    else if(mv==='R') dir=turnRight(dir);
+    else if(mv==='F'){const[nr,nc]=movePos(row,col,dir);if(!isBlocking(nr,nc)){row=nr;col=nc;}}
+    else if(mv==='B'){const[nr,nc]=movePos(row,col,dir,true);if(!isBlocking(nr,nc)){row=nr;col=nc;}}
+  }
+  const movedTank={...origTank,row,col,dir};
+
+  // Shot starting position — only solid walls block initial placement, low obstacles (type 2) are fine
+  const [dr,dc]=DIR_DELTA[dir];
+  const shotRow=row+dr,shotCol=col+dc;
+  const shotVisible=inBounds(shotRow,shotCol)&&g.arenaMap[shotRow][shotCol]!==1;
+  const newShot=shotVisible?[{row:shotRow,col:shotCol,dir,ownerId:pid,ammo:chosenAmmo,id:Math.random()}]:[];
+  const allProjs=[...g.projectiles,...newShot];
+
+  // Visibility for preview
+  const helpers=makeHelpers(g.arenaMap);
+  const previewVis=helpers.computeVisibility(row,col,dir);
+  allProjs.forEach(p=>{
+    if(p.ownerId===pid&&p.ammo==='flare') helpers.computeFlareReveal(p.row,p.col).forEach(k=>previewVis.add(k));
+    if(p.ownerId===pid) previewVis.add(`${p.row},${p.col}`);
+  });
+
+  const previewTanks=g.tanks.map(t=>t.id===pid?movedTank:t);
+
+  // Fire sound
+  if(chosenAmmo==='explosive') sounds.fireExplosive();
+  else if(chosenAmmo==='flare') sounds.fireFlare();
+  else sounds.fireStandard();
+
+  state.game=updated;
+  state.shotPreview={tanks:previewTanks,projectiles:allProjs,visibleCells:previewVis,pid,ammo:chosenAmmo,next,updated};
+  state.screen='shotpreview';
+  render();
+}
+
+function doResolveAI(g){
+  const game=g||state.game;
+  // If all players are AI, generate their moves
+  let pending=game.pendingMoves.slice();
+  pending=pending.map((m,i)=>{
+    if(m!==null) return m;
+    const t=game.tanks[i];
+    if(!t.alive) return m;
+    return planAIMoves(t,game.tanks,game.projectiles,game.maxMoves,game.arenaMap);
+  });
+  const updated={...game,pendingMoves:pending};
+  state.game=updated;
+  doResolve(updated);
+}
+
+function buildReplays(prevSnapshot, currentSnapshot, afterTanks, afterProjectiles, arenaMap, round){
+  if(!prevSnapshot) return [];
+  const {isBlocking} = makeHelpers(arenaMap);
+
+  // One replay per newly-dead tank — must have been alive at start of THIS round
+  // (currentSnapshot = state before this round's resolution)
+  // Guards against re-triggering on tanks killed in previous rounds
+  const newlyDead = afterTanks.filter(t =>
+    !t.alive &&
+    prevSnapshot.tanks.find(pt => pt.id === t.id && pt.alive) &&
+    currentSnapshot.tanks.find(ct => ct.id === t.id && ct.alive)
+  );
+  if(newlyDead.length === 0) return [];
+
+  return newlyDead.map(deadTank => {
+    const moves = deadTank._replayMoves || [];
+    const startProjs = currentSnapshot.projectiles.map(p=>({...p}));
+    const frames = [];
+
+    // Frame 0: end of previous round — tank alive at old position
+    frames.push({
+      tanks: prevSnapshot.tanks.map(t=>({...t})),
+      projectiles: prevSnapshot.projectiles.map(p=>({...p})),
+      label: 'Last round',
+      isDeath: false,
+    });
+
+    // Move frames: simulate this tank's moves one at a time
+    // Other tanks stay at round-start positions (context but not focus)
+    const simTanks = currentSnapshot.tanks.map(t=>({...t}));
+    const moveNames = {F:'Forward',B:'Back',L:'Left',R:'Right'};
+    let hitProj = false;
+
+    for(let mi=0; mi<moves.length; mi++){
+      if(hitProj) break;
+      const mv = moves[mi];
+      const idx = simTanks.findIndex(t=>t.id===deadTank.id);
+      if(idx<0) break;
+      const t = simTanks[idx];
+
+      if(mv==='L') simTanks[idx]={...t,dir:turnLeft(t.dir)};
+      else if(mv==='R') simTanks[idx]={...t,dir:turnRight(t.dir)};
+      else if(mv==='F'){
+        const [nr,nc]=movePos(t.row,t.col,t.dir);
+        if(!isBlocking(nr,nc)) simTanks[idx]={...t,row:nr,col:nc};
+      }
+      else if(mv==='B'){
+        const [nr,nc]=movePos(t.row,t.col,t.dir,true);
+        if(!isBlocking(nr,nc)) simTanks[idx]={...t,row:nr,col:nc};
+      }
+
+      // Check projectile collision — stop simulating if hit
+      const cur = simTanks[idx];
+      if(startProjs.find(p=>p.row===cur.row&&p.col===cur.col&&p.ammo!=='flare')){
+        hitProj = true;
+      }
+
+      frames.push({
+        tanks: simTanks.map(t=>({...t})),
+        projectiles: startProjs.map(p=>({...p})),
+        label: `Move ${mi+1}: ${moveNames[mv]||mv}`,
+        isDeath: false,
+      });
+    }
+
+    // Final frame: post-resolution — this tank shown as 💥
+    frames.push({
+      tanks: afterTanks.map(t=>({...t})),
+      projectiles: currentSnapshot.projectiles.map(p=>({...p})),
+      label: '💥 Eliminated',
+      isDeath: true,
+    });
+
+    return {
+      tankId: deadTank.id,
+      tankColor: deadTank.color,
+      tankName: deadTank.color.name, // updated after build via playerNames
+      centerRow: deadTank.row,
+      centerCol: deadTank.col,
+      frames,
+      arenaMap,
+      round,
+      victimCount: 1,
+    };
+  });
+}
+
+function doResolve(g){
+  // currentSnapshot = state at START of this round (before resolution) — used for replay frameB projectiles
+  const currentSnapshot = {
+    tanks: g.tanks.map(t=>({...t})),
+    projectiles: g.projectiles.map(p=>({...p})),
+  };
+
+  const result=applyMoves(g.tanks,g.projectiles,g.pendingMoves,g.arenaMap);
+
+  // Tag each dead tank with the moves they queued this round, for replay
+  const taggedAfterTanks = result.tanks.map(t => {
+    if(t.alive) return t;
+    const pending = g.pendingMoves[t.id];
+    return { ...t, _replayMoves: pending ? (pending.moves||[]) : [] };
+  });
+
+  // Build death replays — one grouped event per round
+  const replays = buildReplays(g.lastSnapshot, currentSnapshot, taggedAfterTanks, result.projectiles, g.arenaMap, g.round);
+  // Note: allReplays accumulation happens in nextRound to avoid duplicates from re-resolve calls
+
+  // ── Spy plane handling ──
+  let spyPlane=g.spyPlane;
+  let spyPlaneIncoming=g.spyPlaneIncoming;
+  let nextPlaneRound=g.nextPlaneRound;
+  let planePings=[];
+  let planeJustArrived=false;
+
+  // If a plane was incoming, it now enters the arena
+  if(spyPlaneIncoming && !spyPlane){
+    spyPlane=spyPlaneIncoming;
+    spyPlaneIncoming=null;
+    planeJustArrived=true;
+  }
+
+  // Advance active plane and collect pings
+  if(spyPlane){
+    spyPlane=advancePlane(spyPlane);
+    if(planeStillFlying(spyPlane)){
+      planePings=getPlanePings(spyPlane,result.tanks);
+    } else {
+      spyPlane=null; // exited arena
+    }
+  }
+
+  // Schedule announcement this round if it's time
+  let newAnnouncement=null;
+  if(!spyPlane && !spyPlaneIncoming && g.round>=nextPlaneRound){
+    newAnnouncement=generatePlaneApproach();
+    spyPlaneIncoming=newAnnouncement;
+    // Next plane scheduled 5-9 rounds after current
+    nextPlaneRound=g.round+5+Math.floor(Math.random()*5);
+  }
+
+  state.resolveLog=result.log;
+  state.resolveResult={
+    ...result,
+    spyPlane,
+    spyPlaneIncoming,
+    nextPlaneRound,
+    planePings,
+    newAnnouncement,
+    newSnapshot: currentSnapshot,
+    replays,
+  };
+
+  // Sounds
+  g.tanks.forEach((t,i)=>{
+    if(!t.alive) return;
+    const ammo=(g.pendingMoves[t.id]||{}).ammo||'standard';
+    setTimeout(()=>{
+      if(ammo==='explosive') sounds.fireExplosive();
+      else if(ammo==='flare') sounds.fireFlare();
+      else sounds.fireStandard();
+    }, i*60);
+  });
+  const kills=result.log.filter(l=>l.includes('destroyed')||l.includes('caught')||l.includes('themselves'));
+  kills.forEach((_,i)=>setTimeout(()=>sounds.explosion(),250+i*120));
+  const burnouts=result.log.filter(l=>l.includes('burned out'));
+  burnouts.forEach((_,i)=>setTimeout(()=>sounds.flareBurnout(),200+i*80));
+  if(planePings.length>0){
+    planePings.forEach((_,i)=>setTimeout(()=>sounds.radarPing(),300+i*180));
+  }
+
+  state.screen='resolve';
+  render();
+}
+
+let _nextRoundBusy = false;
+function nextRound(){
+  if(_nextRoundBusy) return;
+  _nextRoundBusy = true;
+  setTimeout(()=>{ _nextRoundBusy=false; }, 500);
+
+  const res = state.resolveResult || {};
+  const {tanks,projectiles,winner,hadElimination,spyPlane,spyPlaneIncoming,nextPlaneRound,newSnapshot} = res;
+  const replays = res.replays || [];
+  // Consume replays immediately so re-triggers can't double-show them
+  if(state.resolveResult) state.resolveResult = {...state.resolveResult, replays: []};
+  // Accumulate into end-game gallery exactly once here, tagging with custom names
+  if(replays.length > 0){
+    const playerNames = state.game.playerNames || {};
+    const named = replays.map(r => ({
+      ...r,
+      tankName: playerNames[r.tankId] || r.tankColor.name,
+    }));
+    state.allReplays = [...state.allReplays, ...named];
+  }
+
+  if(winner!==null){
+    state.game={...state.game,tanks,projectiles,winner};
+    // Show kill cam before game over if there were deaths
+    if(replays && replays.length > 0){
+      state.pendingReplays = replays.slice();
+      state.afterReplayScreen = 'gameover';
+      state.screen = 'replay'; render(); return;
+    }
+    state.screen='gameover'; render(); return;
+  }
+  const newMaxMoves=hadElimination?state.game.maxMoves:Math.min(8,state.game.maxMoves+1);
+  const firstAliveHuman=tanks.findIndex(t=>t.alive&&!t.isAI);
+  const firstAlive=firstAliveHuman!==-1?firstAliveHuman:tanks.findIndex(t=>t.alive);
+  state.game={
+    ...state.game,tanks,projectiles,
+    round:state.game.round+1,maxMoves:newMaxMoves,
+    currentPlayer:firstAlive,
+    pendingMoves:Array(state.game.numPlayers).fill(null),
+    spyPlane: spyPlane||null,
+    spyPlaneIncoming: spyPlaneIncoming||null,
+    nextPlaneRound: nextPlaneRound||state.game.nextPlaneRound,
+    lastSnapshot: newSnapshot||null,
+  };
+  state.currentMoves=[]; state.currentAmmo='standard';
+
+  // If no humans left alive, fast-forward AI rounds to result
+  if(firstAliveHuman === -1){
+    fastForwardAI(); return;
+  }
+
+  // Show kill cam mid-game if any deaths this round
+  if(replays && replays.length > 0){
+    state.pendingReplays = replays.slice();
+    // After kill cam: go to handoff if any human alive, otherwise trigger next AI resolve
+    state.afterReplayScreen = firstAliveHuman!==-1 ? 'handoff' : 'aiResolve';
+    state.screen = 'replay'; render(); return;
+  }
+
+  state.screen=firstAliveHuman!==-1?'handoff':'resolve';
+  if(state.screen==='resolve') doResolveAI();
+  else render();
+}
+
+// Auto-resolve all remaining AI rounds silently until a winner or max rounds
+function fastForwardAI(){
+  const MAX_FF_ROUNDS = 200;
+  let rounds = 0;
+  while(rounds++ < MAX_FF_ROUNDS){
+    const g = state.game;
+    // Check if there's already a winner
+    const alive = g.tanks.filter(t=>t.alive);
+    if(alive.length <= 1){
+      const winnerId = alive.length===1 ? alive[0].id : -1;
+      state.game = {...g, winner: winnerId};
+      state.screen = 'gameover';
+      render();
+      return;
+    }
+    // Generate AI moves
+    let pending = g.pendingMoves.slice();
+    pending = pending.map((m,i)=>{
+      if(m!==null) return m;
+      const t = g.tanks[i];
+      if(!t.alive) return m;
+      return planAIMoves(t, g.tanks, g.projectiles, g.maxMoves, g.arenaMap);
+    });
+    const updated = {...g, pendingMoves: pending};
+    // Snapshot for replay tracking
+    const currentSnapshot = {
+      tanks: updated.tanks.map(t=>({...t})),
+      projectiles: updated.projectiles.map(p=>({...p})),
+    };
+    const result = applyMoves(updated.tanks, updated.projectiles, updated.pendingMoves, updated.arenaMap);
+    // Tag dead tanks with moves for replays
+    const taggedAfterTanks = result.tanks.map(t => {
+      if(t.alive) return t;
+      const p = updated.pendingMoves[t.id];
+      return {...t, _replayMoves: p?(p.moves||[]):[]};
+    });
+    // Build and accumulate replays
+    const replays = buildReplays(g.lastSnapshot, currentSnapshot, taggedAfterTanks, result.projectiles, g.arenaMap, g.round);
+    if(replays.length > 0){
+      const playerNames = g.playerNames || {};
+      const named = replays.map(r=>({...r, tankName: playerNames[r.tankId]||r.tankColor.name}));
+      state.allReplays = [...state.allReplays, ...named];
+    }
+    // Advance game state
+    const hadElimination = result.log.some(l=>l.includes('destroyed')||l.includes('caught')||l.includes('themselves'));
+    const newMaxMoves = hadElimination ? g.maxMoves : Math.min(8, g.maxMoves+1);
+    state.game = {
+      ...updated,
+      tanks: result.tanks,
+      projectiles: result.projectiles,
+      round: g.round+1,
+      maxMoves: newMaxMoves,
+      pendingMoves: Array(g.numPlayers).fill(null),
+      lastSnapshot: currentSnapshot,
+    };
+    if(result.winner !== null){
+      state.game = {...state.game, winner: result.winner};
+      state.screen = 'gameover';
+      render();
+      return;
+    }
+  }
+  // Safety: force end after max rounds
+  const alive = state.game.tanks.filter(t=>t.alive);
+  state.game = {...state.game, winner: alive.length===1?alive[0].id:-1};
+  state.screen = 'gameover';
+  render();
+}
+
+// ════════════════════════════════════════════════════════════
+// START
+// ════════════════════════════════════════════════════════════
+render();
+</script>
+</body>
+</html>

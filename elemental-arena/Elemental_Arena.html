@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elemental Arena</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #06060f;
+    --arena-bg:  #0a0a18;
+    --panel-bg:  #10101e;
+    --border:    #1e1e3a;
+    --accent:    #9966ff;
+    --accent2:   #cc44ff;
+    --text:      #c8c8e8;
+    --text-dim:  #5a5a7a;
+    --fire:      #ff5500;
+    --water:     #0099ff;
+    --ice:       #88ddff;
+    --earth:     #c87c3e;
+    --wind:      #66ff99;
+    --lightning: #ffee00;
+    --light:     #ffffff;
+    --dark:      #9933cc;
+    --hp-full:   #44ff88;
+    --hp-low:    #ff4444;
+    --elim:      #ff2244;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    width: 100%;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,10,24,0.9);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    font-size: 1rem;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .round-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+  .round-badge span { color: var(--accent); font-weight: 700; }
+
+  /* ── Main layout ── */
+  .main {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 520px;
+    padding: 10px 10px 24px;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  /* ── Arena canvas ── */
+  .arena-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  #arena {
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, #0e0e22 0%, #06060f 75%);
+    border: 1px solid #1a1a3a;
+    box-shadow: 0 0 60px rgba(100,60,200,0.12), inset 0 0 40px rgba(0,0,0,0.6);
+    cursor: pointer;
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* ── Phase banner ── */
+  .phase-banner {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: center;
+  }
+  .phase-banner .phase-name {
+    color: var(--accent);
+    font-size: 0.85rem;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  /* ── Bottom controls ── */
+  .bottom-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ── Machine + Target row ── */
+  .info-row {
+    display: flex;
+    gap: 8px;
+  }
+  .info-row .panel-box {
+    flex: 1;
+  }
+
+  .panel-box {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .panel-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  /* ── Element picker ── */
+  .elem-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .elem-btn {
+    background: #0d0d1f;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 4px;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-align: center;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .elem-btn:hover { transform: translateY(-2px); border-color: currentColor; }
+  .elem-btn.selected { border-width: 2px; background: #14142a; }
+  .elem-btn .em-icon { font-size: 1.2rem; }
+  .elem-btn .em-stat { font-family: 'JetBrains Mono', monospace; font-size: 0.52rem; color: var(--text-dim); }
+  .elem-btn[data-elem="fire"]      { color: var(--fire); }
+  .elem-btn[data-elem="water"]     { color: var(--water); }
+  .elem-btn[data-elem="ice"]       { color: var(--ice); }
+  .elem-btn[data-elem="earth"]     { color: var(--earth); }
+  .elem-btn[data-elem="wind"]      { color: var(--wind); }
+  .elem-btn[data-elem="lightning"] { color: var(--lightning); }
+  .elem-btn[data-elem="light"]     { color: var(--light); text-shadow: 0 0 8px #fff; }
+  .elem-btn[data-elem="dark"]      { color: var(--dark); }
+
+  /* ── Action button ── */
+  .action-btn {
+    width: 100%;
+    padding: 11px;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: rgba(150,100,255,0.12);
+    color: var(--accent);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.18s;
+    text-transform: uppercase;
+  }
+  .action-btn:hover:not(:disabled) {
+    background: rgba(150,100,255,0.25);
+    box-shadow: 0 0 20px rgba(150,100,255,0.3);
+  }
+  .action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ── Log ── */
+  .log-box {
+    max-height: 200px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .log-entry {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    padding: 3px 0;
+    border-bottom: 1px solid #0f0f1e;
+    line-height: 1.5;
+  }
+  .log-entry.elim { color: var(--elim); }
+  .log-entry.hit  { color: #ffaa44; }
+  .log-entry.info { color: var(--accent); }
+
+  /* ── Tooltip ── */
+  #tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: #14142a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--text);
+    z-index: 999;
+    display: none;
+  }
+
+  /* ── Overlay ── */
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6,6,15,0.88);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    backdrop-filter: blur(6px);
+  }
+  #overlay.hidden { display: none; }
+  .overlay-box {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 40px;
+    text-align: center;
+    max-width: 380px;
+  }
+  .overlay-box h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+    color: var(--accent);
+  }
+  .overlay-box p {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  /* ── Instructions ── */
+  .hint {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.5;
+  }
+  .hint b { color: var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⬡ Elemental Arena</div>
+  <div class="round-badge">ROUND <span id="hdr-round">1</span> &nbsp;·&nbsp; <span id="hdr-phase">PREPARE</span></div>
+</header>
+
+<div class="main">
+  <div class="arena-wrap">
+    <div class="phase-banner">
+      <span class="phase-name" id="phase-label">Prepare</span>
+      <span id="phase-sub">Choose your element below, then select a target on the arena</span>
+    </div>
+    <canvas id="arena" width="480" height="480"></canvas>
+  </div>
+
+  <div class="bottom-panel">
+
+    <div class="panel-box">
+      <div class="panel-label" id="elem-panel-label">Your Element — Round 1</div>
+      <div class="elem-grid">
+        <button class="elem-btn" data-elem="fire"      onclick="selectElem(this)"><span class="em-icon">🔥</span>Fire<span class="em-stat">3dmg 2spd 1sz 0def</span><span class="em-stat" style="color:#44aaff">💧3</span></button>
+        <button class="elem-btn" data-elem="water"     onclick="selectElem(this)"><span class="em-icon">💧</span>Water<span class="em-stat">2dmg 3spd 1sz 1def</span><span class="em-stat" style="color:#44aaff">💧2</span></button>
+        <button class="elem-btn" data-elem="ice"       onclick="selectElem(this)"><span class="em-icon">❄️</span>Ice<span class="em-stat">2dmg 1spd 3sz 2def</span><span class="em-stat" style="color:#44aaff">💧3</span></button>
+        <button class="elem-btn" data-elem="earth"     onclick="selectElem(this)"><span class="em-icon">🪨</span>Earth<span class="em-stat">1dmg 1spd 3sz 3def</span><span class="em-stat" style="color:#44aaff">💧1</span></button>
+        <button class="elem-btn" data-elem="wind"      onclick="selectElem(this)"><span class="em-icon">🌀</span>Wind<span class="em-stat">3dmg 2spd 2sz 1def</span><span class="em-stat" style="color:#44aaff">💧2</span></button>
+        <button class="elem-btn" data-elem="lightning" onclick="selectElem(this)"><span class="em-icon">⚡</span>Lightning<span class="em-stat">4dmg 3spd 1sz 0def</span><span class="em-stat" style="color:#44aaff">💧5</span></button>
+        <button class="elem-btn" data-elem="light"     onclick="selectElem(this)"><span class="em-icon">✨</span>Light<span class="em-stat">0dmg 2spd 2sz ∞def</span><span class="em-stat" style="color:#44aaff">💧4</span></button>
+        <button class="elem-btn" data-elem="dark"      onclick="selectElem(this)"><span class="em-icon">🌑</span>Dark<span class="em-stat">1dmg 2spd 2sz 0def</span><span class="em-stat" style="color:#44aaff">💧4</span></button>
+      </div>
+    </div>
+
+    <div class="info-row">
+      <div class="panel-box" style="flex:0 0 auto;min-width:90px;">
+        <div class="panel-label">💧 Mana</div>
+        <div id="mana-display" style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;color:#44aaff;text-align:center;">3</div>
+        <div id="mana-income" style="font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:var(--text-dim);text-align:center;">+3/round</div>
+      </div>
+      <div class="panel-box" id="machine-panel" style="display:none;">
+        <div class="panel-label">⚙ Machine</div>
+        <div id="machine-status" style="font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:var(--text-dim);text-align:center;padding:2px 0;">Empty</div>
+      </div>
+      <div class="panel-box">
+        <div class="panel-label">Target</div>
+        <div id="target-display" style="font-size:0.75rem;color:var(--text-dim);font-family:'JetBrains Mono',monospace;">None selected</div>
+      </div>
+    </div>
+
+    <button class="action-btn" id="attack-btn" disabled onclick="startAttackPhase()">Launch Attack</button>
+
+    <div class="panel-box">
+      <div class="panel-label">Battle Log</div>
+      <div class="log-box" id="log"></div>
+    </div>
+
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<div id="overlay">
+  <div class="overlay-box">
+    <h2>Elemental Arena</h2>
+    <p>13 mages enter the circle. Only one survives.<br>
+    Choose your element. Pick your target. Attack.<br>
+    All spells fly simultaneously — collisions are real.</p>
+    <button class="action-btn" onclick="startGame()">Enter the Arena</button>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  CONSTANTS & DATA
+// ─────────────────────────────────────────────
+const ELEMENTS = {
+  fire:      { emoji:'🔥', color:'#ff5500', dmgMod:+2, spdMod:+1, sizeMod: 0, defMod: 0, cost: 3 },
+  water:     { emoji:'💧', color:'#0099ff', dmgMod:+1, spdMod:+2, sizeMod: 0, defMod:+1, cost: 2 },
+  ice:       { emoji:'❄️', color:'#88ddff', dmgMod:+1, spdMod: 0, sizeMod:+2, defMod:+2, cost: 3 },
+  earth:     { emoji:'🪨', color:'#c87c3e', dmgMod: 0, spdMod: 0, sizeMod:+2, defMod:+3, cost: 1 },
+  wind:      { emoji:'🌀', color:'#66ff99', dmgMod:+2, spdMod:+1, sizeMod:+1, defMod:+1, cost: 2 },
+  lightning: { emoji:'⚡', color:'#ffee00', dmgMod:+3, spdMod:+2, sizeMod: 0, defMod: 0, cost: 5 },
+  light:     { emoji:'✨', color:'#ffffff', dmgMod:-1, spdMod:+1, sizeMod:+1, defMod:+0, cost: 4, special:'light' },
+  dark:      { emoji:'🌑', color:'#9933cc', dmgMod: 0, spdMod:+1, sizeMod:+1, defMod:+0, cost: 4, special:'dark'  },
+};
+
+const BASE_DMG  = 1;
+const BASE_SPD  = 1;
+const BASE_SIZE = 1;
+const BASE_DEF  = 0;
+const SPD_SCALE = 0.4; // pixels per frame at speed 1 (halved for better visibility)
+const SIZE_PX   = 2.5;   // canvas pixels per size unit (halved)
+
+const PLAYER_NAMES = [
+  'You', 'Aelith', 'Bryndor', 'Caelan', 'Davryn', 'Esvara',
+  'Felmor', 'Grivash', 'Helune', 'Ixtol', 'Jarven', 'Koreth', 'Luneth'
+];
+
+const AI_ELEM_KEYS = Object.keys(ELEMENTS);
+
+// ─────────────────────────────────────────────
+//  HEMISPHERE RULE
+//  Forbidden zone is ±81° around the attacker (45% of the circle).
+//  Valid targets must be more than 81° away angularly.
+// ─────────────────────────────────────────────
+const FORBIDDEN_DEG = 81;
+
+function isValidTarget(attacker, target) {
+  return angleDiff(attacker.angle, target.angle) > FORBIDDEN_DEG;
+}
+
+// Returns the absolute angular difference in degrees [0, 180]
+function angleDiff(a, b) {
+  let d = Math.abs(a - b) % (2 * Math.PI);
+  if (d > Math.PI) d = 2 * Math.PI - d;
+  return d * (180 / Math.PI);
+}
+
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let players = [];
+let selectedElem = null;
+let targetId    = null;
+let invalidTargetFlash = null;
+let phase       = 'prepare'; // prepare | target | attack | result
+let round       = 1;
+let phase2Active = false;       // true once machine activates
+let startingCount = 13;         // total players at game start
+let projectiles = [];
+let animId      = null;
+let gameActive  = false;
+
+// ── Wormhole ──
+const WORMHOLE_CHANCE = 1.0;  // 1.0 = 100% for testing, change to 0.10 for production
+const WORMHOLE_R      = 18;   // capture radius in pixels
+let wormhole = null;          // { x, y, rotation, pulse, active }
+const MACHINE_R = 18; // collision radius
+const machine = {
+  storedElem:  null,   // element key or null
+  storedDmg:   0,
+  storedSize:  0,
+  firing:      false,  // true during fire-burst animation
+  fireAngle:   0,      // direction it fires toward
+  firePulse:   0,      // animation counter
+  active:      false,  // only exists from round 2 onward
+};
+
+const canvas = document.getElementById('arena');
+const ctx    = canvas.getContext('2d');
+
+// Resize canvas to fill its CSS width (square), update derived constants
+let CX, CY, RADIUS, NODE_R;
+
+function resizeCanvas() {
+  const size = Math.min(canvas.parentElement.clientWidth, 520);
+  canvas.width  = size;
+  canvas.height = size;
+  CX     = size / 2;
+  CY     = size / 2;
+  RADIUS = size * 0.42;
+  NODE_R = Math.max(14, size * 0.038);
+  if (gameActive) {
+    // Reposition players to new circle
+    const alive = players.filter(p => p.alive);
+    const total = alive.length;
+    alive.forEach((p, i) => {
+      const a = p.angle;
+      p.x = CX + RADIUS * Math.cos(a);
+      p.y = CY + RADIUS * Math.sin(a);
+    });
+    players.filter(p => !p.alive).forEach(p => {
+      p.x = CX;
+      p.y = CY;
+    });
+    render();
+  }
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+function startGame() {
+  document.getElementById('overlay').classList.add('hidden');
+  initPlayers();
+  gameActive = true;
+  setPhase('prepare');
+  render();
+}
+
+function manaPerRound(r) {
+  // Round 1: 3, rounds 2-3: 5, rounds 4-5: 7, round 6+: 9
+  return Math.min(9, 3 + Math.floor((r - 1) / 2) * 2);
+}
+
+function initPlayers() {
+  players = [];
+  const total = 13;
+  startingCount = total;
+  phase2Active  = false;
+  const startMana = manaPerRound(1);
+  for (let i = 0; i < total; i++) {
+    const angle = (2 * Math.PI * i / total) - Math.PI / 2;
+    players.push({
+      id: i,
+      name: PLAYER_NAMES[i],
+      hp: 5,
+      alive: true,
+      x: CX + RADIUS * Math.cos(angle),
+      y: CY + RADIUS * Math.sin(angle),
+      angle,
+      isHuman: i === 0,
+      chosenElem: null,
+      targetId: null,
+      shieldElem: null,
+      hitThisRound: false,
+      pulse: 0,
+      elemHistory: [],
+      mana: startMana,
+    });
+  }
+}
+
+// ─────────────────────────────────────────────
+//  PHASE CONTROL
+// ─────────────────────────────────────────────
+function setPhase(p) {
+  phase = p;
+  const labels = {
+    prepare: ['Prepare', 'Choose your element below, then click a target on the arena'],
+    target:  ['Target',  'Click a living player on the arena to set your target'],
+    attack:  ['Attack',  'Spells in flight — watch the collisions!'],
+    result:  ['Result',  'Round complete. Prepare for the next round.'],
+  };
+  document.getElementById('phase-label').textContent = labels[p][0];
+  document.getElementById('phase-sub').textContent   = labels[p][1];
+  document.getElementById('hdr-phase').textContent   = p.toUpperCase();
+  document.getElementById('hdr-round').textContent   = phase2Active ? `P2 · ${round}` : round;
+  if (p === 'prepare') refreshCooldowns();
+  refreshAttackBtn();
+}
+
+function refreshAttackBtn() {
+  const btn = document.getElementById('attack-btn');
+  btn.disabled = !(selectedElem && targetId !== null && phase === 'prepare');
+}
+
+function refreshCooldowns() {
+  const human = players[0];
+  if (!human) return;
+  document.querySelectorAll('.elem-btn').forEach(btn => {
+    const elem  = btn.dataset.elem;
+    const onCD  = isOnCooldown(human, elem);
+    const broke = !canAfford(human, elem);
+    const locked = onCD || broke;
+    btn.disabled     = locked;
+    btn.style.opacity = locked ? '0.3' : '1';
+    btn.title = onCD  ? `${elem} on cooldown (2 rounds)`
+              : broke ? `Not enough mana (need ${ELEMENTS[elem].cost})`
+              : `Cost: ${ELEMENTS[elem].cost} mana`;
+    if (locked && selectedElem === elem) {
+      selectedElem = null;
+      btn.classList.remove('selected');
+    }
+  });
+  updateManaUI();
+}
+
+// Returns true if the element is on cooldown for the given player
+function isOnCooldown(player, elem) {
+  return player.elemHistory.includes(elem);
+}
+
+function canAfford(player, elem) {
+  return player.mana >= ELEMENTS[elem].cost;
+}
+
+// ─────────────────────────────────────────────
+//  ELEMENT SELECT
+// ─────────────────────────────────────────────
+function selectElem(el) {
+  const human = players[0];
+  if (!human) return;
+  const elem = el.dataset.elem;
+  if (isOnCooldown(human, elem)) return;
+  if (!canAfford(human, elem)) return;
+  document.querySelectorAll('.elem-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedElem = elem;
+  refreshAttackBtn();
+  refreshCooldowns(); // re-run so mana state updates button titles
+}
+
+// ─────────────────────────────────────────────
+//  CANVAS CLICK → TARGET
+// ─────────────────────────────────────────────
+canvas.addEventListener('click', e => {
+  if (phase !== 'prepare' || !gameActive) return;
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (canvas.width  / rect.width);
+  const my = (e.clientY - rect.top)  * (canvas.height / rect.height);
+
+  let hit = null;
+  for (const p of players) {
+    if (!p.alive) continue;
+    const dx = mx - p.x, dy = my - p.y;
+    if (Math.sqrt(dx*dx + dy*dy) < NODE_R + 6) { hit = p; break; }
+  }
+  if (!hit) return;
+
+  const human = players[0];
+
+  // Self-target → shield
+  if (hit.isHuman) {
+    targetId = human.id;
+    document.getElementById('target-display').innerHTML =
+      `<span style="color:var(--accent)">🛡 Self — Shield stance</span>`;
+    document.getElementById('target-display').style.color = 'var(--accent)';
+    refreshAttackBtn();
+    render();
+    return;
+  }
+
+  // Hemisphere rule: target must be in the opposite hemisphere
+  if (!isValidTarget(human, hit)) {
+    invalidTargetFlash = hit.id;
+    setTimeout(() => { invalidTargetFlash = null; render(); }, 600);
+    render();
+    return;
+  }
+
+  targetId = hit.id;
+  document.getElementById('target-display').textContent =
+    `${hit.name} (${hit.hp}❤)`;
+  document.getElementById('target-display').style.color = '#c8c8e8';
+  refreshAttackBtn();
+  render();
+});
+
+// ─────────────────────────────────────────────
+//  TOOLTIP
+// ─────────────────────────────────────────────
+const tip = document.getElementById('tooltip');
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (canvas.width  / rect.width);
+  const my = (e.clientY - rect.top)  * (canvas.height / rect.height);
+  let found = null;
+  for (const p of players) {
+    const dx = mx - p.x, dy = my - p.y;
+    if (Math.sqrt(dx*dx + dy*dy) < NODE_R + 8) { found = p; break; }
+  }
+  if (found) {
+    tip.style.display = 'block';
+    tip.style.left = (e.clientX + 14) + 'px';
+    tip.style.top  = (e.clientY - 10) + 'px';
+    const hearts = '❤'.repeat(found.hp) || '☠';
+    const human = players[0];
+    const forbidden = found.alive && !found.isHuman && human.alive && !isValidTarget(human, found);
+    const shieldInfo = found.shieldElem ? ` · 🛡 ${found.shieldElem}` : '';
+    tip.innerHTML = `<b>${found.name}</b>${found.isHuman ? ' (You)' : ''}<br>HP: ${hearts}${shieldInfo}<br>${
+      !found.alive ? 'Eliminated' :
+      found.isHuman ? '<span style="color:var(--accent)">Click to shield</span>' :
+      forbidden ? '<span style="color:#ff4466">⛔ Same hemisphere</span>' : 'Valid target'
+    }`;
+  } else {
+    tip.style.display = 'none';
+  }
+});
+canvas.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+
+// ─────────────────────────────────────────────
+//  AI DECISIONS
+// ─────────────────────────────────────────────
+function aiDecide() {
+  const alive = players.filter(p => p.alive);
+  for (const p of players) {
+    if (!p.alive || p.isHuman) continue;
+    // Pick from elements not on cooldown AND affordable
+    const available = AI_ELEM_KEYS.filter(e => !isOnCooldown(p, e) && canAfford(p, e));
+    const pool = available.length > 0 ? available : AI_ELEM_KEYS.filter(e => !isOnCooldown(p, e));
+    // Absolute fallback: cheapest element
+    const finalPool = pool.length > 0 ? pool : ['earth'];
+    p.chosenElem = finalPool[Math.floor(Math.random() * finalPool.length)];
+
+    if (Math.random() < 0.15) {
+      p.targetId   = p.id;
+      p.shieldElem = p.chosenElem;
+    } else {
+      p.shieldElem = null;
+      const validTargets = alive.filter(o => o.id !== p.id && isValidTarget(p, o));
+      const tgtPool = validTargets.length > 0 ? validTargets : alive.filter(o => o.id !== p.id);
+      const tgt = tgtPool[Math.floor(Math.random() * tgtPool.length)];
+      p.targetId = tgt ? tgt.id : null;
+    }
+    // Deduct mana
+    p.mana -= ELEMENTS[p.chosenElem].cost;
+  }
+}
+
+// ─────────────────────────────────────────────
+//  ATTACK PHASE
+// ─────────────────────────────────────────────
+function startAttackPhase() {
+  if (!selectedElem || targetId === null) return;
+  const human = players[0];
+
+  if (targetId === human.id) {
+    // Shield stance — no projectile launched
+    human.chosenElem = selectedElem;
+    human.targetId   = human.id;
+    human.shieldElem = selectedElem;
+    human.mana -= ELEMENTS[selectedElem].cost;
+    addLog(`🛡 You raise a ${ELEMENTS[selectedElem].emoji} ${selectedElem} shield! (${human.mana} mana left)`, 'info');
+  } else {
+    human.chosenElem = selectedElem;
+    human.targetId   = targetId;
+    human.shieldElem = null;
+    human.mana -= ELEMENTS[selectedElem].cost;
+  }
+
+  aiDecide();
+  setPhase('attack');
+  launchProjectiles();
+}
+
+function spellSpeed(elem) {
+  return Math.max(0.3, BASE_SPD + ELEMENTS[elem].spdMod) * SPD_SCALE * 3;
+}
+function spellDamage(elem) {
+  return BASE_DMG + ELEMENTS[elem].dmgMod;
+}
+function spellSize(elem) {
+  return Math.max(2, (BASE_SIZE + ELEMENTS[elem].sizeMod) * SIZE_PX);
+}
+function spellDefence(elem) {
+  return BASE_DEF + ELEMENTS[elem].defMod;
+}
+
+function launchProjectiles() {
+  projectiles = [];
+  for (const p of players) {
+    if (!p.alive || p.targetId === null) continue;
+    if (p.targetId === p.id) continue; // shielding — no projectile
+    const tgt = players[p.targetId];
+    if (!tgt || !tgt.alive) continue;
+    const elem = p.chosenElem;
+    const ex = p.x, ey = p.y;
+    const tx = tgt.x, ty = tgt.y;
+    const dx = tx - ex, dy = ty - ey;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const spd  = spellSpeed(elem);
+    const sz   = spellSize(elem);
+    projectiles.push({
+      id: p.id,
+      ownerId: p.id,
+      targetId: p.targetId,
+      elem,
+      x: ex, y: ey,
+      ox: ex, oy: ey,
+      tx, ty,
+      vx: dx / dist * spd,
+      vy: dy / dist * spd,
+      dist,
+      traveled: 0,
+      damage:  spellDamage(elem),
+      defence: spellDefence(elem),
+      size: sz,
+      alive: true,
+      trail: [],
+      glow: 0,
+    });
+  }
+  cancelAnimationFrame(animId);
+  spawnWormhole();
+  animateAttacks();
+}
+
+function spawnWormhole() {
+  wormhole = null;
+  if (Math.random() > WORMHOLE_CHANCE) return;
+
+  // Pick two different attacking projectiles and place wormhole on the midpoint of their paths
+  const attackers = projectiles.filter(p => p.alive);
+  if (attackers.length < 2) return;
+
+  const a = attackers[Math.floor(Math.random() * attackers.length)];
+  let b;
+  do { b = attackers[Math.floor(Math.random() * attackers.length)]; } while (b === a);
+
+  // Midpoint of attacker A's path (quarter to three-quarter of the way)
+  const t = 0.3 + Math.random() * 0.4;
+  const wx = a.ox + (a.tx - a.ox) * t;
+  const wy = a.oy + (a.ty - a.oy) * t;
+
+  // Keep it inside the arena circle
+  const dx = wx - CX, dy = wy - CY;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  if (dist > RADIUS - WORMHOLE_R * 2) return; // too close to edge, skip
+
+  wormhole = { x: wx, y: wy, rotation: 0, pulse: 0, active: true };
+  addLog(`🌀 A wormhole tears open in the arena!`, 'info');
+}
+
+function handleWormhole(proj) {
+  // Redirect to a random living player
+  const alive = players.filter(p => p.alive);
+  if (alive.length === 0) return;
+  const newTgt = alive[Math.floor(Math.random() * alive.length)];
+  const oldTgtName = players[proj.targetId] ? players[proj.targetId].name : '?';
+
+  proj.targetId = newTgt.id;
+  const dx = newTgt.x - proj.x, dy = newTgt.y - proj.y;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  const spd  = spellSpeed(proj.elem);
+  proj.vx    = dx / dist * spd;
+  proj.vy    = dy / dist * spd;
+  proj.trail = [];
+
+  addLog(`🌀 Wormhole swallows ${ELEMENTS[proj.elem].emoji} (was → ${oldTgtName}) and spits it at ${newTgt.name}!`, 'elim');
+}
+function animateAttacks() {
+  // Snapshot current length — any machine shots added this frame are processed next frame
+  const count = projectiles.length;
+
+  // Move projectiles
+  for (let i = 0; i < count; i++) {
+    const proj = projectiles[i];
+    if (!proj.alive) continue;
+    proj.trail.push({ x: proj.x, y: proj.y });
+    if (proj.trail.length > 18) proj.trail.shift();
+    proj.x += proj.vx;
+    proj.y += proj.vy;
+    proj.traveled += Math.sqrt(proj.vx*proj.vx + proj.vy*proj.vy);
+  }
+
+  // Collision check between projectiles
+  for (let i = 0; i < count; i++) {
+    for (let j = i + 1; j < count; j++) {
+      const a = projectiles[i], b = projectiles[j];
+      if (!a.alive || !b.alive) continue;
+      const dx = a.x - b.x, dy = a.y - b.y;
+      if (Math.sqrt(dx*dx + dy*dy) < a.size + b.size) {
+        resolveCollision(a, b);
+      }
+    }
+  }
+
+  // Check if projectile reached machine or target
+  for (let i = 0; i < count; i++) {
+    const proj = projectiles[i];
+    if (!proj.alive) continue;
+
+    // Machine intercept — skip projectiles that came FROM the machine
+    if (machine.active && !proj.fromMachine) {
+      const mdx = proj.x - CX, mdy = proj.y - CY;
+      if (Math.sqrt(mdx*mdx + mdy*mdy) < MACHINE_R + proj.size) {
+        handleMachineHit(proj);
+        proj.alive = false;
+        continue;
+      }
+    }
+
+    // Wormhole intercept
+    if (wormhole && wormhole.active && !proj.fromWormhole) {
+      const wdx = proj.x - wormhole.x, wdy = proj.y - wormhole.y;
+      if (Math.sqrt(wdx*wdx + wdy*wdy) < WORMHOLE_R + proj.size) {
+        proj.fromWormhole = true; // flag so it doesn't get caught again immediately
+        handleWormhole(proj);
+        // Wormhole collapses after first use this round
+        wormhole.active = false;
+      }
+    }
+
+    const tgt = players[proj.targetId];
+    if (!tgt) { proj.alive = false; continue; }
+    const dx = proj.x - tgt.x, dy = proj.y - tgt.y;
+    if (Math.sqrt(dx*dx + dy*dy) < NODE_R + proj.size) {
+      applyHit(proj, tgt);
+      proj.alive = false;
+    }
+  }
+
+  render();
+
+  const anyAlive = projectiles.some(p => p.alive);
+  if (anyAlive) {
+    animId = requestAnimationFrame(animateAttacks);
+  } else {
+    setTimeout(resolveRound, 600);
+  }
+}
+
+function resolveCollision(a, b) {
+  const eA = ELEMENTS[a.elem], eB = ELEMENTS[b.elem];
+  addLog(`💥 ${eA.emoji} & ${eB.emoji} collide mid-air!`, 'hit');
+
+  const aIsLight = a.elem === 'light';
+  const bIsLight = b.elem === 'light';
+  const aIsDark  = a.elem === 'dark';
+  const bIsDark  = b.elem === 'dark';
+
+  // ── Light vs Dark: they annihilate each other ──
+  if ((aIsLight && bIsDark) || (aIsDark && bIsLight)) {
+    a.alive = false;
+    b.alive = false;
+    addLog(`  → ✨ Light and 🌑 Dark annihilate each other!`, 'info');
+    return;
+  }
+
+  // ── Light: nullifies everything it hits, both die ──
+  if (aIsLight || bIsLight) {
+    a.alive = false;
+    b.alive = false;
+    addLog(`  → ✨ Light nullifies ${(aIsLight ? eB : eA).emoji} completely!`, 'info');
+    return;
+  }
+
+  // ── Dark: corrupts the other spell — random element, random new target ──
+  if (aIsDark || bIsDark) {
+    const darkProj  = aIsDark ? a : b;
+    const otherProj = aIsDark ? b : a;
+    darkProj.alive = false; // dark sacrifices itself
+
+    const newElem = corruptSpell(otherProj);
+    addLog(`  → 🌑 Dark corrupts ${ELEMENTS[otherProj.elem].emoji}! Spell becomes ${ELEMENTS[newElem].emoji} ${newElem} and seeks a new target!`, 'elim');
+    return;
+  }
+
+  // ── Standard: dmg vs def simultaneous fragments ──
+  const fragA = a.damage - b.defence;
+  const fragB = b.damage - a.defence;
+
+  const aThrough = fragA > 0;
+  const bThrough = fragB > 0;
+
+  if (aThrough) {
+    a.damage = fragA;
+    addLog(`  → ${eA.emoji} punches through with ${fragA} dmg fragment`, 'info');
+  } else {
+    a.alive = false;
+    addLog(`  → ${eA.emoji} fully absorbed by ${eB.emoji} defence`, 'info');
+  }
+
+  if (bThrough) {
+    b.damage = fragB;
+    addLog(`  → ${eB.emoji} punches through with ${fragB} dmg fragment`, 'info');
+  } else {
+    b.alive = false;
+    addLog(`  → ${eB.emoji} fully absorbed by ${eA.emoji} defence`, 'info');
+  }
+
+  if (!aThrough && !bThrough) {
+    addLog(`  → Mutual block — both spells nullified!`, 'info');
+  }
+}
+
+// Corrupt a projectile: give it a random non-dark/non-light element and a random new living target
+function corruptSpell(proj) {
+  const corruptableElems = Object.keys(ELEMENTS).filter(e => e !== 'dark' && e !== 'light');
+  const newElem = corruptableElems[Math.floor(Math.random() * corruptableElems.length)];
+  const oldElem = proj.elem;
+
+  proj.elem    = newElem;
+  proj.damage  = spellDamage(newElem);
+  proj.defence = spellDefence(newElem);
+  proj.size    = spellSize(newElem);
+  // Redirect to a random living player (anyone, ignoring hemisphere rule — chaos is chaos)
+  const alivePlayers = players.filter(p => p.alive);
+  if (alivePlayers.length > 0) {
+    const newTgt = alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
+    proj.targetId = newTgt.id;
+    const dx = newTgt.x - proj.x, dy = newTgt.y - proj.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const spd  = spellSpeed(newElem);
+    proj.vx = dx / dist * spd;
+    proj.vy = dy / dist * spd;
+  }
+  proj.trail = []; // clear trail so it looks like a fresh spell
+  return newElem;
+}
+
+function applyHit(proj, tgt) {
+  const shooterName = proj.ownerId === -1 ? '⚙ Machine' : players[proj.ownerId].name;
+  const e = ELEMENTS[proj.elem];
+
+  // Check target's shield
+  if (tgt.shieldElem) {
+    const shield = ELEMENTS[tgt.shieldElem];
+
+    // Light shield: nullifies absolutely everything
+    if (tgt.shieldElem === 'light') {
+      addLog(`🛡 ${tgt.name}'s ✨ Light shield nullifies ${e.emoji} completely!`, 'info');
+      return;
+    }
+
+    // Dark shield: corrupts and redirects incoming spell to a random player
+    if (tgt.shieldElem === 'dark') {
+      addLog(`🛡 ${tgt.name}'s 🌑 Dark shield corrupts ${e.emoji}!`, 'info');
+      const newElem = corruptSpell(proj);
+      addLog(`  → Spell becomes ${ELEMENTS[newElem].emoji} ${newElem} and flies at a new target!`, 'elim');
+      // Re-add to projectiles so it keeps traveling
+      proj.alive = true;
+      projectiles.push(proj);
+      return;
+    }
+
+    // Same element → full nullification
+    if (tgt.shieldElem === proj.elem) {
+      addLog(`🛡 ${tgt.name}'s ${shield.emoji} shield nullifies matching ${e.emoji}!`, 'info');
+      return;
+    }
+
+    // Different element → defence value acts as bonus HP this hit
+    const bonusHp  = shield.defMod;
+    const overflow = proj.damage - bonusHp;
+    if (overflow <= 0) {
+      addLog(`🛡 ${tgt.name}'s ${shield.emoji} shield absorbs ${proj.damage} dmg (${bonusHp} def buffer)!`, 'info');
+      return;
+    }
+    addLog(`🛡 ${tgt.name}'s ${shield.emoji} shield absorbs ${bonusHp} — ${overflow} dmg bleeds through!`, 'hit');
+    tgt.hp -= overflow;
+    tgt.hitThisRound = true;
+    addLog(`  → ${tgt.name} now at ${tgt.hp} HP`, 'hit');
+    return;
+  }
+
+  // No shield — direct hit
+  if (proj.damage <= 0) {
+    addLog(`${e.emoji} ${shooterName}'s weakened spell fizzles on ${tgt.name}`, 'info');
+    return;
+  }
+  tgt.hp -= proj.damage;
+  tgt.hitThisRound = true;
+  addLog(`${e.emoji} ${shooterName} → ${tgt.name} (${proj.damage} dmg, ${tgt.hp} HP left)`, proj.fromMachine ? 'elim' : 'hit');
+}
+
+// ─────────────────────────────────────────────
+//  THE MACHINE
+// ─────────────────────────────────────────────
+function handleMachineHit(proj) {
+  const e = ELEMENTS[proj.elem];
+  addLog(`⚙ ${e.emoji} ${players[proj.ownerId].name}'s spell hits the Machine!`, 'info');
+
+  if (!machine.storedElem) {
+    // Machine was empty — absorb and store
+    machine.storedElem = proj.elem;
+    machine.storedDmg  = proj.damage;
+    machine.storedSize = proj.size;
+    addLog(`  → Machine stores ${e.emoji} ${proj.elem} (${proj.damage} dmg)`, 'info');
+
+  } else if (machine.storedElem === proj.elem) {
+    // Same element — fire at a random living player
+    const targets = players.filter(p => p.alive);
+    if (targets.length === 0) { machine.storedElem = null; updateMachineUI(); return; }
+    const victim = targets[Math.floor(Math.random() * targets.length)];
+    const storedElem = machine.storedElem;
+    const storedDmg  = machine.storedDmg;
+
+    addLog(`  → Same element! Machine FIRES ${ELEMENTS[storedElem].emoji} at ${victim.name}!`, 'elim');
+
+    // Animate machine firing projectile
+    const angle = Math.atan2(victim.y - CY, victim.x - CX);
+    machine.firing    = true;
+    machine.fireAngle = angle;
+    machine.firePulse = 0;
+
+    // Launch a machine projectile
+    const spd = spellSpeed(storedElem);
+    const sz  = spellSize(storedElem);
+    projectiles.push({
+      id: -1,
+      ownerId: -1, // machine
+      targetId: victim.id,
+      elem: storedElem,
+      x: CX, y: CY,
+      ox: CX, oy: CY,
+      tx: victim.x, ty: victim.y,
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd,
+      dist: RADIUS,
+      traveled: 0,
+      damage:  storedDmg,
+      defence: spellDefence(storedElem),
+      size: sz,
+      alive: true,
+      trail: [],
+      glow: 0,
+      fromMachine: true,
+    });
+
+    machine.storedElem = null;
+    machine.storedDmg  = 0;
+
+  } else {
+    // Different element — replace stored
+    const old = machine.storedElem;
+    machine.storedElem = proj.elem;
+    machine.storedDmg  = proj.damage;
+    machine.storedSize = proj.size;
+    addLog(`  → Replaces ${ELEMENTS[old].emoji} with ${e.emoji} ${proj.elem}`, 'info');
+  }
+
+  updateMachineUI();
+}
+
+function updateMachineUI() {
+  const el = document.getElementById('machine-status');
+  if (!machine.storedElem) {
+    el.style.color = 'var(--text-dim)';
+    el.textContent = 'Empty — awaiting spell';
+  } else {
+    const e = ELEMENTS[machine.storedElem];
+    el.style.color = e.color;
+    el.textContent = `${e.emoji} ${machine.storedElem} stored (${machine.storedDmg} dmg) — feed it the same to fire!`;
+  }
+}
+
+function updateManaUI() {
+  const human = players[0];
+  if (!human) return;
+  const el     = document.getElementById('mana-display');
+  const income = document.getElementById('mana-income');
+  if (!el) return;
+  el.textContent = human.mana;
+  el.style.color = human.mana < 1 ? '#ff4444' : human.mana < 3 ? '#ffaa44' : '#44aaff';
+  income.textContent = `+${manaPerRound(round + 1)} next round`;
+}
+
+// ─────────────────────────────────────────────
+//  ROUND RESOLUTION
+// ─────────────────────────────────────────────
+function resolveRound() {
+  let elimCount = 0;
+  for (const p of players) {
+    if (p.alive && p.hp <= 0) {
+      p.alive = false;
+      elimCount++;
+      addLog(`☠ ${p.name} has been eliminated!`, 'elim');
+    }
+    p.hitThisRound = false;
+    // Record used element for cooldown (keep last 2)
+    if (p.chosenElem) {
+      p.elemHistory.push(p.chosenElem);
+      if (p.elemHistory.length > 2) p.elemHistory.shift();
+    }
+    p.chosenElem   = null;
+    p.targetId     = null;
+    p.shieldElem   = null;
+  }
+  wormhole = null;
+  if (elimCount === 0) addLog(`No eliminations this round.`, 'info');
+
+  // Grant mana for next round — carries over, no cap enforced (hoard away)
+  const gained = manaPerRound(round + 1);
+  players.filter(p => p.alive).forEach(p => { p.mana += gained; });
+  addLog(`💧 Each survivor gains ${gained} mana (round ${round + 1} income).`, 'info');
+
+  const alive = players.filter(p => p.alive);
+
+  if (alive.length <= 1) {
+    const winner = alive[0];
+    setTimeout(() => showEndScreen(winner), 800);
+    return;
+  }
+
+  if (!alive.some(p => p.isHuman)) {
+    setTimeout(() => showEndScreen(null), 800);
+    return;
+  }
+
+  // Animate circle redistribution, then start next round
+  redistributeCircle(alive, () => {
+    round++;
+    selectedElem = null;
+    targetId     = null;
+    document.querySelectorAll('.elem-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('target-display').textContent = 'None selected';
+    document.getElementById('target-display').style.color = 'var(--text-dim)';
+
+    // Check if we just crossed the halfway threshold — activate machine
+    const halfThreshold = Math.ceil(startingCount / 2);
+    if (!phase2Active && alive.length <= halfThreshold) {
+      phase2Active       = true;
+      machine.active     = true;
+      machine.storedElem = null;
+      machine.storedDmg  = 0;
+      machine.firing     = false;
+      document.getElementById('machine-panel').style.display = 'block';
+      updateMachineUI();
+      addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info');
+      addLog(`⚙ PHASE 2 — The Machine awakens!`, 'elim');
+      addLog(`  ${alive.length} survivors remain. No mercy.`, 'info');
+      addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, 'info');
+    }
+
+    document.getElementById('elem-panel-label').textContent =
+      phase2Active ? `Your Element — Phase 2 (Round ${round})` : `Your Element — Round ${round}`;
+    setPhase('prepare');
+    updateManaUI();
+    render();
+    addLog(`--- Round ${round} begins (${alive.length} remaining) ---`, 'info');
+  });
+}
+
+// Smoothly slide alive players to new evenly-spaced positions
+function redistributeCircle(alive, onComplete) {
+  const total = alive.length;
+
+  // Compute new target positions — keep human's angular slot as anchor
+  const humanIdx = alive.findIndex(p => p.isHuman);
+  const angleOffset = humanIdx >= 0
+    ? alive[humanIdx].angle - (2 * Math.PI * humanIdx / total)
+    : -Math.PI / 2;
+
+  // Store start and target positions
+  const anims = alive.map((p, i) => {
+    const targetAngle = (2 * Math.PI * i / total) + angleOffset;
+    return {
+      player: p,
+      fromX: p.x,
+      fromY: p.y,
+      toX: CX + RADIUS * Math.cos(targetAngle),
+      toY: CY + RADIUS * Math.sin(targetAngle),
+      targetAngle,
+    };
+  });
+
+  // Also fade-slide eliminated players toward center
+  const dead = players.filter(p => !p.alive);
+
+  const DURATION = 700; // ms
+  const start = performance.now();
+
+  function step(now) {
+    const t = Math.min(1, (now - start) / DURATION);
+    const ease = t < 0.5 ? 2*t*t : -1 + (4-2*t)*t; // ease-in-out quad
+
+    for (const a of anims) {
+      a.player.x = a.fromX + (a.toX - a.fromX) * ease;
+      a.player.y = a.fromY + (a.toY - a.fromY) * ease;
+      a.player.angle = a.targetAngle;
+    }
+
+    // Slide dead players toward center & fade
+    for (const p of dead) {
+      p.x = p.x + (CX - p.x) * 0.06;
+      p.y = p.y + (CY - p.y) * 0.06;
+    }
+
+    render();
+
+    if (t < 1) {
+      animId = requestAnimationFrame(step);
+    } else {
+      // Snap to exact positions
+      for (const a of anims) {
+        a.player.x = a.toX;
+        a.player.y = a.toY;
+      }
+      onComplete();
+    }
+  }
+
+  cancelAnimationFrame(animId);
+  requestAnimationFrame(step);
+}
+
+function showEndScreen(winner) {
+  const ov = document.getElementById('overlay');
+  const box = ov.querySelector('.overlay-box');
+  if (winner) {
+    box.innerHTML = `
+      <h2>${winner.isHuman ? '🏆 Victory!' : '☠ Defeated'}</h2>
+      <p>${winner.isHuman
+        ? 'You are the last mage standing. The arena falls silent.'
+        : `${winner.name} claims the arena. You have been bested.`}</p>
+      <button class="action-btn" onclick="location.reload()">Play Again</button>`;
+  } else {
+    box.innerHTML = `
+      <h2>☠ Eliminated</h2>
+      <p>You have fallen. The battle continues without you.</p>
+      <button class="action-btn" onclick="location.reload()">Play Again</button>`;
+  }
+  ov.classList.remove('hidden');
+  gameActive = false;
+}
+
+// ─────────────────────────────────────────────
+//  LOG
+// ─────────────────────────────────────────────
+function addLog(msg, cls = '') {
+  const box = document.getElementById('log');
+  const el  = document.createElement('div');
+  el.className = 'log-entry' + (cls ? ' ' + cls : '');
+  el.textContent = msg;
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
+}
+
+// ─────────────────────────────────────────────
+//  RENDER
+// ─────────────────────────────────────────────
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawArena();
+  drawConnectionLines();
+  drawProjectiles();
+  drawPlayers();
+}
+
+function drawArena() {
+  ctx.save();
+  // Subtle grid rings
+  for (let r = 60; r <= RADIUS; r += 60) {
+    ctx.beginPath();
+    ctx.arc(CX, CY, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(80,60,160,0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // ── Wormhole ──
+  if (wormhole) drawWormhole();
+}
+
+function drawWormhole() {
+  const now = Date.now();
+  const w   = wormhole;
+  ctx.save();
+
+  const pulse    = 0.6 + 0.4 * Math.sin(now / 200);
+  const outerR   = WORMHOLE_R + (w.active ? 4 * pulse : 0);
+  const col      = w.active ? '#aa44ff' : '#442266';
+  const alpha    = w.active ? 1 : 0.35;
+
+  ctx.globalAlpha = alpha;
+
+  // Outer swirling ring
+  ctx.beginPath();
+  ctx.arc(w.x, w.y, outerR, 0, Math.PI * 2);
+  ctx.strokeStyle = col;
+  ctx.lineWidth   = 2.5;
+  ctx.stroke();
+
+  // Rotating spiral arms
+  w.rotation += w.active ? 0.06 : 0.01;
+  for (let arm = 0; arm < 3; arm++) {
+    const ang = w.rotation + (arm * Math.PI * 2 / 3);
+    ctx.beginPath();
+    ctx.moveTo(w.x, w.y);
+    ctx.lineTo(
+      w.x + Math.cos(ang) * outerR * 0.85,
+      w.y + Math.sin(ang) * outerR * 0.85
+    );
+    ctx.strokeStyle = col;
+    ctx.lineWidth   = 1.5;
+    ctx.globalAlpha = alpha * (w.active ? pulse : 0.2);
+    ctx.stroke();
+  }
+
+  // Void core
+  const coreGrd = ctx.createRadialGradient(w.x, w.y, 0, w.x, w.y, WORMHOLE_R * 0.7);
+  coreGrd.addColorStop(0, 'rgba(0,0,0,1)');
+  coreGrd.addColorStop(0.6, 'rgba(80,0,140,0.8)');
+  coreGrd.addColorStop(1, 'rgba(80,0,140,0)');
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  ctx.arc(w.x, w.y, WORMHOLE_R * 0.7, 0, Math.PI * 2);
+  ctx.fillStyle = coreGrd;
+  ctx.fill();
+
+  // Label
+  ctx.globalAlpha = w.active ? 0.7 : 0.2;
+  ctx.font        = '500 7px "Space Grotesk", sans-serif';
+  ctx.fillStyle   = col;
+  ctx.textAlign   = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(w.active ? 'WORMHOLE' : 'COLLAPSED', w.x, w.y + WORMHOLE_R + 10);
+
+  ctx.restore();  if (machine.active) {
+    drawMachine();
+  } else {
+    // Center rune (round 1 only)
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(CX, CY, 8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(150,100,255,0.25)';
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawMachine() {
+  const now = Date.now();
+  ctx.save();
+
+  const hasSpell = !!machine.storedElem;
+  const col      = hasSpell ? ELEMENTS[machine.storedElem].color : '#446688';
+  const pulse    = 0.6 + 0.4 * Math.sin(now / (hasSpell ? 400 : 900));
+
+  // Outer energy ring — pulses faster when charged
+  ctx.beginPath();
+  ctx.arc(CX, CY, MACHINE_R + 10, 0, Math.PI * 2);
+  ctx.strokeStyle = col;
+  ctx.lineWidth   = 1.5;
+  ctx.globalAlpha = pulse * (hasSpell ? 0.7 : 0.2);
+  ctx.stroke();
+
+  // Gear-like octagon body
+  ctx.globalAlpha = 1;
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + now / 4000; // slow rotation
+    const r = i % 2 === 0 ? MACHINE_R : MACHINE_R * 0.82;
+    const px = CX + r * Math.cos(a), py = CY + r * Math.sin(a);
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  const bodyGrad = ctx.createRadialGradient(CX - 3, CY - 3, 2, CX, CY, MACHINE_R);
+  bodyGrad.addColorStop(0, hasSpell ? col + '55' : '#1a2233');
+  bodyGrad.addColorStop(1, '#0a0a18');
+  ctx.fillStyle   = bodyGrad;
+  ctx.fill();
+  ctx.strokeStyle = hasSpell ? col : '#334455';
+  ctx.lineWidth   = 1.5;
+  ctx.stroke();
+
+  // Inner core — glows with stored element color
+  if (hasSpell) {
+    const grd = ctx.createRadialGradient(CX, CY, 0, CX, CY, MACHINE_R - 4);
+    grd.addColorStop(0, col + 'cc');
+    grd.addColorStop(1, col + '00');
+    ctx.beginPath();
+    ctx.arc(CX, CY, MACHINE_R - 4, 0, Math.PI * 2);
+    ctx.fillStyle   = grd;
+    ctx.globalAlpha = pulse;
+    ctx.fill();
+
+    // Element emoji label
+    ctx.globalAlpha = 1;
+    ctx.font        = '13px serif';
+    ctx.textAlign   = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(ELEMENTS[machine.storedElem].emoji, CX, CY);
+  } else {
+    // Empty indicator
+    ctx.fillStyle   = '#334455';
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.arc(CX, CY, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // "MACHINE" label
+  ctx.globalAlpha = 0.4;
+  ctx.font        = '500 7px "Space Grotesk", sans-serif';
+  ctx.fillStyle   = hasSpell ? col : '#446688';
+  ctx.textAlign   = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('MACHINE', CX, CY + MACHINE_R + 14);
+
+  // Fire burst flash
+  if (machine.firing) {
+    machine.firePulse++;
+    const fp = Math.min(1, machine.firePulse / 12);
+    ctx.globalAlpha = (1 - fp) * 0.8;
+    ctx.beginPath();
+    ctx.arc(CX, CY, (MACHINE_R + 20) * fp, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth   = 3;
+    ctx.stroke();
+    if (machine.firePulse > 12) machine.firing = false;
+  }
+
+  ctx.restore();
+}
+
+function drawConnectionLines() {
+  if (phase !== 'prepare' || !gameActive) return;
+  const human = players[0];
+  if (!human.alive) return;
+
+  // ── Shade the forbidden hemisphere (±90° around the player's own angle) ──
+  ctx.save();
+  // Clip to arena circle
+  ctx.beginPath();
+  ctx.arc(CX, CY, RADIUS + 2, 0, Math.PI * 2);
+  ctx.clip();
+
+  // The forbidden arc spans player.angle ± 81° (45% of circle)
+  const forbidRad = FORBIDDEN_DEG * Math.PI / 180;
+  const a0 = human.angle - forbidRad;
+  const a1 = human.angle + forbidRad;
+  ctx.beginPath();
+  ctx.moveTo(CX, CY);
+  ctx.arc(CX, CY, RADIUS + 2, a0, a1);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(255, 40, 40, 0.07)';
+  ctx.fill();
+
+  // Dashed boundary lines at ±90°
+  for (const a of [a0, a1]) {
+    ctx.beginPath();
+    ctx.moveTo(CX, CY);
+    ctx.lineTo(CX + (RADIUS + 2) * Math.cos(a), CY + (RADIUS + 2) * Math.sin(a));
+    ctx.setLineDash([4, 5]);
+    ctx.strokeStyle = 'rgba(255, 80, 80, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // ── Target aim line ──
+  if (targetId !== null) {
+    const tgt = players[targetId];
+    ctx.save();
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = 'rgba(200,160,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(human.x, human.y);
+    ctx.lineTo(tgt.x, tgt.y);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawProjectiles() {
+  for (const proj of projectiles) {
+    if (!proj.alive && proj.trail.length === 0) continue;
+    const col  = ELEMENTS[proj.elem].color;
+    const sz   = proj.size ?? 5;
+    const glow = sz * 2.8;
+
+    // Trail — width scales with size
+    if (proj.trail.length > 1) {
+      ctx.save();
+      for (let i = 1; i < proj.trail.length; i++) {
+        const frac  = i / proj.trail.length;
+        const alpha = frac * 0.55;
+        const width = frac * sz * 1.4;
+        ctx.beginPath();
+        ctx.moveTo(proj.trail[i-1].x, proj.trail[i-1].y);
+        ctx.lineTo(proj.trail[i].x,   proj.trail[i].y);
+        ctx.strokeStyle = col;
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth   = width;
+        ctx.lineCap     = 'round';
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    if (!proj.alive) continue;
+
+    ctx.save();
+
+    // ── Light: radiant cross flare ──
+    if (proj.elem === 'light') {
+      const grd = ctx.createRadialGradient(proj.x, proj.y, 0, proj.x, proj.y, sz * 4);
+      grd.addColorStop(0, 'rgba(255,255,255,0.9)');
+      grd.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.beginPath();
+      ctx.arc(proj.x, proj.y, sz * 4, 0, Math.PI * 2);
+      ctx.fillStyle = grd;
+      ctx.fill();
+      // Cross arms
+      for (let arm = 0; arm < 4; arm++) {
+        const ang = arm * Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(proj.x, proj.y);
+        ctx.lineTo(proj.x + Math.cos(ang) * sz * 5, proj.y + Math.sin(ang) * sz * 5);
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        ctx.lineWidth   = sz * 0.6;
+        ctx.stroke();
+      }
+      ctx.restore();
+      continue;
+    }
+
+    // ── Dark: void orb with purple corona ──
+    if (proj.elem === 'dark') {
+      const grd = ctx.createRadialGradient(proj.x, proj.y, 0, proj.x, proj.y, sz * 3);
+      grd.addColorStop(0, 'rgba(0,0,0,1)');
+      grd.addColorStop(0.5, 'rgba(100,0,180,0.7)');
+      grd.addColorStop(1, 'rgba(100,0,180,0)');
+      ctx.beginPath();
+      ctx.arc(proj.x, proj.y, sz * 3, 0, Math.PI * 2);
+      ctx.fillStyle = grd;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(proj.x, proj.y, sz, 0, Math.PI * 2);
+      ctx.fillStyle = '#000000';
+      ctx.fill();
+      ctx.strokeStyle = '#9933cc';
+      ctx.lineWidth   = 2;
+      ctx.stroke();
+      ctx.restore();
+      continue;
+    }
+
+    // Outer glow halo
+    const grd = ctx.createRadialGradient(proj.x, proj.y, 0, proj.x, proj.y, glow);
+    grd.addColorStop(0, col + 'bb');
+    grd.addColorStop(1, col + '00');
+    ctx.beginPath();
+    ctx.arc(proj.x, proj.y, glow, 0, Math.PI * 2);
+    ctx.fillStyle = grd;
+    ctx.fill();
+
+    // Core orb
+    ctx.beginPath();
+    ctx.arc(proj.x, proj.y, sz, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.88;
+    ctx.fill();
+
+    // Colored tint ring around core
+    ctx.beginPath();
+    ctx.arc(proj.x, proj.y, sz, 0, Math.PI * 2);
+    ctx.strokeStyle = col;
+    ctx.lineWidth   = Math.max(1.5, sz * 0.5);
+    ctx.globalAlpha = 0.7;
+    ctx.stroke();
+
+    // Extra outer ring for machine-fired projectiles
+    if (proj.fromMachine) {
+      ctx.beginPath();
+      ctx.arc(proj.x, proj.y, sz + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth   = 1.5;
+      ctx.globalAlpha = 0.5;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+}
+
+function drawPlayers() {
+  const now = Date.now();
+  const human = players[0];
+
+  for (const p of players) {
+    const isHuman  = p.isHuman;
+    const isTarget = p.id === targetId;
+    const isForbidden = phase === 'prepare' && !isHuman && p.alive
+                        && human.alive && !isValidTarget(human, p);
+    const isInvalidFlash = p.id === invalidTargetFlash;
+
+    ctx.save();
+
+    if (!p.alive) {
+      // Drift toward center — the closer they are, the more faded
+      const dx = p.x - CX, dy = p.y - CY;
+      const distFromCenter = Math.sqrt(dx*dx + dy*dy);
+      const alpha = Math.min(0.22, distFromCenter / RADIUS * 0.22);
+      const r = Math.max(4, NODE_R * (distFromCenter / RADIUS));
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = '#ff2244';
+      ctx.fill();
+      ctx.restore();
+      continue;
+    }
+
+    // Dim forbidden hemisphere players
+    if (isForbidden) ctx.globalAlpha = 0.35;
+
+    // Invalid-click flash: red ring
+    if (isInvalidFlash) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, NODE_R + 9, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ff2244';
+      ctx.lineWidth = 2.5;
+      ctx.globalAlpha = 0.9;
+      ctx.stroke();
+      ctx.globalAlpha = isForbidden ? 0.35 : 1;
+    }
+
+    // Shield preview on self during prepare
+    if (isHuman && targetId === human.id && selectedElem && phase === 'prepare') {
+      const sc = ELEMENTS[selectedElem].color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, NODE_R + 9, 0, Math.PI * 2);
+      ctx.strokeStyle = sc;
+      ctx.lineWidth   = 2;
+      ctx.globalAlpha = 0.5 + 0.3 * Math.sin(now / 300);
+      ctx.setLineDash([4, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    }
+
+    // Shield ring — visible during attack phase
+    if (p.shieldElem && phase === 'attack') {
+      const sc  = ELEMENTS[p.shieldElem].color;
+      const sp  = 0.5 + 0.5 * Math.sin(now / 220);
+      // Outer rotating arc
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, NODE_R + 11, now / 800, now / 800 + Math.PI * 1.6);
+      ctx.strokeStyle = sc;
+      ctx.lineWidth   = 3;
+      ctx.globalAlpha = 0.85;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, NODE_R + 11, now / 800 + Math.PI, now / 800 + Math.PI * 2.6);
+      ctx.strokeStyle = sc;
+      ctx.lineWidth   = 1.5;
+      ctx.globalAlpha = 0.4;
+      ctx.stroke();
+      // Inner glow ring
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, NODE_R + 5, 0, Math.PI * 2);
+      ctx.strokeStyle = sc;
+      ctx.lineWidth   = 2;
+      ctx.globalAlpha = sp * 0.6;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // Target ring
+    if (isTarget && phase === 'prepare') {
+      const pulse = 0.65 + 0.35 * Math.sin(now / 300);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, NODE_R + 8, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ff4444';
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = pulse * (isForbidden ? 0.35 : 1);
+      ctx.stroke();
+      ctx.globalAlpha = isForbidden ? 0.35 : 1;
+    }
+
+    // Outer glow for human
+    if (isHuman) {
+      const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, NODE_R + 10);
+      grd.addColorStop(0, 'rgba(150,100,255,0.4)');
+      grd.addColorStop(1, 'rgba(150,100,255,0)');
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, NODE_R + 10, 0, Math.PI * 2);
+      ctx.fillStyle = grd;
+      ctx.fill();
+    }
+
+    // Body
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, NODE_R, 0, Math.PI * 2);
+    const grad = ctx.createRadialGradient(p.x - 4, p.y - 4, 2, p.x, p.y, NODE_R);
+    grad.addColorStop(0, isHuman ? '#cc99ff' : '#6699cc');
+    grad.addColorStop(1, isHuman ? '#440088' : '#112244');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.strokeStyle = isHuman ? '#9966ff' : '#335577';
+    ctx.lineWidth = isTarget ? 2.5 : 1.5;
+    ctx.stroke();
+
+    // HP pips
+    const maxHp = 5;
+    for (let h = 0; h < maxHp; h++) {
+      const px = p.x - (maxHp - 1) * 5 + h * 10;
+      const py = p.y + NODE_R + 9;
+      ctx.beginPath();
+      ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = h < p.hp ? '#44ff88' : '#1a1a30';
+      ctx.strokeStyle = h < p.hp ? '#22aa55' : '#333355';
+      ctx.lineWidth = 1;
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // Name
+    ctx.fillStyle = isHuman ? '#cc99ff' : '#8899aa';
+    ctx.font = `${isHuman ? 600 : 400} 9px 'Space Grotesk', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(p.name, p.x, p.y);
+
+    // Mana label above node
+    if (p.mana !== undefined) {
+      ctx.font = '500 8px "JetBrains Mono", monospace';
+      ctx.fillStyle = p.mana < 1 ? '#ff4444' : p.mana < 3 ? '#ffaa44' : '#44aaff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`💧${p.mana}`, p.x, p.y - NODE_R - 8);
+    }
+
+    ctx.restore();
+  }
+}
+
+// Static render loop for idle animation (pulse target ring)
+function idleLoop() {
+  if (phase === 'prepare' && targetId !== null) render();
+  requestAnimationFrame(idleLoop);
+}
+requestAnimationFrame(idleLoop);
+</script>
+</body>
+</html>
